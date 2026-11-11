@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "core"
+title = "Núcleo"
+color = Color(0.8, 0.96, 0.42, 1)
+values = {
+"health": 600.0,
+"cost": 0,
+"radius": 1.8,
+"repair_cost": 15,
+"repair_amount": 80.0
+}

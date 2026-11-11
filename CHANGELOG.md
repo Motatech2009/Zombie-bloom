@@ -1,0 +1,14 @@
+# Changelog
+
+## 0.1.0 — 2026-11-11
+
+- Projeto Godot 4.6.3, menu e partida conectados.
+- Cenário 3D, câmera ortográfica, personagem articulado, movimento, corrida e mira.
+- Três armas, raycasts, efeitos, munição e recarga.
+- Três zumbis, navegação e cinco hordas.
+- Coleta, XP, níveis, seis upgrades e três bônus temporários.
+- Núcleo, barricada, torreta, prévia e reparos.
+- HUD, equipamentos, configurações, pausa, reinício, vitória e derrota.
+- Geometria, sons e animações procedurais originais.
+- Suíte de integração e workflow de validação/exportação Windows.
+- Corrigido cálculo de vida para não reduzir atributos antes da primeira onda.
