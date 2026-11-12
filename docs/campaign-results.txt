@@ -87,7 +87,7 @@ PASS: horde completion permits construction and collection
 PASS: progression unlocks and loads area 2
 PASS: separate area template has its own finite population
 PASS: campaign reaches horde 4
-PASS: fourth horde introduces armored enemies
+PASS: fourth horde introduces ranged corrosive threat
 PASS: horde completion permits construction and collection
 PASS: campaign reaches horde 5
 PASS: horde completion permits construction and collection
@@ -99,8 +99,32 @@ PASS: horde completion permits construction and collection
 PASS: campaign reaches horde 7
 PASS: horde completion permits construction and collection
 PASS: campaign reaches horde 8
-PASS: eighth horde ends in campaign victory
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 9
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 10
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 11
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 12
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 13
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 14
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 15
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 16
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 17
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 18
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 19
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 20
+PASS: twentieth horde ends in campaign victory
 PASS: cold start resumes completed hordes, core and claimed caches
 PASS: weapon purchases survive a new scene instance
 PASS: leaving scene during expedition frees detached base as well
-CAMPAIGN RESULT: 103 checks, 0 failures
+CAMPAIGN RESULT: 127 checks, 0 failures

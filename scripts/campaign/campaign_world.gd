@@ -1,6 +1,20 @@
 extends "res://scripts/systems/game_world.gd"
 const CHECKPOINT = "user://zombie_bloom_arena_campaign.json"
 static var resume_requested: bool = false
+static var next_mode: String = "campaign"
+var game_mode: String = "campaign"
+var layout_revision: int = 0
+var grenades: int = 2
+var rockets: int = 0
+var grenade_cooldown: float = 0
+var vendor_tag: Label3D
+var exit_tag: Label3D
+
+static func save_path(mode: String) -> String:
+	return "user://zombie_bloom_"+mode+"_v2.json"
+
+func checkpoint_path() -> String:
+	return save_path(game_mode)
 var base_root := Node3D.new()
 var field_root: Node3D
 var base_arena: Arena
@@ -17,11 +31,14 @@ var field_queue: Array[int] = []
 var caches: Array[Node3D] = []
 
 func _ready() -> void:
+	game_mode = next_mode if next_mode in ["campaign","endless"] else "campaign"
 	Controls.setup()
 	GameSettings.load_settings()
 	sunlight = VisualFactory.lighting(self)
 	sunlight.shadow_enabled = GameSettings.shadows
 	add_child(base_root)
+	arena.free()
+	arena = load("res://scripts/campaign/defense_arena.gd").new()
 	base_arena = arena
 	base_root.add_child(arena)
 	add_child(effects)
@@ -37,10 +54,12 @@ func _ready() -> void:
 	core.world = self
 	base_root.add_child(core)
 	player = PLAYER_SCENE.instantiate()
+	player.weapons.free()
+	player.weapons = load("res://scripts/campaign/campaign_weapons.gd").new()
 	player.world = self
 	player.position = Vector3(3.8,0,4)
 	add_child(player)
-	player.weapons.owned.assign([true,false,false])
+	player.weapons.owned.assign([true,false,false,false,false])
 	player.weapons.cooldown = .4
 	builder.free()
 	builder = load("res://scripts/campaign/campaign_build.gd").new()
@@ -48,8 +67,8 @@ func _ready() -> void:
 	add_child(builder)
 	add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 32
-	camera.far = 150
+	camera.size = 38
+	camera.far = 200
 	camera.position = player.position+camera_offset
 	camera.look_at(player.position)
 	camera.current = true
@@ -62,6 +81,8 @@ func _ready() -> void:
 	create_vendor()
 	VisualFactory.ring(base_root,3,exit_pos+Vector3(0,.08,0),Color("b8de80"))
 	var sign := VisualFactory.health_label(base_root,2)
+	exit_tag = sign
+	sign.font_size = 25
 	sign.position = exit_pos+Vector3(0,2,0)
 	sign.text = "ROTAS DE COLETA\nM / ÁREAS"
 	for pos in [Vector3(7,0,-4),Vector3(-7,0,4),Vector3(-5,0,-7),Vector3(7,0,7)]: spawn_pickup(pos,0,15)
@@ -87,20 +108,29 @@ func create_vendor() -> void:
 	person.rotation.y = PI
 	vendor_rig = VisualFactory.human(person,Color("a5966b"),false)
 	var tag := VisualFactory.health_label(stand,3.5)
+	vendor_tag = tag
+	tag.font_size = 25
 	tag.text = "BENTO / ARMEIRO\nV para negociar"
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if phase == "ended": return
+	grenade_cooldown = maxf(0,grenade_cooldown-delta)
+	core.label.visible = area_index==-1 and player.position.distance_to(core.position)<4
+	vendor_tag.visible = area_index==-1 and player.position.distance_to(vendor_pos)<7
+	exit_tag.visible = area_index==-1 and player.position.distance_to(exit_pos)<7
 	shop_clock += delta
 	if area_index == -1: VisualFactory.animate_human(vendor_rig,shop_clock,.12,0,false)
 	if area_index >= 0 and phase == "expedition":
 		field_spawn_left -= delta
 		if field_spawn_left <= 0 and not field_queue.is_empty() and get_tree().get_nodes_in_group("enemies").size()<12:
 			var index: int = field_queue.pop_front()
-			var positions := [Vector3(-20,0,-20),Vector3(20,0,-20),Vector3(0,0,-24),Vector3(-23,0,0),Vector3(23,0,0)]
+			var positions := [Vector3(-42,0,-40),Vector3(42,0,-40),Vector3(0,0,-48),Vector3(-48,0,5),Vector3(48,0,5)]
 			var kind := 0
-			if area_index>=3 and index%7==0: kind = 4
+			if area_index>=2 and index%9==0: kind = 5
+			elif area_index>=1 and index%8==0: kind = 7
+			elif index%5==0: kind = 6
+			elif area_index>=3 and index%7==0: kind = 4
 			elif area_index>=2 and index%4==0: kind = 3
 			elif area_index>=1 and index%5==0: kind = 2
 			elif index%3==0: kind = 1
@@ -119,6 +149,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("sector_map"): hud.show_routes()
 	elif event.is_action_pressed("vendor"): open_shop()
+	elif event.is_action_pressed("grenade"): throw_grenade()
+	elif event.is_action_pressed("slot_4") and not builder.active: player.weapons.equip(3)
+	elif event.is_action_pressed("slot_5") and not builder.active: player.weapons.equip(4)
 	elif event.is_action_pressed("save_campaign"): save_checkpoint()
 	elif event.is_action_pressed("load_campaign"): load_checkpoint()
 	elif event.is_action_pressed("upgrade_piece"): improve_nearby()
@@ -139,6 +172,15 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	return enemy
 
 func spawn_pickup(pos: Vector3,experience: int,metal: int,power: String = "") -> Node3D:
+	var drops := get_tree().get_nodes_in_group("pickups")
+	if drops.size()>=256:
+		if power.is_empty():
+			for existing in drops:
+				if existing.power.is_empty() and not existing.collected:
+					existing.xp += experience
+					existing.scrap += metal
+					return existing
+		else: return null
 	var pickup := Node3D.new()
 	pickup.set_script(PICKUP_SCRIPT)
 	pickup.world = self
@@ -176,13 +218,14 @@ func credit(key: String,amount: int) -> void:
 	else: stock[key] += amount
 
 func buy_weapon(index: int) -> bool:
-	if area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5 or index not in [1,2] or player.weapons.owned[index]: return false
-	var price := 110 if index == 1 else 220
+	if area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5 or index not in [1,2,3,4] or player.weapons.owned[index]: return false
+	var price: int = CampaignData.PRICES[index]
 	if not pay({"scrap":price}): return false
 	player.weapons.owned[index] = true
 	player.weapons.ammo[index] = player.weapons.capacity(index)
+	if index==4: rockets += 5
 	player.weapons.equip(index)
-	notify("%s comprada. Equipe com %d." % [Catalog.WEAPONS[index].title,index+1])
+	notify("%s comprada. Equipe com %d." % [CampaignData.WEAPONS[index].title,index+1])
 	return true
 
 func shop_service(id: String) -> bool:
@@ -197,6 +240,12 @@ func shop_service(id: String) -> bool:
 		"parts":
 			if not pay({"scrap":45}): return false
 			stock.parts += 4
+		"grenades":
+			if not pay({"scrap":45}): return false
+			grenades += 3
+		"rockets":
+			if not player.weapons.owned[4] or not pay({"scrap":60}): return false
+			rockets += 5
 		_: return false
 	return true
 
@@ -253,6 +302,7 @@ func travel(index: int) -> bool:
 	if area_index!=-1 or phase!="prep" or index<0 or index>=areas.size() or waves.wave<int(CampaignData.AREAS[index].wave) or resources.pending>0: return false
 	builder.set_active(false)
 	hud.close_modal()
+	clear_hazards()
 	remove_child(base_root)
 	area_index = index
 	field_root = Node3D.new()
@@ -310,6 +360,7 @@ func return_to_base() -> bool:
 	# All loose drops are collected on extraction; deaths/cache claims remain finite.
 	for p in get_tree().get_nodes_in_group("pickups"): p.collect()
 	if not hud.mode.is_empty(): hud.close_modal()
+	clear_hazards()
 	remove_child(field_root)
 	field_root.queue_free()
 	field_root = null
@@ -331,14 +382,14 @@ func save_checkpoint(show_notice: bool = true) -> bool:
 		return false
 	var data := snapshot()
 	if not valid_snapshot(data): notify("Estado atual não pôde ser validado para salvar."); return false
-	var file := FileAccess.open(CHECKPOINT+".tmp",FileAccess.WRITE)
+	var file := FileAccess.open(checkpoint_path()+".tmp",FileAccess.WRITE)
 	if file==null: notify("Falha ao gravar o checkpoint."); return false
 	file.store_string(JSON.stringify(data))
 	file.flush()
 	file.close()
-	var dst := ProjectSettings.globalize_path(CHECKPOINT)
-	if FileAccess.file_exists(CHECKPOINT): DirAccess.copy_absolute(dst,dst+".bak")
-	var error := DirAccess.rename_absolute(ProjectSettings.globalize_path(CHECKPOINT+".tmp"),dst)
+	var dst := ProjectSettings.globalize_path(checkpoint_path())
+	if FileAccess.file_exists(checkpoint_path()): DirAccess.copy_absolute(dst,dst+".bak")
+	var error := DirAccess.rename_absolute(ProjectSettings.globalize_path(checkpoint_path()+".tmp"),dst)
 	if error!=OK: notify("Não foi possível concluir o checkpoint."); return false
 	if show_notice: notify("Refúgio salvo. F9 restaura o último checkpoint.")
 	return true
@@ -351,12 +402,15 @@ func snapshot() -> Dictionary:
 	for p in get_tree().get_nodes_in_group("pickups"):
 		if not p.collected: drops.append({"pos":[p.position.x,p.position.z],"xp":p.xp,"scrap":p.scrap,"power":p.power})
 	var gun: WeaponSystem = player.weapons
-	return {"format":1,"wave":waves.wave,"stock":stock.duplicate(),"scrap":resources.scrap,"level":resources.level,"xp":resources.xp,"kills":kills,"elapsed":elapsed,"areas":areas.duplicate(true),"core_tier":core_tier,"core_hp":core.health.current,"hp":player.health.current,"max_hp":player.health.maximum,"position":[player.position.x,player.position.z],"owned":gun.owned.duplicate(),"ammo":gun.ammo.duplicate(),"slot":gun.slot,"gun":[gun.damage_multiplier,gun.rate_multiplier,gun.capacity_multiplier,gun.reload_multiplier,gun.level],"speed":player.speed_multiplier,"upgrades":upgrades.levels.duplicate(),"structures":structures,"drops":drops}
+	return {"format":2,"mode":game_mode,"grenades":grenades,"rockets":rockets,"wave":waves.wave,"stock":stock.duplicate(),"scrap":resources.scrap,"level":resources.level,"xp":resources.xp,"kills":kills,"elapsed":elapsed,"areas":areas.duplicate(true),"core_tier":core_tier,"core_hp":core.health.current,"hp":player.health.current,"max_hp":player.health.maximum,"position":[player.position.x,player.position.z],"owned":gun.owned.duplicate(),"ammo":gun.ammo.duplicate(),"slot":gun.slot,"gun":[gun.damage_multiplier,gun.rate_multiplier,gun.capacity_multiplier,gun.reload_multiplier,gun.level],"speed":player.speed_multiplier,"upgrades":upgrades.levels.duplicate(),"structures":structures,"drops":drops}
 
 func load_checkpoint() -> bool:
 	if area_index!=-1 or phase!="prep": notify("Restaure no refúgio entre hordas."); return false
-	if not FileAccess.file_exists(CHECKPOINT): notify("Nenhum refúgio salvo."); return false
-	var data = JSON.parse_string(FileAccess.get_file_as_string(CHECKPOINT))
+	var path := checkpoint_path()
+	if not FileAccess.file_exists(path) and game_mode=="campaign": path = CHECKPOINT
+	if not FileAccess.file_exists(path): notify("Nenhum refúgio salvo."); return false
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+	data = migrate_snapshot(data)
 	if not valid_snapshot(data): notify("Checkpoint inválido: o refúgio atual foi preservado."); return false
 	apply_snapshot(data)
 	notify("Refúgio restaurado · horda %d concluída." % waves.wave)
@@ -364,22 +418,23 @@ func load_checkpoint() -> bool:
 
 func valid_snapshot(data: Variant) -> bool:
 	if not data is Dictionary: return false
-	for key in ["format","wave","stock","scrap","level","xp","kills","elapsed","areas","core_tier","core_hp","hp","max_hp","position","owned","ammo","slot","gun","speed","upgrades","structures","drops"]:
+	for key in ["format","mode","grenades","rockets","wave","stock","scrap","level","xp","kills","elapsed","areas","core_tier","core_hp","hp","max_hp","position","owned","ammo","slot","gun","speed","upgrades","structures","drops"]:
 		if not data.has(key): return false
-	if data.format!=1 or not bounded(data.wave,0,7) or not bounded(data.scrap,0,10000000) or not bounded(data.level,1,10000) or not bounded(data.xp,0,10000000) or not bounded(data.kills,0,10000000) or not bounded(data.elapsed,0,100000000) or not bounded(data.core_tier,1,4): return false
+	if data.format!=2 or data.mode!=game_mode or not bounded(data.grenades,0,100000) or not bounded(data.rockets,0,100000) or not bounded(data.wave,0,19 if game_mode=="campaign" else 100000000) or not bounded(data.scrap,0,10000000) or not bounded(data.level,1,10000) or not bounded(data.xp,0,10000000) or not bounded(data.kills,0,10000000) or not bounded(data.elapsed,0,100000000) or not bounded(data.core_tier,1,4): return false
 	if not bounded(data.max_hp,100,1000000) or not bounded(data.hp,1,data.max_hp) or not bounded(data.core_hp,1,600+250*(data.core_tier-1)) or not bounded(data.speed,.1,1000): return false
 	if not point_valid(data.position) or not data.stock is Dictionary or not data.upgrades is Dictionary: return false
 	for key in data.upgrades:
 		if key not in ["damage","rate","capacity","reload","speed","health"] or not bounded(data.upgrades[key],0,10000): return false
 	for key in ["wood","parts"]:
 		if not data.stock.has(key) or not bounded(data.stock[key],0,10000000): return false
-	if not data.owned is Array or data.owned.size()!=3 or data.owned[0]!=true or not data.ammo is Array or data.ammo.size()!=3 or not bounded(data.slot,0,2): return false
-	for i in range(3):
+	if not data.owned is Array or data.owned.size()!=5 or data.owned[0]!=true or not data.ammo is Array or data.ammo.size()!=5 or not bounded(data.slot,0,4): return false
+	for i in range(5):
 		if not data.owned[i] is bool or not bounded(data.ammo[i],0,100000): return false
+	if data.ammo[4]>1: return false
 	if not data.owned[int(data.slot)] or not data.gun is Array or data.gun.size()!=5: return false
 	for value in data.gun:
 		if not bounded(value,.01,100000): return false
-	if not data.areas is Array or data.areas.size()!=4 or not data.structures is Array or data.structures.size()>80 or not data.drops is Array or data.drops.size()>2000: return false
+	if not data.areas is Array or data.areas.size()!=4 or not data.structures is Array or data.structures.size()>120 or not data.drops is Array or data.drops.size()>2000: return false
 	for i in range(4):
 		var area = data.areas[i]
 		if not area is Dictionary or not area.get("dead") is Array or not area.get("caches") is Array or not area.get("cleared") is bool: return false
@@ -400,7 +455,7 @@ func bounded(value: Variant,minimum: float,maximum: float) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and value>=minimum and value<=maximum
 
 func point_valid(value: Variant) -> bool:
-	return value is Array and value.size()==2 and bounded(value[0],-31,31) and bounded(value[1],-31,31)
+	return value is Array and value.size()==2 and bounded(value[0],-55,55) and bounded(value[1],-55,55)
 
 func unique_indices(values: Array,limit: int) -> bool:
 	var seen := {}
@@ -410,6 +465,10 @@ func unique_indices(values: Array,limit: int) -> bool:
 	return true
 
 func apply_snapshot(data: Dictionary) -> void:
+	clear_hazards()
+	layout_revision += 1
+	grenades = int(data.grenades)
+	rockets = int(data.rockets)
 	builder.set_active(false)
 	for s in get_tree().get_nodes_in_group("campaign_structure"):
 		s.get_parent().remove_child(s)
@@ -469,3 +528,91 @@ func apply_snapshot(data: Dictionary) -> void:
 
 func _exit_tree() -> void:
 	if not base_root.is_inside_tree(): base_root.free()
+
+func migrate_snapshot(data: Variant) -> Variant:
+	if not data is Dictionary or data.get("format")!=1: return data
+	var converted: Dictionary = data.duplicate(true)
+	if not converted.get("owned") is Array or converted.owned.size()!=3 or not converted.get("ammo") is Array or converted.ammo.size()!=3: return data
+	converted.format = 2
+	converted.mode = "campaign"
+	converted.grenades = 2
+	converted.rockets = 0
+	converted.owned.append_array([false,false])
+	converted.ammo.append_array([40,0])
+	return converted
+
+func clear_hazards() -> void:
+	for group in ["campaign_projectiles","acid_pools"]:
+		for node in get_tree().get_nodes_in_group(group):
+			node.get_parent().remove_child(node)
+			node.queue_free()
+
+func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float) -> Node3D:
+	if get_tree().get_nodes_in_group("campaign_projectiles").size()>=32: return null
+	var shot := Node3D.new()
+	shot.set_script(load("res://scripts/campaign/campaign_projectile.gd"))
+	shot.world = self
+	shot.kind = kind
+	shot.start = from
+	shot.destination = to
+	shot.damage = power
+	shot.radius = radius
+	shot.life = travel_time
+	add_child(shot)
+	return shot
+
+func throw_grenade() -> bool:
+	if phase not in ["combat","expedition"] or builder.active or not hud.mode.is_empty(): return false
+	if grenades<=0: notify("Sem granadas. Compre com Bento."); return false
+	if grenade_cooldown>0: return false
+	var point := mouse_ground(0)
+	var offset := point-player.position
+	offset.y = 0
+	if offset.length()>18: offset = offset.normalized()*18
+	if projectile("grenade",player.position+Vector3(0,1.2,0),player.position+offset+Vector3(0,.15,0),105,4.5,.85)==null: return false
+	grenades -= 1
+	grenade_cooldown = 1.5
+	return true
+
+func explode(point: Vector3,radius: float,power: float) -> void:
+	effects.burst(point,Color("f6b666"),14)
+	effects.flash(point)
+	audio.play_tone(65,.25,.18)
+	var ring := VisualFactory.ring(effects,radius,point,Color("e6b762"))
+	var fade := create_tween()
+	fade.tween_property(ring,"scale",Vector3.ONE*.01,.4)
+	fade.tween_callback(ring.queue_free)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		var target_point: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
+		var d := point.distance_to(target_point)
+		if d>radius: continue
+		var ray := PhysicsRayQueryParameters3D.create(point+Vector3(0,.25,0),target_point,1|8)
+		if not get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): continue
+		enemy.take_damage(power*lerpf(1,.45,d/radius))
+	if player.position.distance_to(point)<radius*.7: player.take_damage(power*.25)
+
+func spawn_acid(point: Vector3,radius: float,power: float) -> Node3D:
+	if get_tree().get_nodes_in_group("acid_pools").size()>=16: return null
+	var pool := Node3D.new()
+	pool.set_script(load("res://scripts/campaign/acid_pool.gd"))
+	pool.world = self
+	pool.position = point
+	pool.radius = radius
+	pool.damage = power
+	add_child(pool)
+	return pool
+
+func air_aim(origin: Vector3,direction: Vector3,range_limit: float) -> Vector3:
+	var nearest: Node3D
+	var distance := range_limit
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.spec.id not in ["hound","flyer"]: continue
+		var offset: Vector3 = enemy.global_position-origin
+		offset.y = 0
+		var forward := offset.dot(direction)
+		if forward<=0 or forward>=distance: continue
+		if (offset-direction*forward).length()>.85: continue
+		nearest = enemy
+		distance = forward
+	if nearest==null: return direction
+	return (nearest.global_position+Vector3(0,nearest.aim_height,0)-origin).normalized()

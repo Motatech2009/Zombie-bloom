@@ -1,3 +1,15 @@
+# Arquitetura atual — Defesa 0.5
+
+A composição segue `CampaignWorld`. `next_mode` escolhe campanha ou infinito; `game_mode` e a versão 2 dos snapshots isolam os arquivos. A migração do save 0.4 produz cópia validada. O menu consulta caminhos leves e só carrega os serviços da campanha ao entrar, evitando reter dependências desnecessárias.
+
+`defense_arena.gd` amplia piso, bordas e AStar para 110 m; `campaign_arena.gd` deriva as áreas. `campaign_build.gd` mantém materiais e uma grade persistente, invalidados por `layout_revision` ao construir, destruir, desmontar ou restaurar. A prévia não consulta caminho; o commit valida fisicamente e aplica/reverte apenas células candidatas antes de debitar.
+
+`campaign_weapons.gd` estende o contrato de WeaponSystem para cinco slots e recarga finita do lançador. `campaign_projectile.gd` contém arco/voo/colisão, `acid_pool.gd` contém a duração/ticks de corrosão. Áreas e mudança de fase removem perigos transitórios. `campaign_enemy.gd` separa perseguição humana, cão, voador e atirador; mantém a colisão aérea real e altura de mira. O HUD compacto atualiza informação a 10 Hz; mira permanece por quadro.
+
+Balanceamento e regras atuais em [CAMPAIGN.md](CAMPAIGN.md). Evidência da construção em `docs/build-performance.json` e três suítes headless. Relatórios antigos abaixo são históricos.
+
+---
+
 # Arquitetura atual — campanha 0.4
 
 O menu carrega `scenes/campaign/CampaignWorld.tscn`. O código de `scripts/campaign/` estende os componentes do MVP e preserva seu cenário e linguagem visual. `campaign_data.gd` centraliza áreas, oito hordas, peças/custos e novas variantes. `campaign_world.gd` compõe serviços, transações, viagens e checkpoints; `campaign_waves.gd` administra as hordas; `campaign_structure.gd` implementa seis peças e níveis; `campaign_build.gd` valida espaço, acesso e clique; `campaign_enemy.gd` adapta percepção de alvo e blindagem; `campaign_arena.gd` gera cada área; `campaign_hud.gd` apresenta suas ações.

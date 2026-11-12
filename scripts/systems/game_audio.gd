@@ -34,3 +34,9 @@ func play_tone(frequency: int, duration: float, gain: float) -> void:
 	voice.stream = cache[key]
 	voice.volume_db = linear_to_db(gain)
 	voice.play()
+
+func _exit_tree() -> void:
+	for voice in voices:
+		voice.stop()
+		voice.stream = null
+	cache.clear()

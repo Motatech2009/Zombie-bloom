@@ -1,0 +1,12 @@
+{
+  "existing_80_ms": 6.21,
+  "max_ms": 1.799,
+  "median_ms": 0.444,
+  "placements": 8,
+  "preview_path_checks": 0,
+  "renderer": "headless",
+  "engine": "Godot 4.6.3 stable official",
+  "environment": "Linux cloud, headless, no GPU render timing",
+  "protocol": "8 real placements; 120 manual preview updates at 1/60; 1 placement with 80 existing defenses",
+  "scope": "CPU duration of validation, debit and node creation only; excludes next rendered frame, shader compilation and Windows scheduling"
+}

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "smg"
+title = "Submetralhadora"
+color = Color(0.9,0.65,0.3,1)
+values = {
+"damage": 9.0,
+"interval": 0.065,
+"range": 23.0,
+"capacity": 40,
+"reload": 1.7,
+"pellets": 1,
+"spread": 0.07
+}

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — 2026-11-12
+
+- Construção com prévia/material/grade reutilizados; script pré-carregado e limite de 120 peças.
+- Campanha de 20 hordas e defesa infinita; checkpoints distintos e importação do save 0.4.
+- Arenas de 110 m, HUD compacto e atalhos ocultáveis.
+- Corrosivos, cães, voadores e Alfa periódico, com escala de pressão maior.
+- SMG, lança-foguetes, granadas e munição explosiva finita.
+- Limites de drops, projéteis e poças; 267 verificações.
+
+
 ## 0.4.0 — 2026-11-12
 
 - Retomada da arena original enviada por ZIP, em branch independente da Beta.

@@ -77,22 +77,34 @@ func show_main() -> void:
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
-	var description := UI.label(content, "Oito hordas. Sua fortaleza.\nLimpe áreas, negocie armas e construa novas camadas de defesa.", 17, UI.MUTED)
+	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nCampanha de 20 hordas ou defesa sem fim.", 17, UI.MUTED)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content, 6)
-	UI.button(content, "INICIAR SOBREVIVÊNCIA   →", start_game, true)
-	if FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
-		UI.button(content, "CONTINUAR REFÚGIO", continue_campaign)
+	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
+	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
+	if FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
+	if FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
+		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "CAMPANHA 0.4   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "DEFESA 0.5   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+
+func resume_mode(mode: String) -> void:
+	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
+	continue_campaign()
+
+func choose_mode(mode: String) -> void:
+	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
+	start_game()
 
 func start_game() -> void:
-	if FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+	var campaign = load("res://scripts/campaign/campaign_world.gd")
+	if FileAccess.file_exists(campaign.save_path(campaign.next_mode)):
 		clear_content()
-		UI.label(content,"NOVA CAMPANHA",35,UI.LIME)
+		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
 		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
 Quer começar outro refúgio?",20,UI.MUTED)
 		UI.button(content,"COMEÇAR NOVO REFÚGIO",begin_campaign,true)
@@ -112,7 +124,7 @@ func continue_campaign() -> void:
 func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
-	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–3 armas\nB catálogo de construção · Q girar peça\n1–6 peças na prévia · Clique instalar\nE reparar · G melhorar perto · X desmontar\nF abrir/fechar portão · V armeiro próximo\nM rotas de coleta · ESPAÇO próxima horda\nTAB arsenal · F5 salvar · F9 restaurar\nESC pausar / fechar / cancelar\n\nNa preparação, construa e reforce a base.\nO armeiro vende armas e materiais por sucata.\nLimpe as quatro áreas para recolher suas reservas.\nE volta pela zona de extração ao sul.\nAs áreas liberam após hordas 0, 1, 3 e 5.\n\nMunição de reserva ilimitada. Recarregue com R.\nO Núcleo e cada defesa podem ser melhorados.\nVença oito hordas. Morrer ou perder o Núcleo\nencerra a tentativa; retome seu checkpoint.",17,UI.MUTED)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–5 armas\nB catálogo de construção · Q girar peça\n1–6 peças na prévia · Clique instalar\nE reparar · G melhorar perto · X desmontar\nF abrir/fechar portão · V armeiro próximo\nM rotas de coleta · ESPAÇO próxima horda\nC granada · H atalhos · TAB arsenal\nF5 salvar · F9 restaurar\nESC pausar / fechar / cancelar\n\nNa preparação, construa e reforce a base.\nO armeiro vende armas e materiais por sucata.\nLimpe as quatro áreas para recolher suas reservas.\nE volta pela zona de extração ao sul.\nAs áreas liberam após hordas 0, 1, 3 e 5.\n\nBalas comuns livres; explosivos são finitos.\nO Núcleo e cada defesa podem ser melhorados.\nVença 20 hordas ou resista no infinito. Perder o Núcleo\nencerra a tentativa; retome seu checkpoint.",17,UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 

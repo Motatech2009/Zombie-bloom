@@ -39,6 +39,9 @@ jobs:
           godot --headless --path . --script res://tests/campaign_tests.gd 2>&1 | tee campaign-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' campaign-tests.log; then exit 1; fi
           grep -E 'CAMPAIGN RESULT: [0-9]+ checks, 0 failures' campaign-tests.log
+          godot --headless --path . --script res://tests/defense_tests.gd 2>&1 | tee defense-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' defense-tests.log; then exit 1; fi
+          grep -E 'DEFENSE RESULT: [0-9]+ checks, 0 failures' defense-tests.log
       - name: Install matching export templates
         shell: bash
         run: |
@@ -58,7 +61,7 @@ jobs:
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
           cp README.md CAMPAIGN.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/campaign-results.txt docs/integration-results.txt builds/windows/docs/
+          cp docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

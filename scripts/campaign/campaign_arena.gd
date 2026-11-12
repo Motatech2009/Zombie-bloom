@@ -1,9 +1,9 @@
-extends Arena
+extends "res://scripts/campaign/defense_arena.gd"
 var area: int = 0
 
 func ground() -> void:
 	super.ground()
-	VisualFactory.box(self,Vector3(61,.02,61),Vector3(0,-.03,0),CampaignData.AREAS[area].color)
+	VisualFactory.box(self,Vector3(109,.02,109),Vector3(0,-.03,0),CampaignData.AREAS[area].color)
 
 func props() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -27,6 +27,14 @@ func props() -> void:
 			for x in [-2,2]: VisualFactory.cylinder(body,.6,3,Vector3(x,2,0),Color("8b8170"))
 		VisualFactory.collider(body,size,Vector3(0,size.y/2,0))
 		mark_solid(spots[i],Vector2(size.x+1,size.z+1))
+	for x in [-32,32]:
+		for z in [-28,0,28]:
+			var obstacle := StaticBody3D.new()
+			add_child(obstacle)
+			obstacle.position = Vector3(x,0,z)
+			VisualFactory.box(obstacle,Vector3(7,2.8,6),Vector3(0,1.4,0),Color("58625c"))
+			VisualFactory.collider(obstacle,Vector3(7,2.8,6),Vector3(0,1.4,0))
+			mark_solid(obstacle.position,Vector2(8,7))
 	var sign := VisualFactory.health_label(self,2)
 	sign.position = Vector3(0,2,23)
 	sign.text = "EXTRAÇÃO\nE / VOLTAR AO REFÚGIO"

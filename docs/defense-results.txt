@@ -1,0 +1,59 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: larger arena has physical terrain and navigation across 110 metres
+PASS: outer terrain beyond previous map border supports the real player
+PASS: campaign contains twenty increasingly populated waves
+PASS: later waves scale durability faster than the old campaign
+PASS: infinite population formula continues beyond campaign length
+PASS: preview does not run full path validation every frame
+PASS: preview collision checks are throttled to ten per second
+PASS: preview reuses its two materials
+PASS: construction commits without a deferred phantom piece 0
+PASS: construction commits without a deferred phantom piece 1
+PASS: construction commits without a deferred phantom piece 2
+PASS: construction commits without a deferred phantom piece 3
+PASS: construction commits without a deferred phantom piece 4
+PASS: construction commits without a deferred phantom piece 5
+PASS: construction commits without a deferred phantom piece 6
+PASS: construction commits without a deferred phantom piece 7
+PASS: path grid is reused until structure layout changes
+PASS: cached access validation still rejects sealing the core route
+PASS: temporary placement cells are rolled back after validation
+PASS: SMG is purchased through the trader and selected
+PASS: launcher purchase grants one loaded and five reserve rockets
+PASS: grenade packs add finite inventory
+PASS: rocket packs add finite reserve
+PASS: rocket firing consumes the loaded round only
+PASS: launcher begins a finite reload
+PASS: switching cancels launcher reload without spending reserve
+PASS: finished launcher reload consumes exactly one reserve rocket
+PASS: empty reserve cannot refill a launcher for free
+PASS: grenade input launches a delayed explosive and spends one grenade
+PASS: grenade cooldown prevents duplicate throws
+PASS: grenade is a physical-flight gameplay object before detonation
+PASS: explosion applies area damage to several enemies
+PASS: explosive proximity can hurt the survivor
+PASS: solid geometry shields enemies from blast damage
+PASS: corrosive ground damages both defenses and survivor
+PASS: acid pool expires instead of accumulating forever
+PASS: corrosive infected casts an actual delayed acid projectile
+PASS: infected hound has fast movement and a quadruped hit height
+PASS: flyer occupies air space and bypasses ground obstacles
+PASS: ground firearm can hit the low hound silhouette
+PASS: firearm adjusts elevation to hit an aimed-at flyer
+PASS: turret line of sight and damage include air targets
+PASS: periodic Alpha introduces boss-scale durability
+PASS: construction remains valid with eighty existing defenses
+PASS: five weapons and finite explosive inventory validate after serialization
+PASS: legacy save migration preserves source and extends arsenal safely
+PASS: expanded shop opens inside a scrollable modal
+PASS: arsenal describes all five weapons and explosives
+PASS: infinite mode uses a separate checkpoint
+PASS: infinite mode starts wave twenty-one
+PASS: infinite wave completion never opens campaign victory
+PASS: infinite mode starts the following wave normally
+PASS: infinite checkpoint saves past campaign length
+PASS: checkpoint restores finite explosive ammunition
+PASS: infinite mode rejects applying a campaign snapshot
+BUILD BENCHMARK {"existing_80_ms":6.21,"max_ms":1.799,"median_ms":0.444,"placements":8,"preview_path_checks":0,"renderer":"headless"}
+DEFENSE RESULT: 55 checks, 0 failures

@@ -121,10 +121,32 @@ func dismantle() -> bool:
 	collision_layer = 0
 	remove_from_group("buildings")
 	remove_from_group("campaign_structure")
+	world.layout_revision += 1
 	queue_free()
 	world.notify("Estrutura desmontada · 50% dos materiais recuperados.")
 	return true
 
 func die() -> void:
+	world.layout_revision += 1
 	remove_from_group("campaign_structure")
 	super.die()
+
+func fire_turret() -> void:
+	var nearest: Node3D
+	var distance: float = spec.values.range
+	var origin := global_position+Vector3(0,1.45,0)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		var point: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
+		var d := origin.distance_to(point)
+		if d>=distance: continue
+		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,point,1|4|8,[get_rid()]))
+		if not hit.is_empty() and hit.collider==enemy:
+			nearest = enemy
+			distance = d
+	if nearest==null: return
+	var point: Vector3 = nearest.global_position+Vector3(0,nearest.aim_height,0)
+	var direction := point-origin
+	head.rotation.y = atan2(-direction.x,-direction.z)
+	cooldown = float(spec.values.interval)
+	world.effects.tracer(origin,point,Color("72dce0"))
+	nearest.take_damage(float(spec.values.damage))

@@ -1,3 +1,19 @@
+# Validação da Defesa 0.5 — 2026-11-12
+
+**267 verificações aprovadas:** 85 do MVP, 127 da campanha ampliada e 55 da expansão. Godot 4.6.3 oficial, Linux. Logs atuais: `docs/integration-results.txt`, `docs/campaign-results.txt` e `docs/defense-results.txt`.
+
+A expansão verifica modo infinito além da campanha (hordas 21/22), checkpoints separados, migração do save anterior, cinco armas, compra/consumo/recarga cancelada de foguetes, granadas finitas e recuperação, explosão em área com obstrução e dano próprio, poça corrosiva com expiração e dano às defesas, projétil do corrosivo, tiro e torreta em cães/voadores, atributos do Alfa e mapa físico além do limite antigo. A campanha percorre as 20 hordas e retoma o checkpoint 19 em cena nova.
+
+Construção: 120 atualizações de prévia sem consulta completa de caminho; materiais mantêm suas instâncias; ocupação é limitada a 10 verificações por segundo; a grade de acesso é reutilizada e células temporárias são revertidas. Oito colocações reais tiveram mediana de **0.444 ms**, máximo de **1.799 ms**; uma colocação com **80 defesas existentes levou 6.21 ms**. Dados em `docs/build-performance.json`. São tempos de CPU da operação headless; excluem o quadro seguinte, shaders e renderização e não certificam ausência de travamento no Windows do usuário.
+
+Conferência em janela nativa 1280×800, Mesa llvmpipe: seleção de campanha/infinito, HUD compacto, catálogo, colocação de barricada (140→120 sucata), nove silhuetas por fixture visual, seleção do lança-foguetes, lançamento de granada e arsenal de cinco armas. Modelos e efeitos continuam de protótipo. O helper `tests/defense_preview.gd` não integra o executável e usa hostis parados para revisão de arte.
+
+Importação e suítes sem erros de script. A liberação do áudio aguarda o processamento do mixer nos testes, evitando falso vazamento de playback no encerramento rápido. Sem dispositivo ALSA para ouvir som. Não foi executada uma campanha humana completa nem o exe em Windows; dificuldade e desempenho no hardware alvo ainda precisam ser aferidos. Exportação/CI devem ser confirmados no Actions do commit entregue.
+
+---
+
+## Histórico 0.4
+
 # Validação da campanha 0.4 — 2026-11-12
 
 Godot 4.6.3 oficial, Linux: **103 verificações da campanha + 85 do MVP = 188 aprovadas, zero falhas**. Importação e execução headless da cena da campanha sem erros de script. Logs atuais em `docs/campaign-results.txt` e `docs/integration-results.txt`.

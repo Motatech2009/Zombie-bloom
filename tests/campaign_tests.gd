@@ -39,7 +39,7 @@ func place(index: int,pos: Vector3,angle: float = 0) -> Node3D:
 
 func run() -> void:
 	seed(9221)
-	var path := "user://zombie_bloom_arena_campaign.json"
+	var path := "user://zombie_bloom_campaign_v2.json"
 	had_save = FileAccess.file_exists(path)
 	if had_save: backup = FileAccess.get_file_as_string(path)
 	world = load("res://scenes/campaign/CampaignWorld.tscn").instantiate()
@@ -48,7 +48,7 @@ func run() -> void:
 	await frames()
 	check(world.phase=="prep" and world.area_index==-1 and world.core.health.current==600,"campaign initializes the original arena and intact core")
 	check(world.stock.wood==12 and world.stock.parts==4,"starter construction materials exist")
-	check(world.player.weapons.owned==[true,false,false],"pistol only at start; advanced guns require purchases")
+	check(world.player.weapons.owned==[true,false,false,false,false],"pistol only at start; advanced guns require purchases")
 	world.player.weapons.equip(2)
 	check(world.player.weapons.slot==0,"number key equip cannot bypass weapon ownership")
 	var before: int = world.resources.scrap
@@ -240,17 +240,18 @@ func run() -> void:
 	world.waves.set_physics_process(false)
 	check(world.waves.start() and not world.waves.start(),"base wave starts once after expedition")
 	check(not world.travel(0) and not world.buy_weapon(1),"active base horde blocks travel and shop")
-	for wave_index in range(8):
+	for wave_index in range(CampaignData.WAVES.size()):
 		check(world.waves.wave==wave_index+1,"campaign reaches horde %d" % (wave_index+1))
 		while world.waves.to_spawn>0:
 			var enemy: Node3D = world.waves.spawn_enemy()
 			enemy.set_physics_process(false)
-			if wave_index==3 and world.waves.spawned==1: check(enemy.spec.id=="armored","fourth horde introduces armored enemies")
+			if wave_index==3 and world.waves.spawned==1: check(enemy.spec.id=="spitter","fourth horde introduces ranged corrosive threat")
 			if wave_index==5 and world.waves.spawned==1: check(enemy.spec.id=="demolisher","sixth horde introduces demolishers")
 			enemy.take_damage(100000)
+			enemy.queue_free()
 			unpause_choices()
 		world.waves.complete()
-		if wave_index<7:
+		if wave_index<CampaignData.WAVES.size()-1:
 			check(world.phase=="prep","horde completion permits construction and collection")
 			if wave_index in [0,2,4]:
 				var area_id := 1 if wave_index==0 else 2 if wave_index==2 else 3
@@ -262,7 +263,7 @@ func run() -> void:
 				unpause_choices()
 				await frames()
 			world.waves.start()
-	check(world.phase=="ended" and world.won and paused and world.hud.mode=="result","eighth horde ends in campaign victory")
+	check(world.phase=="ended" and world.won and paused and world.hud.mode=="result","twentieth horde ends in campaign victory")
 	paused = false
 	world.queue_free()
 	await process_frame
@@ -271,7 +272,7 @@ func run() -> void:
 	root.add_child(world)
 	current_scene = world
 	await frames()
-	check(world.waves.wave==7 and world.core_tier==2 and world.areas[0].caches.size()==3,"cold start resumes completed hordes, core and claimed caches")
+	check(world.waves.wave==CampaignData.WAVES.size()-1 and world.core_tier==2 and world.areas[0].caches.size()==3,"cold start resumes completed hordes, core and claimed caches")
 	check(world.player.weapons.owned[1] and world.player.weapons.owned[2],"weapon purchases survive a new scene instance")
 	world.travel(0)
 	await frames()
