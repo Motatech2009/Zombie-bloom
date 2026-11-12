@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brute"
+title = "Bruto"
+color = Color(0.47, 0.4, 0.58, 1)
+values = {
+"health": 180.0,
+"speed": 1.45,
+"damage": 23.0,
+"interval": 1.35,
+"xp": 22,
+"scrap": 15,
+"scale": 1.5
+}

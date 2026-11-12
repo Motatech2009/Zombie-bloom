@@ -1,0 +1,75 @@
+name: Validate and build Zombie Bloom
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GODOT_VERSION: 4.6.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned official Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          echo 'd0bc2113065e481c9c2c2b2c37daa4e8be3fe9e27f0ab9ab0b6096e9a37907f3  /tmp/godot.zip' | sha256sum --check
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_*
+          echo /tmp/godot >> "$GITHUB_PATH"
+          ln -s "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /tmp/godot/godot
+      - name: Import project and run integration suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
+          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
+          grep -E 'RESULT: [0-9]+ checks, 0 failures' tests.log
+          godot --headless --path . --script res://tests/world_tests.gd 2>&1 | tee world-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' world-tests.log; then exit 1; fi
+          grep -E 'WORLD RESULT: [0-9]+ checks, 0 failures' world-tests.log
+          godot --headless --path . --script res://tests/beta_tests.gd 2>&1 | tee beta-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' beta-tests.log; then exit 1; fi
+          grep -E 'BETA RESULT: [0-9]+ checks, 0 failures' beta-tests.log
+      - name: Install matching export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          echo '3fbe2c0e2dec9d537ab9ec97bcf8da91dcf23357fc51f67092dd068d839290a8  /tmp/templates.tpz' | sha256sum --check
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          mv /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Export portable Windows build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds/windows
+          godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
+          test -s builds/windows/ZombieBloom.exe
+          cp README.md BETA_1.md TEST_REPORT.md builds/windows/
+          mkdir -p builds/windows/docs
+          cp docs/beta-results.txt docs/classic-results.txt docs/world-results.txt docs/beta-render-benchmarks.json builds/windows/docs/
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-Windows-x64
+          path: builds/windows/
+          if-no-files-found: error
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Validation-logs
+          path: '*.log'
