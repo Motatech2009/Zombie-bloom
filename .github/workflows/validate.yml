@@ -32,13 +32,13 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
-          if rg 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
           godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
-          if rg 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
-          rg 'RESULT: [0-9]+ checks, 0 failures' tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
+          grep -E 'RESULT: [0-9]+ checks, 0 failures' tests.log
           godot --headless --path . --script res://tests/world_tests.gd 2>&1 | tee world-tests.log
-          if rg 'SCRIPT ERROR:|FAIL:|ERROR:' world-tests.log; then exit 1; fi
-          rg 'WORLD RESULT: [0-9]+ checks, 0 failures' world-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' world-tests.log; then exit 1; fi
+          grep -E 'WORLD RESULT: [0-9]+ checks, 0 failures' world-tests.log
       - name: Install matching export templates
         shell: bash
         run: |
