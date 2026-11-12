@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-12
+
+- Retomada da arena original enviada por ZIP, em branch independente da Beta.
+- Quatro áreas finitas, limpeza, reservas, extração e desbloqueios por horda.
+- Armeiro físico, compra de armas/materiais e tratamento.
+- Seis defesas, rotação, melhorias, portões, estacas, apoio e Núcleo N4.
+- Oito hordas; blindados e demolidores.
+- Checkpoints validados e continuação; 103 verificações de campanha e 85 de regressão.
+
+
 ## 0.1.0 — 2026-11-11
 
 - Projeto Godot 4.6.3, menu e partida conectados.

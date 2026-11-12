@@ -1,3 +1,15 @@
+# Arquitetura atual — campanha 0.4
+
+O menu carrega `scenes/campaign/CampaignWorld.tscn`. O código de `scripts/campaign/` estende os componentes do MVP e preserva seu cenário e linguagem visual. `campaign_data.gd` centraliza áreas, oito hordas, peças/custos e novas variantes. `campaign_world.gd` compõe serviços, transações, viagens e checkpoints; `campaign_waves.gd` administra as hordas; `campaign_structure.gd` implementa seis peças e níveis; `campaign_build.gd` valida espaço, acesso e clique; `campaign_enemy.gd` adapta percepção de alvo e blindagem; `campaign_arena.gd` gera cada área; `campaign_hud.gd` apresenta suas ações.
+
+As alterações compartilhadas no MVP são a lista de armas possuídas em WeaponSystem (padrão mantém as três para regressão), novas ações em Controls e a nova rota no menu. A cena original continua testável separadamente.
+
+Duas raízes alternam a presença no SceneTree: base persistida em memória e expedição recriada de descritor/estado finito. Jogador, câmera, recursos e HUD pertencem à campanha. Ao encerrar na expedição, a base destacada é liberada explicitamente. Estado de campanha e layout detalhados em [CAMPAIGN.md](CAMPAIGN.md).
+
+---
+
+## Arquitetura histórica do MVP
+
 # Arquitetura
 
 ## Cenas

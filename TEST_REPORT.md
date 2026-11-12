@@ -1,3 +1,17 @@
+# Validação da campanha 0.4 — 2026-11-12
+
+Godot 4.6.3 oficial, Linux: **103 verificações da campanha + 85 do MVP = 188 aprovadas, zero falhas**. Importação e execução headless da cena da campanha sem erros de script. Logs atuais em `docs/campaign-results.txt` e `docs/integration-results.txt`.
+
+A nova suíte usa cenas, físicas e raycasts reais. Verifica posse de armas, compra única/proximidade/saldo, tratamento e materiais; transações atômicas; seis defesas, rotação, bordas contíguas, ocupação, níveis, Núcleo, portão que não fecha sobre personagem, estacas e cura; blindagem e demolidor; clique projetado a partir da posição do evento; mapas/pausa; viagem das quatro áreas, base retirada da árvore, preservação das mesmas defesas ao retornar, populações finitas, limpeza, três reservas conservativas e sem repetição; checkpoint e rejeição de dados inválidos; oito hordas com vitória e retomada em cena nova. Conclusão de hordas e limpeza nos testes usam dano de fixture para exercitar mortes e transições; não equivalem a uma partida humana completa.
+
+Conferência gráfica por janela nativa 1280×800: menu, continuação, catálogo de seis peças, instalação de muro pelo clique (140→105 sucata), barraca/negociação, compra de espingarda (120→10), mapa com quatro cartões e bloqueios, entrada no pátio e infectados ativos. O cenário, câmera, HUD e modelos preservam a versão da imagem. Revisão corrigiu a projeção do clique que antes usava cursor do frame anterior e a validação de integridade após serialização numérica JSON.
+
+Exportação Windows é feita pelo workflow no commit publicado. Seu resultado deve ser conferido no Actions. O ambiente nativo usa Mesa llvmpipe por CPU e não oferece áudio ALSA; não certifica desempenho na GPU do usuário nem qualidade sonora. Execução nativa do `.exe` em Windows e balanceamento de sessão longa permanecem sem validação. Arte e áudio são procedurais de protótipo.
+
+---
+
+## Relatório histórico do MVP
+
 # Relatório de testes — 2026-11-11
 
 ## Ambiente e comandos executados

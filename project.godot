@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Zombie Bloom"
-config/description="Sobreviva. Construa. Resista ao florescer da horda."
+config/description="Limpe áreas, compre armas e fortaleça seu Núcleo contra oito hordas."
 run/main_scene="res://scenes/main/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 

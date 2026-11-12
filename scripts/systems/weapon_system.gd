@@ -3,6 +3,7 @@ extends Node
 signal fired
 var actor: Node3D
 var world: Node3D
+var owned: Array[bool] = [true, true, true]
 var slot: int = 0
 var ammo: Array[int] = [12, 6, 30]
 var cooldown: float = 0.0
@@ -28,7 +29,7 @@ func capacity(index: int = -1) -> int:
 	return maxi(1, ceili(float(Catalog.WEAPONS[slot if index < 0 else index].values.capacity) * capacity_multiplier))
 
 func equip(index: int) -> void:
-	if index == slot or index < 0 or index >= Catalog.WEAPONS.size():
+	if index < 0 or index >= Catalog.WEAPONS.size() or not owned[index] or index == slot:
 		return
 	slot = index
 	reload_left = 0.0
@@ -43,7 +44,7 @@ func reload() -> bool:
 	return true
 
 func shoot(direction: Vector3) -> bool:
-	if cooldown > 0 or reload_left > 0 or not is_instance_valid(actor):
+	if cooldown > 0 or reload_left > 0 or not is_instance_valid(actor) or not owned[slot]:
 		return false
 	if ammo[slot] <= 0:
 		reload()

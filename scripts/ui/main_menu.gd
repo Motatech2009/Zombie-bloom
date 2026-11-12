@@ -55,7 +55,7 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_right", 58)
 	margin.add_theme_constant_override("margin_top", 38)
 	margin.add_theme_constant_override("margin_bottom", 24)
-	content = UI.vbox(margin, 10)
+	content = UI.vbox(margin, 7)
 	show_main()
 	var footer := UI.label(root, "GODOT 4.6   /   SINGLE-PLAYER   /   OFFLINE", 13, Color("c1d2c5"))
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -71,39 +71,57 @@ func clear_content() -> void:
 func show_main() -> void:
 	clear_content()
 	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
-	UI.spacer(content, 24)
+	UI.spacer(content, 12)
 	UI.label(content, "ZOMBIE", 62)
 	var bloom := UI.label(content, "BLOOM.", 78, UI.LIME)
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
-	var description := UI.label(content, "Cinco hordas. Um núcleo.\nConstrua defesas, evolua seu arsenal e sobreviva até o amanhecer.", 17, UI.MUTED)
+	var description := UI.label(content, "Oito hordas. Sua fortaleza.\nLimpe áreas, negocie armas e construa novas camadas de defesa.", 17, UI.MUTED)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content, 6)
 	UI.button(content, "INICIAR SOBREVIVÊNCIA   →", start_game, true)
+	if FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+		UI.button(content, "CONTINUAR REFÚGIO", continue_campaign)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "MVP 0.1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "CAMPANHA 0.4   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func start_game() -> void:
-	get_tree().change_scene_to_file("res://scenes/main/GameWorld.tscn")
+	if FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+		clear_content()
+		UI.label(content,"NOVA CAMPANHA",35,UI.LIME)
+		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
+Quer começar outro refúgio?",20,UI.MUTED)
+		UI.button(content,"COMEÇAR NOVO REFÚGIO",begin_campaign,true)
+		UI.button(content,"CONTINUAR O SALVO",continue_campaign)
+		UI.button(content,"VOLTAR",show_main)
+	else:
+		begin_campaign()
+
+func begin_campaign() -> void:
+	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
+	get_tree().change_scene_to_file("res://scenes/campaign/CampaignWorld.tscn")
+
+func continue_campaign() -> void:
+	load("res://scripts/campaign/campaign_world.gd").resume_requested = true
+	get_tree().change_scene_to_file("res://scenes/campaign/CampaignWorld.tscn")
 
 func show_help() -> void:
 	clear_content()
-	UI.label(content, "MANUAL DE CAMPO", 14, UI.LIME)
-	UI.label(content, "Mantenha o\nnúcleo vivo.", 43)
-	var help := UI.label(content, "WASD  ·  mover     SHIFT  ·  correr\nMOUSE  ·  mirar     CLIQUE  ·  disparar\nR  ·  recarregar     1 / 2 / 3  ·  armas\nB  ·  construção     E  ·  reparar perto\nESPAÇO  ·  iniciar a próxima horda\nTAB  ·  equipamentos     ESC  ·  pausa\n\nNa preparação, B abre a construção.\n1 seleciona barricada, 2 seleciona torreta.\nClique para instalar; botão direito cancela.\n\nColete os fragmentos para receber XP e sucata.\nXP melhora o personagem. Sucata paga defesas.\nBônus coloridos duram dez segundos.\n\nVocê perde se morrer ou perder o núcleo.\nSobreviva às cinco hordas para vencer.", 17, UI.MUTED)
+	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–3 armas\nB catálogo de construção · Q girar peça\n1–6 peças na prévia · Clique instalar\nE reparar · G melhorar perto · X desmontar\nF abrir/fechar portão · V armeiro próximo\nM rotas de coleta · ESPAÇO próxima horda\nTAB arsenal · F5 salvar · F9 restaurar\nESC pausar / fechar / cancelar\n\nNa preparação, construa e reforce a base.\nO armeiro vende armas e materiais por sucata.\nLimpe as quatro áreas para recolher suas reservas.\nE volta pela zona de extração ao sul.\nAs áreas liberam após hordas 0, 1, 3 e 5.\n\nMunição de reserva ilimitada. Recarregue com R.\nO Núcleo e cada defesa podem ser melhorados.\nVença oito hordas. Morrer ou perder o Núcleo\nencerra a tentativa; retome seu checkpoint.",17,UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.button(content, "VOLTAR", show_main)
+	UI.button(content,"VOLTAR",show_main)
 
 func show_settings() -> void:
 	clear_content()
 	UI.label(content, "CONFIGURAÇÕES", 35)
 	UI.spacer(content, 28)
 	UI.settings(content, func(): sun.shadow_enabled = GameSettings.shadows)
-	UI.spacer(content, 24)
+	UI.spacer(content, 12)
 	UI.button(content, "VOLTAR", show_main)
 
 func _process(delta: float) -> void:

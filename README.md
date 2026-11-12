@@ -1,73 +1,55 @@
-# Zombie Bloom
+# Zombie Bloom — Campanha do Refúgio
 
-**O mundo acabou. Seu refúgio ainda resiste.**
+**Limpe áreas. Compre armas. Construa sua fortaleza.**
 
-Jogo single-player offline de sobrevivência e defesa de base. Projeto Godot **4.6.3**, GDScript, cenário 3D low-poly e câmera ortográfica elevada (2.5D). Geometrias, animações e sons próprios gerados pelo projeto, sem assets pagos ou serviços externos.
+Evolução da versão de arena enviada pelo criador, preservando o visual 2.5D, o combate, as hordas iniciadas pelo jogador e a defesa do Núcleo. Godot 4.6.3, single-player offline, geometrias e sons procedurais.
 
-## Abrir e jogar
+## Jogar
 
-1. Instale a [Godot 4.6.3 padrão, sem .NET](https://godotengine.org/download/archive/4.6.3-stable/).
-2. Baixe ou clone este repositório.
-3. Na Godot, clique em **Importar** e selecione `project.godot`.
-4. Pressione **F5** e clique em **Iniciar sobrevivência**.
-5. Use **B** para construir e **Espaço** para iniciar a primeira horda.
+No pacote Windows, extraia o ZIP e execute **ZombieBloom.exe**. Não precisa instalar Godot. No código-fonte, importe `project.godot` na Godot 4.6.3 e pressione F5. Clique em **Iniciar sobrevivência** ou **Continuar refúgio**.
 
-Não há pacotes adicionais para instalar. `project.godot` abre o projeto fonte; o executável Windows exige exportação.
+Você começa com pistola, 140 de sucata, 12 madeiras e 4 componentes. **B** abre o catálogo. **M** mostra as áreas de coleta. O pátio está aberto desde o início; limpe seus infectados, recolha as três reservas com **E** e retorne pelo círculo de extração ao sul. Aproxime-se da barraca à esquerda do Núcleo e use **V** para comprar armas e materiais. Inicie a horda com **Espaço** quando estiver pronto.
 
-## Implementado
+## Sistemas da campanha
 
-- Um mapa com ruas, veículos abandonados, obstáculos sólidos e núcleo central.
-- Movimento, corrida, mira, câmera suave e personagens articulados com animações procedurais.
-- Pistola, espingarda e rifle com dano, dispersão, alcance, pente, cadência e recarga próprios.
-- Cinco hordas; errantes, corredores e brutos com perseguição, navegação e ataques.
-- XP, níveis, seis melhorias reais e três power-ups temporários.
-- Sucata, prévia de construção, barricadas, torretas e reparos.
-- Menu, instruções, configurações persistentes, HUD, equipamentos, pausa, reinício, vitória e derrota.
-- Efeitos de disparo, impacto, dano, construção, reparo e morte; sons sintetizados.
+- Refúgio persistente e quatro áreas de combate/coleta separadas; somente a área visitada fica ativa.
+- Oito hordas, com errantes, corredores, brutos, blindados e demolidores.
+- Armeiro físico: pistola inicial, compra única de espingarda e rifle; venda de materiais e tratamento.
+- Barricada, torreta, muro, portão, estacas e posto de apoio; rotação, colisão, custos e três níveis por defesa.
+- Núcleo melhorável até N4, reparos e desmontagem com devolução de metade dos materiais.
+- XP e bônus do MVP preservados; reserva de munição ilimitada e pentes com recarga.
+- Checkpoints locais, continuação, configurações e pausa.
 
 ## Controles
 
 | Entrada | Ação |
 | --- | --- |
-| WASD | Mover em relação à câmera |
-| Shift | Correr |
-| Mouse / botão esquerdo | Mirar / disparar |
-| R | Recarregar |
-| 1 / 2 / 3 | Pistola / espingarda / rifle |
-| B | Abrir/fechar construção durante a preparação |
-| 1 / 2 em construção | Barricada / torreta |
-| Clique esquerdo / direito | Instalar / cancelar construção |
-| E | Reparar estrutura danificada próxima, até 4,5 m |
-| Espaço | Iniciar a próxima horda |
-| Tab | Equipamentos e atributos |
-| Esc | Pausar / continuar / cancelar construção |
+| WASD / Shift | Mover / correr |
+| Mouse / clique esquerdo / R | Mirar / disparar / recarregar |
+| 1–3 | Equipar arma comprada |
+| B | Catálogo de construção; fecha a prévia quando ativa |
+| 1–6 / Q em construção | Selecionar peça / girar 90° |
+| Clique esquerdo / direito | Instalar / cancelar prévia |
+| E | Reparar perto no refúgio; recolher reserva ou extrair em expedição |
+| G / X | Melhorar estrutura próxima / confirmar desmontagem |
+| F | Abrir ou fechar portão próximo |
+| V / M | Armeiro próximo / rotas de coleta |
+| Espaço | Iniciar a próxima horda no refúgio |
+| Tab / Esc | Arsenal / pausa ou fechar painel |
+| F5 / F9 | Salvar / restaurar na preparação do refúgio |
 
-Você começa com 140 de sucata e as três armas. Reserva de munição ilimitada; cada pente exige recarga. Recolha fragmentos verdes para ganhar XP e sucata. A preparação não tem cronômetro. Morte do jogador ou destruição do núcleo encerra a partida. Sobreviva às cinco hordas para vencer.
+Save: `user://zombie_bloom_arena_campaign.json`. Checkpoint automático após horda e extração quando não há escolhas de XP pendentes. Depois de escolher uma evolução pendente, use F5 antes de sair. Morte do jogador ou do Núcleo encerra a tentativa e permite retomar o checkpoint. Nova campanha pede confirmação se existir save.
 
-## Testes
+## Código e validação
 
-```bash
+Ponto de entrada: `scenes/campaign/CampaignWorld.tscn`. O `GameWorld.tscn` original permanece no repositório para a suíte de regressão, com cinco hordas e todas as armas liberadas; ele não é a campanha aberta pelo menu.
+
+```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
+godot --headless --path . --script res://tests/campaign_tests.gd
 ```
 
-A suíte usa cenas e física reais da engine. Veja [TEST_REPORT.md](TEST_REPORT.md) para as evidências e limitações.
+**188 verificações locais aprovadas**: 85 do MVP e 103 da campanha. O workflow repete as duas suítes e exporta Windows x64. A arte é de protótipo; desempenho no PC alvo, execução nativa em Windows e balanceamento prolongado ainda exigem conferência.
 
-## Windows
-
-Instale os templates 4.6.3 em **Editor → Gerenciar templates de exportação**. Use **Projeto → Exportar → Windows Desktop**, ou:
-
-```bash
-mkdir -p builds/windows
-godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe
-```
-
-O preset incorpora o PCK no executável. Assinatura digital não configurada. O workflow do GitHub Actions valida o projeto e gera o artefato `ZombieBloom-Windows-x64` quando a execução termina com sucesso. Não confunda um workflow configurado com uma exportação já validada.
-
-## Documentação
-
-[Design](GAME_DESIGN.md) · [Arquitetura](ARCHITECTURE.md) · [Balanceamento](BALANCING.md) · [Testes](TEST_REPORT.md) · [Changelog](CHANGELOG.md)
-
-## Limites
-
-MVP com arte procedural simples. Balanceamento e diversão ainda exigem sessões com jogadores; testes de sistemas não substituem essa avaliação. Não há salvamento de partidas, remapeamento de teclas, multiplayer, mundo aberto ou crafting complexo. Armadilhas e estação de reparo ficam para expansão. FPS e compatibilidade do executável Windows precisam ser medidos nos equipamentos de destino.
+[Regras e progressão](CAMPAIGN.md) · [Testes](TEST_REPORT.md) · [Arquitetura](ARCHITECTURE.md) · [Changelog](CHANGELOG.md)

@@ -1,0 +1,106 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: campaign initializes the original arena and intact core
+PASS: starter construction materials exist
+PASS: pistol only at start; advanced guns require purchases
+PASS: number key equip cannot bypass weapon ownership
+PASS: shop purchase rejected outside vendor reach
+PASS: vendor exchanges exact scrap for shotgun ownership
+PASS: repeated weapon purchase does not double-charge
+PASS: rifle cannot be bought without enough currency
+PASS: rifle purchased and equipped
+PASS: vendor treatment heals to maximum
+PASS: treatment does not charge at full health
+PASS: vendor sells an actual wood bundle
+PASS: vendor sells actual components
+PASS: transaction rejects negative or unknown costs
+PASS: multi-resource transaction conserves all balances on failure
+PASS: construction rejects the core footprint
+PASS: construction preserves vendor access
+PASS: construction preserves extraction access
+PASS: construction respects arena boundaries
+PASS: construction respects player reach
+PASS: reinforced wall is a real damageable solid structure
+PASS: construction rejects existing piece overlap
+PASS: modular walls can share an edge without a forced gap
+PASS: rotation is applied to both visible and physical barricade
+PASS: turret is buildable using scrap and components
+PASS: gate starts physically closed
+PASS: open gate clears its collision
+PASS: gate cannot close through the player
+PASS: unoccupied gate closes physically
+PASS: spike bed permits traversal
+PASS: support station builds successfully
+PASS: structure upgrade increases integrity
+PASS: turret upgrade increases actual combat damage
+PASS: defense tiers stop at three
+PASS: upgraded wall can be repaired
+PASS: core upgrade adds actual maximum integrity
+PASS: support station heals player and nearby structure during preparation
+PASS: spikes deal real damage to an enemy on the bed
+PASS: armored infected reduces incoming damage by forty percent
+PASS: demolisher is durable and prioritizes the core
+PASS: dismantling refunds half the paid materials
+PASS: dismantling cannot refund twice
+PASS: placement projects the current click rather than stale cursor preview
+PASS: real click path creates the selected structure at the requested point
+PASS: build catalog pauses gameplay
+PASS: route map opens as a real modal
+PASS: residential area locked before first wave
+PASS: yard travel loads the first combat area
+PASS: base geometry and defenses are removed from active scene during expedition
+PASS: expedition blocks base waves and construction
+PASS: checkpoint cannot serialize a half-loaded field as a base
+PASS: cache cannot be looted before clearing hostiles
+PASS: field encounter materializes enemies over time
+PASS: field enemies target survivor instead of detached core
+PASS: field kills persist by encounter identifier
+PASS: retreat returns through physical extraction point
+PASS: travel retains exact base structure instances and upgrades
+PASS: returning to unfinished area spawns only surviving enemies
+PASS: last finite enemy marks the area cleared
+PASS: cleared cache transfers supplies 0
+PASS: cache cannot grant supplies twice 0
+PASS: cleared cache transfers supplies 1
+PASS: cache cannot grant supplies twice 1
+PASS: cleared cache transfers supplies 2
+PASS: cache cannot grant supplies twice 2
+PASS: three caches conserve the complete area reward
+PASS: cleared area revisits do not regenerate enemies or rewards
+PASS: base checkpoint writes successfully
+PASS: serialized checkpoint passes schema validation
+PASS: save rejects repeated enemy IDs before applying
+PASS: save rejects negative stock
+PASS: save rejects a locked equipped gun
+PASS: restore recovers currency and materials
+PASS: restore replaces structures without duplicating them
+PASS: base wave starts once after expedition
+PASS: active base horde blocks travel and shop
+PASS: campaign reaches horde 1
+PASS: horde completion permits construction and collection
+PASS: progression unlocks and loads area 1
+PASS: separate area template has its own finite population
+PASS: campaign reaches horde 2
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 3
+PASS: horde completion permits construction and collection
+PASS: progression unlocks and loads area 2
+PASS: separate area template has its own finite population
+PASS: campaign reaches horde 4
+PASS: fourth horde introduces armored enemies
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 5
+PASS: horde completion permits construction and collection
+PASS: progression unlocks and loads area 3
+PASS: separate area template has its own finite population
+PASS: campaign reaches horde 6
+PASS: sixth horde introduces demolishers
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 7
+PASS: horde completion permits construction and collection
+PASS: campaign reaches horde 8
+PASS: eighth horde ends in campaign victory
+PASS: cold start resumes completed hordes, core and claimed caches
+PASS: weapon purchases survive a new scene instance
+PASS: leaving scene during expedition frees detached base as well
+CAMPAIGN RESULT: 103 checks, 0 failures
