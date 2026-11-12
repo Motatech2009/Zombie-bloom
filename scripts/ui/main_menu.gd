@@ -55,7 +55,7 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_right", 58)
 	margin.add_theme_constant_override("margin_top", 38)
 	margin.add_theme_constant_override("margin_bottom", 24)
-	content = UI.vbox(margin, 10)
+	content = UI.vbox(margin, 7)
 	show_main()
 	var footer := UI.label(root, "GODOT 4.6   /   SINGLE-PLAYER   /   OFFLINE", 13, Color("c1d2c5"))
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -71,30 +71,47 @@ func clear_content() -> void:
 func show_main() -> void:
 	clear_content()
 	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
-	UI.spacer(content, 24)
-	UI.label(content, "ZOMBIE", 62)
-	var bloom := UI.label(content, "BLOOM.", 78, UI.LIME)
+	UI.spacer(content, 12)
+	UI.label(content, "ZOMBIE", 56)
+	var bloom := UI.label(content, "BLOOM.", 68, UI.LIME)
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
-	var description := UI.label(content, "Cinco hordas. Um núcleo.\nConstrua defesas, evolua seu arsenal e sobreviva até o amanhecer.", 17, UI.MUTED)
+	var description := UI.label(content, "Um refúgio. Um mundo para explorar.\nExtraia recursos, volte à base e construa sua sobrevivência.", 17, UI.MUTED)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content, 6)
-	UI.button(content, "INICIAR SOBREVIVÊNCIA   →", start_game, true)
+	UI.button(content, "EXPLORAR O MUNDO   →", start_game, true)
+	if FileAccess.file_exists("user://ultimo_refugio_v1.json"):
+		UI.button(content, "CONTINUAR REFÚGIO", continue_world)
+	UI.button(content, "DESAFIO · CINCO HORDAS", start_classic)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "MVP 0.1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "PROTÓTIPO 0.2   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func start_game() -> void:
+	WorldState.resume_requested = false
+	get_tree().change_scene_to_file("res://scenes/world/FrontierWorld.tscn")
+
+func continue_world() -> void:
+	WorldState.resume_requested = true
+	get_tree().change_scene_to_file("res://scenes/world/FrontierWorld.tscn")
+
+func start_classic() -> void:
 	get_tree().change_scene_to_file("res://scenes/main/GameWorld.tscn")
 
 func show_help() -> void:
 	clear_content()
 	UI.label(content, "MANUAL DE CAMPO", 14, UI.LIME)
 	UI.label(content, "Mantenha o\nnúcleo vivo.", 43)
-	var help := UI.label(content, "WASD  ·  mover     SHIFT  ·  correr\nMOUSE  ·  mirar     CLIQUE  ·  disparar\nR  ·  recarregar     1 / 2 / 3  ·  armas\nB  ·  construção     E  ·  reparar perto\nESPAÇO  ·  iniciar a próxima horda\nTAB  ·  equipamentos     ESC  ·  pausa\n\nNa preparação, B abre a construção.\n1 seleciona barricada, 2 seleciona torreta.\nClique para instalar; botão direito cancela.\n\nColete os fragmentos para receber XP e sucata.\nXP melhora o personagem. Sucata paga defesas.\nBônus coloridos duram dez segundos.\n\nVocê perde se morrer ou perder o núcleo.\nSobreviva às cinco hordas para vencer.", 17, UI.MUTED)
+	var scroll := ScrollContainer.new()
+	content.add_child(scroll)
+	scroll.custom_minimum_size = Vector2(480, 430)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var help := UI.label(scroll, "MUNDO ABERTO\nF  ·  extrair / entrar / abrir portas / depositar\nM  ·  mapa     U  ·  melhorar resistência\nF5  ·  salvar na base     F9  ·  restaurar\n\nWASD  ·  mover     SHIFT  ·  correr\nMOUSE  ·  mirar     CLIQUE  ·  disparar\nR  ·  recarregar     1 / 2 / 3  ·  armas\nB  ·  construção     E  ·  reparar perto\nESPAÇO  ·  iniciar a próxima horda\nTAB  ·  equipamentos     ESC  ·  pausa\n\nNa preparação, B abre a construção.\n1 seleciona barricada, 2 seleciona torreta.\nClique para instalar; botão direito cancela.\n\nColete os fragmentos para receber XP e sucata.\nXP melhora o personagem. Sucata paga defesas.\nBônus coloridos duram dez segundos.\n\nVocê perde se morrer ou perder o núcleo.\nNo mundo, sobreviva e desenvolva o refúgio.\nNo desafio clássico, vença cinco hordas.", 17, UI.MUTED)
+	help.custom_minimum_size.x = 450
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content, "VOLTAR", show_main)
 
@@ -102,8 +119,16 @@ func show_settings() -> void:
 	clear_content()
 	UI.label(content, "CONFIGURAÇÕES", 35)
 	UI.spacer(content, 28)
+	UI.label(content, "SEED DO NOVO MUNDO", 14, UI.LIME)
+	var seed_input := SpinBox.new()
+	seed_input.min_value = 1
+	seed_input.max_value = 2147483647
+	seed_input.value = WorldState.next_seed
+	seed_input.value_changed.connect(func(value: float): WorldState.next_seed = int(value))
+	content.add_child(seed_input)
+	UI.label(content, "A mesma seed repete o mapa. Continuar usa a seed salva.", 13, UI.MUTED)
 	UI.settings(content, func(): sun.shadow_enabled = GameSettings.shadows)
-	UI.spacer(content, 24)
+	UI.spacer(content, 12)
 	UI.button(content, "VOLTAR", show_main)
 
 func _process(delta: float) -> void:

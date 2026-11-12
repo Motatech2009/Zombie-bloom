@@ -55,3 +55,13 @@ Foram corrigidas barras excessivamente altas e a escala dos indicadores 3D. A ex
 - Execução de um `.exe` em Windows não validada neste ambiente Linux.
 - O workflow configura validação e exportação; seu status deve ser consultado no GitHub Actions.
 - Modelos procedurais e animações são de protótipo, sem rigging ou assets externos.
+
+## Mundo de exploração 0.2
+
+Execução local em Godot 4.6.3: **55 verificações do mundo e 85 do modo clássico, zero falhas**. Logs em `docs/world-results.txt` e `docs/classic-results.txt`.
+
+A suíte nova verifica determinismo entre seeds e independência da ordem de visita, posse de setores negativos, IDs únicos em 49 setores, lotes sem sobreposição, entradas fora de vias/água, ponte, conservação de recursos e limite de carga, emendas físicas do chão, câmera em coordenadas distantes, descarregamento/recriação de setores, portas e recipientes persistentes, circulação pelos quatro cômodos a partir das colisões reais, compra/restauração de melhorias, arquivos inválidos, mapa/pausa, continuação além da quinta horda e retomada do disco em nova instância da cena.
+
+Conferência gráfica por janela nativa: menu de exploração, terreno, caminho até a primeira casa, transição para interior com quatro cômodos, ruas/lotes da cidade e mapa regional. A revisão identificou e corrigiu faces do terreno invisíveis, deslocamento da câmera em viagens longas, sobreposição do painel de carga sobre modais e linhas do mapa fora da área prevista. Relevo, receitas separadas e simulação externa durante interiores permanecem fora desta entrega, conforme `WORLD_IMPLEMENTATION.md`.
+
+Não foi feita certificação de desempenho no PC alvo, teste do executável Windows ou validação de diversão por sessão prolongada. Resultado do GitHub Actions deve ser lido separadamente do resultado local.

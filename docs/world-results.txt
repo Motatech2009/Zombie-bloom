@@ -1,0 +1,58 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: same seed reproduces complete sector descriptors
+PASS: visiting other sectors cannot change generation
+PASS: another seed changes resource positions and amounts of objects
+PASS: negative coordinates use floor, avoiding duplicate sector ownership
+PASS: interior plans are reproducible independently of visit order
+PASS: distinct building IDs select independent floorplans
+PASS: settlement buildings stay off roads and entrances stay out of the river
+PASS: regional building lots never overlap
+PASS: resources across 49 sectors have unique IDs and stay off roads and water
+PASS: bridge is traversable while the adjacent river blocks crossing
+PASS: inventory capacity clamps extraction without losing accepted units
+PASS: full inventory and unknown resources cannot receive cargo
+PASS: deposit transfers cargo exactly once
+PASS: open world boots with nine resident sectors and exploration enabled
+PASS: adjacent sector floors have continuous physical support at seams
+PASS: loaded sectors contain real interactive resources and entrances
+PASS: starter extraction tree is discoverable
+PASS: extraction requires sustained time
+PASS: timed extraction transfers resources from the actual node into cargo
+PASS: fully harvested resource remains depleted
+PASS: depleted node cannot duplicate resources
+PASS: world camera keeps the player centered at distant coordinates
+PASS: streaming unloads distant sectors and retains only the local ring plus refuge
+PASS: harvested state survives sector unload and recreation
+PASS: cargo cannot be deposited away from the base
+PASS: returning to core converts carried materials to construction resources
+PASS: partially full cargo only removes the units actually accepted
+PASS: remote entry into a building is rejected
+PASS: nearby entrance transitions to its own interior scene
+PASS: outdoor geometry is hidden and disabled during the separate interior scene
+PASS: opening an internal door removes its blocking collision
+PASS: physics-derived grid connects the entry to all four furnished rooms with doors open
+PASS: closing a door restores physical collision
+PASS: interior container extraction uses the same limited cargo system
+PASS: exit returns the player to its original building entrance
+PASS: outdoor coordinates and simulation restore on exit
+PASS: same building can be entered again
+PASS: reentering preserves the floorplan, door states and emptied containers
+PASS: existing construction works on streamed ground
+PASS: resources upgrade the resistance of a nearby defense
+PASS: checkpoint serializes seed, cargo, edits, combat stats and defenses
+PASS: checkpoint reload succeeds through the actual world controller
+PASS: save restores bank, carried materials and harvested resource state
+PASS: save restores interior door and loot changes
+PASS: save restores placed defense and its purchased upgrade
+PASS: standalone save reader restores the generator seed
+PASS: unknown save formats are rejected without silently regenerating
+PASS: failed load leaves the current world intact
+PASS: regional map opens as a real paused HUD modal
+PASS: closing map resumes the expedition
+PASS: survival mode can start a sixth horde
+PASS: active horde blocks saving and interior escape
+PASS: completed survival horde returns to exploration without terminal victory
+PASS: persisted interior edits survive a fresh state instance
+PASS: cold scene restart resumes saved resources and interior state
+WORLD RESULT: 55 checks, 0 failures

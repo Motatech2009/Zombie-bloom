@@ -1,73 +1,67 @@
-# Zombie Bloom
+# Zombie Bloom — Último Refúgio
 
-**O mundo acabou. Seu refúgio ainda resiste.**
+Protótipo Godot **4.6.3**, single-player offline, GDScript, cenário 3D low-poly e câmera ortográfica isométrica. Geometrias, animações e áudio são gerados pelo projeto, sem assets pagos ou serviços externos.
 
-Jogo single-player offline de sobrevivência e defesa de base. Projeto Godot **4.6.3**, GDScript, cenário 3D low-poly e câmera ortográfica elevada (2.5D). Geometrias, animações e sons próprios gerados pelo projeto, sem assets pagos ou serviços externos.
+**Saia da base, extraia recursos, carregue-os na mochila e volte para construir, reparar e fortalecer as defesas.** O primeiro trecho do mundo inclui recursos por seed, setores contínuos, estradas, rio com travessias, cidade, vila, fazenda, pátio industrial e interiores térreos com portas e recipientes persistentes.
+
+É um protótipo das ideias WORLD-001–008. A localização principal dos assentamentos e a rede viária inicial ainda são fixas; relevo físico, cidades integralmente procedurais e simulação externa durante visitas a interiores não estão implementados. Consulte [o estado detalhado do mundo](WORLD_IMPLEMENTATION.md).
 
 ## Abrir e jogar
 
 1. Instale a [Godot 4.6.3 padrão, sem .NET](https://godotengine.org/download/archive/4.6.3-stable/).
-2. Baixe ou clone este repositório.
-3. Na Godot, clique em **Importar** e selecione `project.godot`.
-4. Pressione **F5** e clique em **Iniciar sobrevivência**.
-5. Use **B** para construir e **Espaço** para iniciar a primeira horda.
+2. Baixe ou clone o repositório e importe `project.godot`.
+3. Pressione F5 na engine e selecione **Explorar o mundo**.
+4. Procure recursos fora do círculo do refúgio. Segure F junto a uma árvore, rocha ou caixa.
+5. Retorne ao núcleo e pressione F para depositar; use B para construir.
+6. Salve com F5 dentro do refúgio, entre hordas e sem hostis próximos. O menu passa a oferecer **Continuar refúgio**.
 
-Não há pacotes adicionais para instalar. `project.godot` abre o projeto fonte; o executável Windows exige exportação.
+O **Desafio de cinco hordas** original continua disponível como modo separado, com vitória após a quinta onda. No modo de exploração, as hordas são iniciadas manualmente na base e podem continuar além da quinta.
 
-## Implementado
-
-- Um mapa com ruas, veículos abandonados, obstáculos sólidos e núcleo central.
-- Movimento, corrida, mira, câmera suave e personagens articulados com animações procedurais.
-- Pistola, espingarda e rifle com dano, dispersão, alcance, pente, cadência e recarga próprios.
-- Cinco hordas; errantes, corredores e brutos com perseguição, navegação e ataques.
-- XP, níveis, seis melhorias reais e três power-ups temporários.
-- Sucata, prévia de construção, barricadas, torretas e reparos.
-- Menu, instruções, configurações persistentes, HUD, equipamentos, pausa, reinício, vitória e derrota.
-- Efeitos de disparo, impacto, dano, construção, reparo e morte; sons sintetizados.
+A seed de uma nova expedição pode ser alterada em Configurações. Continuar usa a seed do arquivo salvo.
 
 ## Controles
 
 | Entrada | Ação |
 | --- | --- |
-| WASD | Mover em relação à câmera |
-| Shift | Correr |
-| Mouse / botão esquerdo | Mirar / disparar |
-| R | Recarregar |
+| WASD / Shift | Mover em relação à câmera / correr |
+| Mouse / clique / R | Mirar / disparar / recarregar |
 | 1 / 2 / 3 | Pistola / espingarda / rifle |
-| B | Abrir/fechar construção durante a preparação |
-| 1 / 2 em construção | Barricada / torreta |
-| Clique esquerdo / direito | Instalar / cancelar construção |
-| E | Reparar estrutura danificada próxima, até 4,5 m |
-| Espaço | Iniciar a próxima horda |
-| Tab | Equipamentos e atributos |
-| Esc | Pausar / continuar / cancelar construção |
+| Segurar F | Extrair recursos próximos, até o limite de 45 unidades |
+| F | Entrar/sair de edifício, abrir/fechar porta ou depositar junto ao núcleo |
+| B / 1–2 / clique | Construir barricada ou torreta; botão direito cancela |
+| E | Reparar uma estrutura próxima entre hordas |
+| U | Melhorar a resistência de uma estrutura próxima |
+| Espaço | Iniciar horda no refúgio |
+| M / Tab / Esc | Mapa / equipamentos / pausa |
+| F5 / F9 no jogo | Salvar na base / restaurar o checkpoint |
 
-Você começa com 140 de sucata e as três armas. Reserva de munição ilimitada; cada pente exige recarga. Recolha fragmentos verdes para ganhar XP e sucata. A preparação não tem cronômetro. Morte do jogador ou destruição do núcleo encerra a partida. Sobreviva às cinco hordas para vencer.
+Você começa com 140 de sucata e três armas. A munição de reserva é ilimitada, mas os pentes exigem recarga. XP concede escolhas de evolução e há bônus temporários. No mundo, a sucata dos inimigos também ocupa a mochila até ser depositada. Madeira, pedra e metal são convertidos em sucata reaproveitável 1:1 no depósito; receitas separadas ainda não existem.
+
+O salvamento é manual. Voltar ao menu sem salvar descarta o progresso desde o checkpoint. Portas, recipientes, recursos retirados, carga, atributos, núcleo e defesas são restaurados. Inimigos e bônus temporários não são. A morte do jogador ou a destruição do núcleo encerra a expedição em andamento.
 
 ## Testes
 
-```bash
+```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
+godot --headless --path . --script res://tests/world_tests.gd
 ```
 
-A suíte usa cenas e física reais da engine. Veja [TEST_REPORT.md](TEST_REPORT.md) para as evidências e limitações.
+As suítes usam cenas e física reais da engine. Consulte [TEST_REPORT.md](TEST_REPORT.md) e [WORLD_IMPLEMENTATION.md](WORLD_IMPLEMENTATION.md) para evidências, parâmetros provisórios e comandos de revisão visual.
 
 ## Windows
 
-Instale os templates 4.6.3 em **Editor → Gerenciar templates de exportação**. Use **Projeto → Exportar → Windows Desktop**, ou:
+Instale os templates 4.6.3 em **Editor → Gerenciar templates de exportação** e use **Projeto → Exportar → Windows Desktop**, ou:
 
-```bash
+```sh
 mkdir -p builds/windows
 godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe
 ```
 
-O preset incorpora o PCK no executável. Assinatura digital não configurada. O workflow do GitHub Actions valida o projeto e gera o artefato `ZombieBloom-Windows-x64` quando a execução termina com sucesso. Não confunda um workflow configurado com uma exportação já validada.
+O preset incorpora o PCK. Assinatura digital não configurada. O GitHub Actions está configurado para validar os dois modos e gerar `ZombieBloom-Windows-x64` quando a execução termina com sucesso. A configuração do workflow não comprova que uma exportação terminou ou que o executável foi testado no Windows.
 
-## Documentação
+## Documentação e limites
 
-[Design](GAME_DESIGN.md) · [Arquitetura](ARCHITECTURE.md) · [Balanceamento](BALANCING.md) · [Testes](TEST_REPORT.md) · [Changelog](CHANGELOG.md)
+[Estado do mundo](WORLD_IMPLEMENTATION.md) · [Design original](GAME_DESIGN.md) · [Arquitetura](ARCHITECTURE.md) · [Balanceamento clássico](BALANCING.md) · [Testes](TEST_REPORT.md) · [Changelog](CHANGELOG.md)
 
-## Limites
-
-MVP com arte procedural simples. Balanceamento e diversão ainda exigem sessões com jogadores; testes de sistemas não substituem essa avaliação. Não há salvamento de partidas, remapeamento de teclas, multiplayer, mundo aberto ou crafting complexo. Armadilhas e estação de reparo ficam para expansão. FPS e compatibilidade do executável Windows precisam ser medidos nos equipamentos de destino.
+A arte é geométrica e provisória. Balanceamento, diversão, FPS e consumo de memória precisam de avaliação com jogadores e no hardware alvo. Não há multiplayer, remapeamento de teclas, crafting complexo, fome/sede, resgate ou dia/noite. Interiores suspendem o exterior e não possuem inimigos nesta versão. Compatibilidade futura dos arquivos salvos depende de migração explícita do gerador.

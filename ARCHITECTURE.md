@@ -52,3 +52,7 @@ Relógio de sobrevivência conta preparação e combate ativos; pausas e escolha
 ## Desempenho
 
 Navegação recalculada a cada 0,5–0,85 s, distribuída entre inimigos. Materiais reutilizados. Limites de 55 inimigos vivos, 24 defesas, 80 efeitos e oito vozes de áudio. As cinco ondas somam 127 inimigos. Objetos transitórios são liberados; sem pooling prematuro. FPS e requisitos mínimos não foram medidos em hardware de destino.
+
+## Mundo de exploração
+
+A arquitetura nova, a persistência e os parâmetros provisórios estão descritos em [WORLD_IMPLEMENTATION.md](WORLD_IMPLEMENTATION.md). A cena de entrada desse modo é `scenes/world/FrontierWorld.tscn`.

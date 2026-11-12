@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2 — Primeiro trecho de mundo
+
+- Acrescenta exploração por setores, seed reproduzível, assentamentos de protótipo, rio, estradas e travessias.
+- Acrescenta coleta, mochila limitada, depósito, interiores térreos, portas/recipientes persistentes, mapa e checkpoint.
+- Reutiliza construção e combate, acrescenta melhorias de resistência e hordas sem vitória obrigatória na quinta.
+- Mantém o desafio clássico separado e acrescenta testes de integração do mundo.
+- Documenta hipóteses e limitações em WORLD_IMPLEMENTATION.md.
+
 ## 0.1.0 — 2026-11-11
 
 - Projeto Godot 4.6.3, menu e partida conectados.
