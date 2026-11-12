@@ -1,0 +1,35 @@
+[
+  {
+    "active_enemies": 32,
+    "average_fps": 15.6339706075067,
+    "crowd_draw_parts": 11,
+    "frame_max_ms": 99.8466666666667,
+    "frame_p50_ms": 59.0909090909091,
+    "frame_p95_ms": 86.112,
+    "frames": 300,
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "resident_sectors": 9,
+    "startup_ms": 504,
+    "environment": "Linux cloud desktop, Mesa llvmpipe software rendering, 1280x800 window",
+    "protocol": "90 warmup frames + 300 sampled frames; 32 actors; fixture player protected from damage"
+  },
+  {
+    "active_enemies": 32,
+    "average_fps": 34.855635018898,
+    "crowd_draw_parts": 11,
+    "draw_calls": 96.0,
+    "frame_max_ms": 42.906,
+    "frame_p50_ms": 28.0123703703704,
+    "frame_p95_ms": 34.7222222222222,
+    "frames": 300,
+    "physics_ms": 17.696,
+    "process_ms": 18.526,
+    "render_scale": 0.5,
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "resident_sectors": 9,
+    "shadows": false,
+    "startup_ms": 531,
+    "environment": "Linux cloud desktop, Mesa llvmpipe software rendering, 1280x800 window",
+    "protocol": "90 warmup frames + 300 sampled frames; 32 actors; fixture player protected from damage"
+  }
+]

@@ -25,7 +25,7 @@ func _ready() -> void:
 	VisualFactory.box(body, Vector3(width + 1, .1, depth + 1), Vector3(0, .01, 0), Color("787969"))
 	if commercial:
 		VisualFactory.box(body, Vector3(width * .85, .7, .3), Vector3(0, 2.7, -depth * .5 - .25), Color("344e4b"))
-	var entry := WorldInteraction.new()
+	var entry: WorldInteraction = world.new_interaction() if world.has_method("new_interaction") else WorldInteraction.new()
 	entry.world = world
 	entry.id = str(data.id) + ":entry"
 	entry.kind = "entry"

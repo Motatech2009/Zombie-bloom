@@ -45,14 +45,14 @@ func _ready() -> void:
 		furniture(Vector3(-6, 0, 6.5), Vector3(3, 1.3, 1.3), Color("72898b"))
 		furniture(Vector3(6.5, 0, 6.5), Vector3(1.6, 1.8, 1.6), Color("a49371"))
 	for i in range(2):
-		var loot := WorldInteraction.new()
+		var loot: WorldInteraction = world.new_interaction() if world.has_method("new_interaction") else WorldInteraction.new()
 		loot.world = world
 		loot.id = str(data.id) + ":container:%d" % i
 		loot.kind = "container"
 		loot.data = {"units": 12}
 		loot.position = Vector3(-7 if i == 0 else 7, 0, -2)
 		add_child(loot)
-	var exit := WorldInteraction.new()
+	var exit: WorldInteraction = world.new_interaction() if world.has_method("new_interaction") else WorldInteraction.new()
 	exit.world = world
 	exit.id = str(data.id) + ":exit"
 	exit.kind = "exit"
@@ -60,8 +60,9 @@ func _ready() -> void:
 	exit.position = Vector3(-3, 0, -7.5)
 	add_child(exit)
 	# Windows are visual states in this prototype; no view into the exterior scene.
-	for x in [-5, 5]:
-		VisualFactory.box(self, Vector3(1.7, 1, .05), Vector3(x, 1.6, -8.82), Color("719ba0"))
+	if not world.has_method("container_for"):
+		for x in [-5, 5]:
+			VisualFactory.box(self, Vector3(1.7, 1, .05), Vector3(x, 1.6, -8.82), Color("719ba0"))
 	navigation.region = Rect2i(-9, -9, 19, 19)
 	navigation.cell_size = Vector2.ONE
 	navigation.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
@@ -94,7 +95,7 @@ func partition(center_pos: Vector3, size: Vector3, along_z: bool, opening: float
 			part.x = bounds.y - bounds.x
 		pos.y = size.y * .5
 		wall(pos, part, true)
-	var door := WorldInteraction.new()
+	var door: WorldInteraction = world.new_interaction() if world.has_method("new_interaction") else WorldInteraction.new()
 	door.world = world
 	door.kind = "door"
 	door.id = str(data.id) + ":door:%s:%s" % [along_z, opening]

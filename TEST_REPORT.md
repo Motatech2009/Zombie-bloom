@@ -1,3 +1,21 @@
+# Relatório de testes — Beta 1 — 2026-11-12
+
+## Entrega atual
+
+Godot **4.6.3.stable.official.7d41c59c4**, Linux: **260 verificações aprovadas, zero falhas** — 120 da Beta 1, 85 de regressão clássica e 55 do mundo anterior. Importação e execução headless da campanha sem erros de script ou avisos de objetos órfãos. Os resultados das versões anteriores permanecem abaixo como histórico; suas ondas/torretas não aparecem na campanha Beta.
+
+A suíte Beta verifica geração determinística com relevo físico, rios e assentamentos, streaming, inventário por slots/peso, conservação em transferências parciais, equipamento e mochila ampliada, 15 receitas e falhas atômicas, seis peças construíveis, acesso ao Núcleo, dano/reparo, armas e munição finita, descarte de arma com devolução do pente, rolamento sem imunidade, extração, percepção obstruída, eventos aleatórios e estado agregado, registros e continuação em nova instância. Também cobre rejeição de saves inválidos ou de outra seed, retomada após derrota, seleção de espingarda restaurada e recuperação de caixa destruída sem duplicação.
+
+Logs: `docs/beta-results.txt`, `docs/classic-results.txt` e `docs/world-results.txt`. Matriz dos capítulos e parâmetros: `BETA_1.md`.
+
+Conferência por interface nativa: menu, inventário/equipamentos, filtro de receitas, fabricação e instalação da bancada por clique, salvamento/retomada, opções, noite/neblina/lanterna e multidão articulada. A revisão corrigiu posição de colocação pelo clique, layout com texto ampliado e restauração de estado de derrota.
+
+Benchmark reproduzível com 32 infectados, nove setores e 300 amostras: **15,6 FPS** no padrão e **34,9 FPS** no modo leve. Ambiente **Mesa llvmpipe, renderização por CPU**, janela 1280 × 800; não representa uma RX 7600. Dados completos em `docs/beta-render-benchmarks.json`. A meta de 60 FPS exige medição no PC alvo. Não há saída de áudio neste ambiente e a qualidade sonora não pôde ser ouvida.
+
+O workflow executa as três suítes e exporta o pacote Windows x64 com os guias. O sucesso da exportação deve ser conferido no GitHub Actions para o commit entregue. A execução nativa do `.exe` em Windows e uma sessão prolongada de balanceamento permanecem sem validação neste ambiente Linux. Modelos, animações e áudio são procedurais de protótipo; este relatório não certifica acabamento comercial.
+
+---
+
 # Relatório de testes — 2026-11-11
 
 ## Ambiente e comandos executados

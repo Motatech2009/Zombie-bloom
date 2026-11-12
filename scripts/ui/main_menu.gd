@@ -10,6 +10,8 @@ var clock: float = 0
 func _ready() -> void:
 	get_tree().paused = false
 	Controls.setup()
+	BetaOptions.setup()
+	WorldState.next_seed = BetaOptions.last_seed
 	GameSettings.load_settings()
 	sun = VisualFactory.lighting(self)
 	sun.shadow_enabled = GameSettings.shadows
@@ -72,8 +74,8 @@ func show_main() -> void:
 	clear_content()
 	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
 	UI.spacer(content, 12)
-	UI.label(content, "ZOMBIE", 56)
-	var bloom := UI.label(content, "BLOOM.", 68, UI.LIME)
+	UI.label(content, "ÚLTIMO", 56)
+	var bloom := UI.label(content, "REFÚGIO.", 68, UI.LIME)
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
@@ -81,38 +83,39 @@ func show_main() -> void:
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content, 6)
 	UI.button(content, "EXPLORAR O MUNDO   →", start_game, true)
-	if FileAccess.file_exists("user://ultimo_refugio_v1.json"):
+	if FileAccess.file_exists(BetaPersistence.path(WorldState.next_seed)):
 		UI.button(content, "CONTINUAR REFÚGIO", continue_world)
-	UI.button(content, "DESAFIO · CINCO HORDAS", start_classic)
+	UI.label(content, "BETA 1 · Hordas migratórias, sem ondas agendadas", 13, UI.MUTED)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "PROTÓTIPO 0.2   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "BETA 1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func start_game() -> void:
+	if FileAccess.file_exists(BetaPersistence.path(WorldState.next_seed)):
+		clear_content()
+		UI.label(content, "JÁ EXISTE UM REFÚGIO", 28, UI.LIME)
+		UI.label(content, "Esta seed possui um salvamento. Uma nova campanha só substituirá esse arquivo quando você salvar. Para manter ambos, escolha outra seed nas configurações.", 18, UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.button(content, "CONTINUAR CAMPANHA SALVA", continue_world, true)
+		UI.button(content, "INICIAR NOVA NESTA SEED", begin_beta)
+		UI.button(content, "VOLTAR", show_main)
+		return
+	begin_beta()
+
+func begin_beta() -> void:
 	WorldState.resume_requested = false
-	get_tree().change_scene_to_file("res://scenes/world/FrontierWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/beta/BetaWorld.tscn")
 
 func continue_world() -> void:
 	WorldState.resume_requested = true
-	get_tree().change_scene_to_file("res://scenes/world/FrontierWorld.tscn")
-
-func start_classic() -> void:
-	get_tree().change_scene_to_file("res://scenes/main/GameWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/beta/BetaWorld.tscn")
 
 func show_help() -> void:
 	clear_content()
-	UI.label(content, "MANUAL DE CAMPO", 14, UI.LIME)
-	UI.label(content, "Mantenha o\nnúcleo vivo.", 43)
-	var scroll := ScrollContainer.new()
-	content.add_child(scroll)
-	scroll.custom_minimum_size = Vector2(480, 430)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var help := UI.label(scroll, "MUNDO ABERTO\nF  ·  extrair / entrar / abrir portas / depositar\nM  ·  mapa     U  ·  melhorar resistência\nF5  ·  salvar na base     F9  ·  restaurar\n\nWASD  ·  mover     SHIFT  ·  correr\nMOUSE  ·  mirar     CLIQUE  ·  disparar\nR  ·  recarregar     1 / 2 / 3  ·  armas\nB  ·  construção     E  ·  reparar perto\nESPAÇO  ·  iniciar a próxima horda\nTAB  ·  equipamentos     ESC  ·  pausa\n\nNa preparação, B abre a construção.\n1 seleciona barricada, 2 seleciona torreta.\nClique para instalar; botão direito cancela.\n\nColete os fragmentos para receber XP e sucata.\nXP melhora o personagem. Sucata paga defesas.\nBônus coloridos duram dez segundos.\n\nVocê perde se morrer ou perder o núcleo.\nNo mundo, sobreviva e desenvolva o refúgio.\nNo desafio clássico, vença cinco hordas.", 17, UI.MUTED)
-	help.custom_minimum_size.x = 450
-	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.label(content, "MANUAL DO REFÚGIO", 28, UI.LIME)
+	var text := UI.label(content, "WASD mover · mouse mirar · clique atacar\nShift correr · Espaço rolar (sem imunidade)\nE interagir / segurar para extrair\nI mochila · C fabricar · B construir · Q girar\nF reparar · L lanterna · M mapa\nR recarregar · 1–6 barra rápida\nF5 salvar · F9 restaurar · Esc pausar\n\nSaia para buscar materiais e leve-os ao depósito.\nAs armas de fogo usam munição da mochila.\nSlots e peso limitam o transporte: acima de\n125% da carga, corrida e rolamento param.\n\nConstrua bancada, paredes, portão e caixas.\nHordas são grupos que migram pelo mundo: podem\npassar longe da base ou investigar luz e ruído.\nNão há cronômetro de ataques nem vitória por ondas.\n\nSalve antes de sair. Voltar ao menu não salva\na campanha automaticamente.", 17, UI.MUTED)
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content, "VOLTAR", show_main)
 
 func show_settings() -> void:
@@ -124,7 +127,7 @@ func show_settings() -> void:
 	seed_input.min_value = 1
 	seed_input.max_value = 2147483647
 	seed_input.value = WorldState.next_seed
-	seed_input.value_changed.connect(func(value: float): WorldState.next_seed = int(value))
+	seed_input.value_changed.connect(func(value: float): WorldState.next_seed = int(value); BetaOptions.last_seed = int(value); BetaOptions.save())
 	content.add_child(seed_input)
 	UI.label(content, "A mesma seed repete o mapa. Continuar usa a seed salva.", 13, UI.MUTED)
 	UI.settings(content, func(): sun.shadow_enabled = GameSettings.shadows)

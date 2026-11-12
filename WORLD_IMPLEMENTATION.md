@@ -1,5 +1,7 @@
 # Último Refúgio — primeiro trecho jogável do mundo
 
+**Histórico do protótipo 0.2. Para a campanha atual, consulte [Beta 1](BETA_1.md).**
+
 Referência: compêndio WORLD-001 a WORLD-008 fornecido pelo autor, versão consolidada de 11/11/2026. O documento distingue decisões aprovadas de hipóteses. Esta implementação é um protótipo funcional das bases técnicas e do ciclo de exploração; não representa a entrega integral de todos os sistemas descritos.
 
 ## Como testar

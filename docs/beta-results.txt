@@ -1,0 +1,123 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: absolute weight limit accepts only whole units up to 150 percent
+PASS: absolute limit never immobilizes an overloaded player
+PASS: normal load permits full movement and agile actions
+PASS: first overload band applies 75 percent movement and preserves agility
+PASS: second overload band blocks sprint and roll
+PASS: partial transfer conserves units under target weight limit
+PASS: self-transfer and invalid slot cannot duplicate items
+PASS: slot capacity is independent of weight capacity
+PASS: equipped backpack expands slots and nominal capacity while retaining its weight
+PASS: equipped backpack cannot be transferred to exploit its capacity
+PASS: switch to smaller backpack rejects too many occupied slots
+PASS: smaller backpack compacts sparse contents and remaps hotbar without item loss
+PASS: inventory restore rejects dangling hotbar references
+PASS: settlement lots and positions are seed dependent and reproducible
+PASS: expanding into another region never changes the starter region
+PASS: macro terrain contains actual spatial height variation
+PASS: sector edges share deterministic global terrain heights
+PASS: interior room functions depend on building category
+PASS: new beta campaign starts with finite equipment and ammunition items
+PASS: production scene connects the beta construction, terrain and combat services
+PASS: beta scene uses bounded streaming of seed generated regions
+PASS: rendered terrain has real matching heightmap collision across sector seams
+PASS: finite-ammo reload starts when compatible reserves exist
+PASS: chambered ammunition still counts toward equipped carry weight
+PASS: reload moves exactly twelve rounds from inventory to magazine
+PASS: partial magazine reload starts
+PASS: switching weapons cancels reload without reserving or duplicating rounds
+PASS: shotgun cannot reload from pistol ammunition
+PASS: real firearm raycast consumes one chambered round and applies damage
+PASS: gunfire creates an audible world stimulus
+PASS: melee cannot damage through an actual wall
+PASS: melee applies damage only to an unobstructed target in range
+PASS: storing the last loaded firearm atomically unloads its rounds without ammunition loss or hidden magazine storage
+PASS: retrieving a stored firearm never duplicates its former magazine
+PASS: rolling grants no invulnerability
+PASS: player remains damageable while rolling
+PASS: rolling uses CharacterBody collision and does not cross walls
+PASS: bench recipes reject missing station without consuming materials
+PASS: bench recipe succeeds within station range
+PASS: crafting consumes exact ingredients and creates exact output
+PASS: double-click guard blocks repeated transaction
+PASS: recipe produces useful beta item: bandage
+PASS: recipe produces useful beta item: plank
+PASS: recipe produces useful beta item: foundation
+PASS: recipe produces useful beta item: wall
+PASS: recipe produces useful beta item: gate
+PASS: recipe produces useful beta item: barricade
+PASS: recipe produces useful beta item: crate
+PASS: recipe produces useful beta item: workbench
+PASS: recipe produces useful beta item: repair_kit
+PASS: recipe produces useful beta item: axe
+PASS: recipe produces useful beta item: ammo9
+PASS: recipe produces useful beta item: shell
+PASS: recipe produces useful beta item: lantern
+PASS: recipe produces useful beta item: backpack
+PASS: recipe produces useful beta item: armor
+PASS: crafting with no output slot leaves all ingredients intact
+PASS: invalid construction overlaps core and preserves the crafted piece
+PASS: valid construction consumes exactly one crafted piece
+PASS: construction uses the click position even when the preview has a stale cursor position
+PASS: repair consumes materials and restores damaged structure
+PASS: base gate toggles physical collision
+PASS: destroyed storage preserves its contents in a recoverable ground container
+PASS: full construction path places beta structure: foundation
+PASS: full construction path places beta structure: wall
+PASS: full construction path places beta structure: gate
+PASS: full construction path places beta structure: barricade
+PASS: full construction path places beta structure: crate
+PASS: full construction path places beta structure: workbench
+PASS: procedural beta retains an accessible first extraction tree
+PASS: beta extraction moves real weighted materials from the resource node
+PASS: weighted extraction remains depleted after streaming out and back
+PASS: beta campaign enters a real ground-floor building
+PASS: window supports persistent broken visual state
+PASS: window barricade consumes actual materials and persists state
+PASS: environmental record opens readable short-form lore and journal entry
+PASS: world clock continues during an interior visit
+PASS: night reduces sunlight and lantern remains available
+PASS: discarded indoor items remain inside their original building
+PASS: complete beta snapshot saves while inside a building
+PASS: validated save contains clock and interior player state
+PASS: beta reenters the same building
+PASS: indoor discarded container is recreated when reentering the same house
+PASS: interior loot and opened doors do not reroll on reentry
+PASS: save restores the correct interior and player position
+PASS: save restores selected firearm, its own magazine and hotbar selection
+PASS: window state survives disk reload
+PASS: atmospheric fog is active in the 3D exterior
+PASS: accessibility setting can disable fog without changing gameplay state
+PASS: advancing four days does not force daily/nightly hordes or base attacks
+PASS: migratory event has identity, size, route and off-screen origin
+PASS: event materialization refuses a spawn on the player or in view
+PASS: director can find loaded, collision-free positions outside the camera
+PASS: migration may investigate actual noise rather than automatically targeting the core
+PASS: unalerted horde member physically advances along its migration route
+PASS: distant player is not detected without sight or noise
+PASS: audible stimulus triggers investigation without direct visual contact
+PASS: migratory event state can be checkpointed with the outdoor campaign
+PASS: save preserves aggregated horde identity and route
+PASS: corrupt inventory data is rejected before mutating the campaign
+PASS: generator version mismatch is rejected
+PASS: save refuses to overwrite a campaign belonging to another seed
+PASS: loading another seed never silently replaces the current world
+PASS: hybrid inventory UI is connected to the game
+PASS: two-panel loot UI opens against a persistent container
+PASS: crafting UI renders the real recipe catalog
+PASS: construction palette contains beta structures rather than turrets
+PASS: map opens without offering teleportation
+PASS: settings expose audio, resolution, fog, text and controls
+PASS: control rebinding refuses conflicting movement keys
+PASS: core destruction opens beta defeat without erasing the saved campaign
+PASS: restoring after core defeat reactivates its health, collision and damageable structure role
+PASS: restored campaign resumes playable simulation after defeat
+PASS: different deterministic random states produce different encounter frequencies instead of a fixed daily schedule
+PASS: pursuer detects and pressures at longer range than the common wanderer
+PASS: vision detection respects real blocking geometry
+PASS: stationary roll follows the mouse aim direction
+PASS: restoring destroyed storage creates only one recoverable container in the world
+PASS: fresh scene restores campaign, lore, interior edits and persistent events
+PASS: cold restart preserves every slot, hotbar reference and equipment flag
+BETA RESULT: 120 checks, 0 failures

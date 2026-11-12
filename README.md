@@ -1,67 +1,63 @@
-# Zombie Bloom — Último Refúgio
+# Último Refúgio — Zombie Bloom Beta 1
 
-Protótipo Godot **4.6.3**, single-player offline, GDScript, cenário 3D low-poly e câmera ortográfica isométrica. Geometrias, animações e áudio são gerados pelo projeto, sem assets pagos ou serviços externos.
+Jogo de sobrevivência isométrica single-player offline em Godot **4.6.3**. Explore um mundo procedural com relevo e interiores térreos, obtenha materiais, administre mochila/peso, fabrique itens e construa seu refúgio. Infectados investigam visão, luz e ruído; hordas são grupos migratórios aleatórios, sem ondas obrigatórias ou contador de ataque à base.
 
-**Saia da base, extraia recursos, carregue-os na mochila e volte para construir, reparar e fortalecer as defesas.** O primeiro trecho do mundo inclui recursos por seed, setores contínuos, estradas, rio com travessias, cidade, vila, fazenda, pátio industrial e interiores térreos com portas e recipientes persistentes.
+**[Leia o guia da Beta 1](BETA_1.md)** para regras, limites, dados de balanceamento, salvamento e validação do GDD.
 
-É um protótipo das ideias WORLD-001–008. A localização principal dos assentamentos e a rede viária inicial ainda são fixas; relevo físico, cidades integralmente procedurais e simulação externa durante visitas a interiores não estão implementados. Consulte [o estado detalhado do mundo](WORLD_IMPLEMENTATION.md).
+## Jogar
 
-## Abrir e jogar
+1. Baixe ou clone o projeto e importe `project.godot` na Godot 4.6.3 padrão, sem .NET.
+2. Execute e escolha **Explorar o mundo**. Configurações permite escolher a seed.
+3. Use **E** para interagir e segure E para extrair árvores/pedras. Abra recipientes e transfira o que couber.
+4. **I** abre a mochila; **C**, a fabricação. Fabrique uma bancada, abra **B**, selecione a peça e clique em local livre.
+5. Retorne ao Núcleo/caixas para armazenar materiais. Salve com **F5**, restaure com **F9** e retome pelo menu.
 
-1. Instale a [Godot 4.6.3 padrão, sem .NET](https://godotengine.org/download/archive/4.6.3-stable/).
-2. Baixe ou clone o repositório e importe `project.godot`.
-3. Pressione F5 na engine e selecione **Explorar o mundo**.
-4. Procure recursos fora do círculo do refúgio. Segure F junto a uma árvore, rocha ou caixa.
-5. Retorne ao núcleo e pressione F para depositar; use B para construir.
-6. Salve com F5 dentro do refúgio, entre hordas e sem hostis próximos. O menu passa a oferecer **Continuar refúgio**.
-
-O **Desafio de cinco hordas** original continua disponível como modo separado, com vitória após a quinta onda. No modo de exploração, as hordas são iniciadas manualmente na base e podem continuar além da quinta.
-
-A seed de uma nova expedição pode ser alterada em Configurações. Continuar usa a seed do arquivo salvo.
-
-## Controles
-
-| Entrada | Ação |
+| Entrada padrão | Ação |
 | --- | --- |
-| WASD / Shift | Mover em relação à câmera / correr |
-| Mouse / clique / R | Mirar / disparar / recarregar |
-| 1 / 2 / 3 | Pistola / espingarda / rifle |
-| Segurar F | Extrair recursos próximos, até o limite de 45 unidades |
-| F | Entrar/sair de edifício, abrir/fechar porta ou depositar junto ao núcleo |
-| B / 1–2 / clique | Construir barricada ou torreta; botão direito cancela |
-| E | Reparar uma estrutura próxima entre hordas |
-| U | Melhorar a resistência de uma estrutura próxima |
-| Espaço | Iniciar horda no refúgio |
-| M / Tab / Esc | Mapa / equipamentos / pausa |
-| F5 / F9 no jogo | Salvar na base / restaurar o checkpoint |
+| WASD / mouse / clique | Mover / mirar / atacar |
+| Shift / Espaço | Correr / rolar sem invulnerabilidade |
+| E / I / C | Interagir ou extrair / mochila / crafting |
+| B / Q / botão direito | Construir / girar / cancelar prévia |
+| F / R / 1–6 | Reparar / recarregar com munição finita / hotbar |
+| L / M / Esc | Lanterna / mapa / pausa |
+| F5 / F9 | Salvar / restaurar |
 
-Você começa com 140 de sucata e três armas. A munição de reserva é ilimitada, mas os pentes exigem recarga. XP concede escolhas de evolução e há bônus temporários. No mundo, a sucata dos inimigos também ocupa a mochila até ser depositada. Madeira, pedra e metal são convertidos em sucata reaproveitável 1:1 no depósito; receitas separadas ainda não existem.
+Movimento e ações podem ser redefinidos nas opções. Resolução, volume, sombras, neblina, escala de texto e modo leve também são ajustáveis. A reserva de munição é item real de inventário; a hotbar referencia slots, sem criar armazenamento extra.
 
-O salvamento é manual. Voltar ao menu sem salvar descarta o progresso desde o checkpoint. Portas, recipientes, recursos retirados, carga, atributos, núcleo e defesas são restaurados. Inimigos e bônus temporários não são. A morte do jogador ou a destruição do núcleo encerra a expedição em andamento.
+## Escopo
 
-## Testes
+A Beta inclui 25 itens, 15 receitas, seis peças construtivas, machado/pistola/espingarda, errante/perseguidor, dia/noite, neblina, cinco registros ambientais e um gancho narrativo. O catálogo editável fica em `resources/beta/catalog.tres`. Não há torretas, fome/sede, NPCs, veículos dirigíveis, múltiplos andares, multiplayer ou automação industrial.
+
+Os parâmetros são o balanceamento inicial do protótipo. A arte é geométrica original, com animação procedural, vegetação/multidões instanciadas e sons sintetizados. As ilustrações do GDD eram esquemas de referência; não assets de produção final.
+
+## Salvamento
+
+Cada seed tem seu próprio arquivo Beta. O progresso inclui inventário, equipamentos, estado do personagem/interior, recipientes, recursos extraídos, portas/janelas, construções, relógio, lore e estado agregado das hordas. A gravação valida dados e usa temporário/backup. Não sobrescreve arquivo de outra seed silenciosamente.
+
+O save é manual. Voltar ao menu não salva automaticamente. Os arquivos do protótipo 0.2 permanecem separados e não possuem migração automática. Morte permite retomar o último salvamento; resgate/respawn avançado está fora da Beta 1.
+
+## Verificar e exportar
 
 ```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/world_tests.gd
+godot --headless --path . --script res://tests/beta_tests.gd
 ```
 
-As suítes usam cenas e física reais da engine. Consulte [TEST_REPORT.md](TEST_REPORT.md) e [WORLD_IMPLEMENTATION.md](WORLD_IMPLEMENTATION.md) para evidências, parâmetros provisórios e comandos de revisão visual.
+O GitHub Actions executa as três suítes e exporta `ZombieBloom-Windows-x64`. Após uma execução bem-sucedida, baixe o artefato da execução correspondente. Os dois protótipos anteriores são mantidos para regressão técnica; a campanha principal utiliza `scenes/beta/BetaWorld.tscn`.
 
-## Windows
-
-Instale os templates 4.6.3 em **Editor → Gerenciar templates de exportação** e use **Projeto → Exportar → Windows Desktop**, ou:
+Para exportar localmente, instale os templates oficiais 4.6.3 em **Editor → Gerenciar templates de exportação** e use **Projeto → Exportar → Windows Desktop**, ou:
 
 ```sh
 mkdir -p builds/windows
 godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe
 ```
 
-O preset incorpora o PCK. Assinatura digital não configurada. O GitHub Actions está configurado para validar os dois modos e gerar `ZombieBloom-Windows-x64` quando a execução termina com sucesso. A configuração do workflow não comprova que uma exportação terminou ou que o executável foi testado no Windows.
+O preset incorpora o PCK no executável. O build não é assinado. Exportar para Windows não substitui executar e avaliar o jogo nesse sistema e no hardware de destino.
 
-## Documentação e limites
+## Documentação
 
-[Estado do mundo](WORLD_IMPLEMENTATION.md) · [Design original](GAME_DESIGN.md) · [Arquitetura](ARCHITECTURE.md) · [Balanceamento clássico](BALANCING.md) · [Testes](TEST_REPORT.md) · [Changelog](CHANGELOG.md)
+[Guia/aceite Beta 1](BETA_1.md) · [Relatório de testes](TEST_REPORT.md) · [Arquitetura](ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Protótipo 0.2 histórico](WORLD_IMPLEMENTATION.md)
 
-A arte é geométrica e provisória. Balanceamento, diversão, FPS e consumo de memória precisam de avaliação com jogadores e no hardware alvo. Não há multiplayer, remapeamento de teclas, crafting complexo, fome/sede, resgate ou dia/noite. Interiores suspendem o exterior e não possuem inimigos nesta versão. Compatibilidade futura dos arquivos salvos depende de migração explícita do gerador.
+O benchmark disponível foi executado em renderização por software llvmpipe: cerca de 15,6 FPS padrão e 34,9 FPS no modo leve com 32 infectados ativos. O alvo provisório de 60 FPS em GPU dedicada ainda requer medição no PC de destino. Dados e protocolo estão no guia; os testes de lógica não certificam diversão, desempenho universal ou áudio em um dispositivo que não está conectado ao ambiente de teste.

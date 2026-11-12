@@ -1,0 +1,365 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "beta_1"
+title = "Catálogo Beta 1"
+values = {
+  "items": {
+    "wood": {
+      "title": "Madeira bruta",
+      "weight": 0.8,
+      "stack": 30
+    },
+    "stone": {
+      "title": "Pedra",
+      "weight": 1.2,
+      "stack": 30
+    },
+    "fiber": {
+      "title": "Fibras",
+      "weight": 0.1,
+      "stack": 30
+    },
+    "cloth": {
+      "title": "Tecido",
+      "weight": 0.1,
+      "stack": 30
+    },
+    "scrap": {
+      "title": "Sucata",
+      "weight": 0.6,
+      "stack": 30
+    },
+    "plank": {
+      "title": "Tábuas",
+      "weight": 0.5,
+      "stack": 30
+    },
+    "component": {
+      "title": "Componentes",
+      "weight": 0.25,
+      "stack": 30
+    },
+    "bandage": {
+      "title": "Bandagem",
+      "weight": 0.15,
+      "stack": 30
+    },
+    "repair_kit": {
+      "title": "Kit de reparo",
+      "weight": 0.6,
+      "stack": 30
+    },
+    "food": {
+      "title": "Mantimento",
+      "weight": 0.4,
+      "stack": 30
+    },
+    "water": {
+      "title": "Água",
+      "weight": 1.0,
+      "stack": 30
+    },
+    "ammo9": {
+      "title": "Munição de pistola",
+      "weight": 0.02,
+      "stack": 60
+    },
+    "shell": {
+      "title": "Cartucho",
+      "weight": 0.08,
+      "stack": 24
+    },
+    "axe": {
+      "title": "Machado",
+      "weight": 2,
+      "stack": 1
+    },
+    "pistol": {
+      "title": "Pistola",
+      "weight": 1.1,
+      "stack": 1
+    },
+    "shotgun": {
+      "title": "Espingarda",
+      "weight": 3.3,
+      "stack": 1
+    },
+    "lantern": {
+      "title": "Lanterna",
+      "weight": 0.6,
+      "stack": 1
+    },
+    "backpack": {
+      "title": "Mochila de expedição",
+      "weight": 1.5,
+      "stack": 1
+    },
+    "armor": {
+      "title": "Proteção improvisada",
+      "weight": 2.5,
+      "stack": 1
+    },
+    "foundation": {
+      "title": "Fundação",
+      "weight": 3,
+      "stack": 4
+    },
+    "wall": {
+      "title": "Parede de madeira",
+      "weight": 3,
+      "stack": 4
+    },
+    "gate": {
+      "title": "Portão",
+      "weight": 4,
+      "stack": 4
+    },
+    "barricade": {
+      "title": "Barricada",
+      "weight": 3,
+      "stack": 4
+    },
+    "crate": {
+      "title": "Caixa",
+      "weight": 2,
+      "stack": 4
+    },
+    "workbench": {
+      "title": "Bancada",
+      "weight": 5,
+      "stack": 4
+    }
+  },
+  "recipes": [
+    {
+      "id": "bandage",
+      "title": "Bandagem improvisada",
+      "cost": {
+        "cloth": 2
+      },
+      "output": "bandage",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "plank",
+      "title": "Serrar tábuas",
+      "cost": {
+        "wood": 2
+      },
+      "output": "plank",
+      "station": "bench",
+      "amount": 2
+    },
+    {
+      "id": "foundation",
+      "title": "Fundação",
+      "cost": {
+        "wood": 4,
+        "stone": 2
+      },
+      "output": "foundation",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "wall",
+      "title": "Parede de madeira",
+      "cost": {
+        "wood": 6,
+        "scrap": 2
+      },
+      "output": "wall",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "gate",
+      "title": "Portão simples",
+      "cost": {
+        "plank": 6,
+        "scrap": 3
+      },
+      "output": "gate",
+      "station": "bench",
+      "amount": 1
+    },
+    {
+      "id": "barricade",
+      "title": "Barricada leve",
+      "cost": {
+        "wood": 4,
+        "scrap": 2
+      },
+      "output": "barricade",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "crate",
+      "title": "Caixa de armazenamento",
+      "cost": {
+        "plank": 6,
+        "scrap": 2
+      },
+      "output": "crate",
+      "station": "bench",
+      "amount": 1
+    },
+    {
+      "id": "workbench",
+      "title": "Bancada de fabricação",
+      "cost": {
+        "wood": 8,
+        "scrap": 4,
+        "stone": 2
+      },
+      "output": "workbench",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "repair_kit",
+      "title": "Kit de reparo",
+      "cost": {
+        "scrap": 3,
+        "cloth": 1
+      },
+      "output": "repair_kit",
+      "station": "bench",
+      "amount": 1
+    },
+    {
+      "id": "axe",
+      "title": "Machado",
+      "cost": {
+        "wood": 2,
+        "stone": 3
+      },
+      "output": "axe",
+      "station": "manual",
+      "amount": 1
+    },
+    {
+      "id": "ammo9",
+      "title": "Recuperar munição",
+      "cost": {
+        "scrap": 2,
+        "component": 1
+      },
+      "output": "ammo9",
+      "station": "bench",
+      "amount": 6
+    },
+    {
+      "id": "shell",
+      "title": "Recuperar cartuchos",
+      "cost": {
+        "scrap": 3,
+        "component": 1
+      },
+      "output": "shell",
+      "station": "bench",
+      "amount": 4
+    },
+    {
+      "id": "lantern",
+      "title": "Lanterna",
+      "cost": {
+        "scrap": 2,
+        "component": 1
+      },
+      "output": "lantern",
+      "station": "bench",
+      "amount": 1
+    },
+    {
+      "id": "backpack",
+      "title": "Mochila de expedição",
+      "cost": {
+        "cloth": 8,
+        "fiber": 6
+      },
+      "output": "backpack",
+      "station": "bench",
+      "amount": 1
+    },
+    {
+      "id": "armor",
+      "title": "Proteção improvisada",
+      "cost": {
+        "cloth": 6,
+        "scrap": 4
+      },
+      "output": "armor",
+      "station": "bench",
+      "amount": 1
+    }
+  ],
+  "structures": {
+    "foundation": {
+      "title": "Fundação",
+      "size": [
+        4,
+        0.18,
+        4
+      ],
+      "health": 240,
+      "color": "8b876e"
+    },
+    "wall": {
+      "title": "Parede",
+      "size": [
+        4,
+        2.4,
+        0.35
+      ],
+      "health": 240,
+      "color": "816e4e"
+    },
+    "gate": {
+      "title": "Portão",
+      "size": [
+        4,
+        2.4,
+        0.3
+      ],
+      "health": 200,
+      "color": "6a654d"
+    },
+    "barricade": {
+      "title": "Barricada",
+      "size": [
+        2,
+        1.5,
+        0.9
+      ],
+      "health": 160,
+      "color": "94805d"
+    },
+    "crate": {
+      "title": "Caixa",
+      "size": [
+        1.2,
+        0.9,
+        1
+      ],
+      "health": 130,
+      "color": "8f7955"
+    },
+    "workbench": {
+      "title": "Bancada",
+      "size": [
+        2,
+        0.95,
+        1.2
+      ],
+      "health": 180,
+      "color": "657e72"
+    }
+  }
+}

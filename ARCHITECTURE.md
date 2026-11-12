@@ -56,3 +56,7 @@ Navegação recalculada a cada 0,5–0,85 s, distribuída entre inimigos. Materi
 ## Mundo de exploração
 
 A arquitetura nova, a persistência e os parâmetros provisórios estão descritos em [WORLD_IMPLEMENTATION.md](WORLD_IMPLEMENTATION.md). A cena de entrada desse modo é `scenes/world/FrontierWorld.tscn`.
+
+## Beta 1 atual
+
+A campanha entra por `scenes/beta/BetaWorld.tscn`. Os serviços e contratos da arquitetura atual estão em [BETA_1.md](BETA_1.md). O código dos marcos anteriores permanece como base/revisão de regressão, sem disponibilizar as ondas e torretas antigas na campanha.

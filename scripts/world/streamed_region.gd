@@ -75,19 +75,19 @@ func load_sector(coord: Vector2i) -> void:
 		house.position = Vector3(house_data.pos.x, 0, house_data.pos.y)
 		sector.add_child(house)
 	for prop_data: Dictionary in data.resources:
-		var prop := WorldInteraction.new()
+		var prop: WorldInteraction = world.new_interaction() if world.has_method("new_interaction") else WorldInteraction.new()
 		prop.world = world
 		prop.id = prop_data.id
 		prop.kind = prop_data.kind
 		prop.data = prop_data
-		prop.position = Vector3(prop_data.pos.x, 0, prop_data.pos.y)
+		prop.position = Vector3(prop_data.pos.x, generator.height_at(prop_data.pos) if generator.has_method("height_at") else 0, prop_data.pos.y)
 		sector.add_child(prop)
 	if coord == Vector2i.ZERO:
 		VisualFactory.ring(sector, 18, Vector3(0, .035, 0), Color("879c64"))
 		var sign := VisualFactory.health_label(sector, 3)
 		sign.position = Vector3(-5, 3, -7)
 		sign.font_size = 24
-		sign.text = "ÚLTIMO REFÚGIO\nDEPÓSITO · F"
+		sign.text = "ÚLTIMO REFÚGIO\nDEPÓSITO · " + ("E" if world.has_method("new_interaction") else "F")
 
 func terrain(parent: Node3D, coord: Vector2i) -> void:
 	var surface := SurfaceTool.new()
