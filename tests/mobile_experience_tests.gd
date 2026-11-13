@@ -27,6 +27,9 @@ func run() -> void:
 	check(c.move_vector.x>.99,"floating joystick measures displacement from the actual thumb origin")
 	a._physics_process(1.0/60)
 	check(a.aim.dot(a.movement_direction(c.move_vector).normalized())>.999,"walking without fire faces the movement direction")
+	a.bag.slots[8] = {"id":"grenade","qty":1}; a.bag.selected = 8
+	check(c.frame().aim.dot(a.movement_direction(c.move_vector).normalized())>.999,"walking with a grenade also faces movement before the throw button is pressed")
+	a.bag.selected = 0
 	var e: Node3D = w.make_enemy(0,a.position+Vector3(-5,0,-5),false,1); e.set_physics_process(false); e.health.setup(1000)
 	await frames(); c.set_target(e); touch(c,1,c.buttons.fire.get_center())
 	check(c.frame().aim.dot(MobileTargeting.direction(a,e))>.999 and c.frame().move.x>.99,"holding fire aims independently while the left thumb keeps moving")
@@ -75,6 +78,11 @@ func run() -> void:
 	check(w.prediction.roll(Vector3.RIGHT),"client accepts an eligible roll before a host reply")
 	w.prediction.tick(); await physics_frame
 	check(a.roll_left>0 and a.roll_cooldown>4.9,"predicted roll starts on the next local physics tick")
+	var incoming: Dictionary = w.net_state(1,false); incoming._bulk = false
+	incoming.players[0].roll = 0.0; incoming.players[0].roll_cd = 0.0; incoming.profile.roll_cd = 0.0
+	w.apply_net_state(incoming,1)
+	check(a.roll_left>0 and a.roll_cooldown>4.9,"an incoming pre-roll snapshot preserves local roll animation and recharge until physics reconciliation")
+	w.prediction.pending_state.clear()
 	# Predicted weapon feedback is cosmetic until a server snapshot accepts ammunition and damage.
 	a.stop_roll(); a.roll_cooldown = 0; w.prediction.history.clear(); w.prediction.visual_shots.clear(); w.prediction.fire_left = 0
 	a.bag.selected = 0; a.weapons.sync_hand(); a.weapons.ammo[0] = 12

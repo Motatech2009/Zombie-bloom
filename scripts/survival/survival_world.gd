@@ -719,7 +719,7 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.health.dead = data.hp<=0
 	actor.downed = actor.health.dead
 	actor.rig.rotation.z = PI*.5 if actor.downed else 0.0
-	actor.roll_cooldown = float(data.get("roll_cd",0))
+	if not is_client or actor!=player or not prediction.enabled(): actor.roll_cooldown = float(data.get("roll_cd",0))
 	if not is_client: actor.stop_roll()
 	actor.speed_multiplier = data.speed
 	actor.weapons.sync_hand()
@@ -1035,9 +1035,12 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.gather_kind = state.kind
 		actor.slow_left = float(state.get("slow",0))
 		actor.authoritative_roll_count = int(state.get("roll_count",0))
-		actor.roll_left = float(state.get("roll",0))
-		actor.roll_cooldown = float(state.get("roll_cd",0))
-		actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
+		# The predicted local roll is reconciled with its pending inputs in physics.
+		# Writing a stale snapshot here erases it between physics and rendering.
+		if actor!=player or not prediction.enabled():
+			actor.roll_left = float(state.get("roll",0))
+			actor.roll_cooldown = float(state.get("roll_cd",0))
+			actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
 		if state.down: actor.stop_roll()
 		if actor==player: prediction.queue_reconcile(state)
 		actor.replica_motion = float(state.get("motion",0))

@@ -56,7 +56,7 @@ func reset_fingers() -> void:
 
 func frame() -> Dictionary:
 	var movement_aim: Vector3 = world.player.movement_direction(move_vector).normalized() if move_vector.length_squared()>.01 else world.player.aim
-	var input := {"move":move_vector,"aim":free_aim if world.player.bag.hand()=="grenade" else movement_aim,"sprint":move_vector.length()>.88,"fire":false,"reload":reload_held,"interact":interact_held,"slot":world.pending_slot if world.is_client and world.pending_slot>=0 else world.player.bag.selected}
+	var input := {"move":move_vector,"aim":movement_aim,"sprint":move_vector.length()>.88,"fire":false,"reload":reload_held,"interact":interact_held,"slot":world.pending_slot if world.is_client and world.pending_slot>=0 else world.player.bag.selected}
 	if (target_revision>=0 and target_revision!=scene_token()) or (target_slot>=0 and target_slot!=world.player.bag.selected) or world.builder.active or world.player.health.dead or not world.hud.mode.is_empty(): fire_held = false
 	if not MobileTargeting.alive(locked_target) or target_revision!=scene_token() or target_slot!=world.player.bag.selected or world.builder.active or world.player.health.dead or not world.hud.mode.is_empty():
 		clear_target()

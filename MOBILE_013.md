@@ -28,7 +28,7 @@ A física de colisão e os ataques continuam ativos a 60 Hz. A base segue vulner
 
 ## Resposta do cooperativo
 
-O personagem local prevê movimento e rolamento a cada passo, usando as mesmas colisões de movimento. O anfitrião confirma entradas e posição. A reconciliação ocorre no passo de física, e o rolamento também envia uma intenção confiável vinculada à sequência de entrada. O cliente descarta entradas confirmadas, reaplica as pendentes e suaviza pequenas correções no modelo. Divergências grandes, queda e troca de setor exigem correção direta. O histórico limita-se a dois segundos e o envio mantém a intenção mais recente. A troca de setor bloqueia comandos até o convidado receber o mapa e o estado completo.
+O personagem local prevê movimento e rolamento a cada passo, usando as mesmas colisões de movimento. O anfitrião confirma entradas e posição. O recebimento de estado não apaga a animação e a recarga locais do rolamento entre passos. A reconciliação ocorre no passo de física, e o rolamento também envia uma intenção confiável vinculada à sequência de entrada. O cliente descarta entradas confirmadas, reaplica as pendentes e suaviza pequenas correções no modelo. Divergências grandes, queda e troca de setor exigem correção direta. O histórico limita-se a dois segundos e o envio mantém a intenção mais recente. A troca de setor bloqueia comandos até o convidado receber o mapa e o estado completo.
 
 O servidor usa a intenção mais recente, preserva toques breves de tiro/recarga e limita a simulação à própria frequência. Sequências repetidas não repetem o rolamento. Nenhuma previsão concede dano, vida, munição ou itens.
 

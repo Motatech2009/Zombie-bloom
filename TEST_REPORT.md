@@ -1,6 +1,6 @@
 # Validação 0.13 — controles, materiais e resposta de rede
 
-983 verificações locais aprovadas: 15 suítes com 870 verificações e quatro processos ENet com 113. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).
+985 verificações locais aprovadas: 15 suítes com 872 verificações e quatro processos ENet com 113. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).
 
 A nova suíte de 26 verificações cobre analógico flutuante, rotação ao andar e disparar, coleta contextual, qualidade aplicada em tempo real sem resetar inimigos, geometria do menu/barra, movimento durante lacuna de 200 ms sem snapshots, reconciliação, rolamento previsto, feedback de tiro sem mutar munição/vida e interpolação de 100 ms. As suítes móveis anteriores acompanham a nova regra: tocar escolhe o alvo e segurar dispara.
 

@@ -69,8 +69,11 @@ func run() -> void:
 	check(world.player.rig.get_node("ArmR").rotation.x>0,"replicated armed pose keeps the right arm facing forward")
 	check(world.player.position.distance_to(start)>3,"replicated client avatar follows movement accepted by the host")
 	world.send_action("roll",{"direction":Vector3.RIGHT})
-	await create_timer(.15).timeout
-	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"predicted roll starts locally and keeps its five-second cooldown")
+	# Inspect the first local physics update, rather than a wall-clock timer that can
+	# resume after several catch-up frames on a loaded shared CI runner.
+	await physics_frame
+	await process_frame
+	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"predicted roll starts locally and keeps its five-second cooldown (left=%.3f, cooldown=%.3f)" % [world.player.roll_left,world.player.roll_cooldown])
 	deadline = Time.get_ticks_msec()+3000
 	while world.player.authoritative_roll_count<1 and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
 	var roll_before: int = world.player.authoritative_roll_count
