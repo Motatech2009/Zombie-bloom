@@ -1,60 +1,51 @@
-# Zombie Bloom — Campanha e Defesa Infinita
+# Zombie Bloom — Setores e Cercos 0.6
 
-**Limpe áreas. Compre armas. Construa sua fortaleza.**
+**Explore por partes. Volte antes do cerco. Mantenha o Núcleo vivo.**
 
-Evolução da versão de arena enviada pelo criador, preservando o visual 2.5D, o combate, as hordas iniciadas pelo jogador e a defesa do Núcleo. Godot 4.6.3, single-player offline, geometrias e sons procedurais.
+Single-player offline, Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. A versão da arena evolui para setores procedurais e hordas automáticas. Construção otimizada, HUD compacto, nove famílias de infectados, cinco armas e explosivos continuam presentes.
 
 ## Jogar
 
-No pacote Windows, extraia o ZIP e execute **ZombieBloom.exe**. Não precisa instalar Godot. No código-fonte, importe `project.godot` na Godot 4.6.3 e pressione F5. Escolha **Campanha / 20 hordas** ou **Defesa infinita**. Cada modo possui continuação própria.
+No Windows, extraia o ZIP e execute **ZombieBloom.exe**. No código-fonte, importe `project.godot` na Godot 4.6.3 e pressione F5. Escolha campanha de 20 cercos ou defesa infinita; cada modo tem seu próprio save.
 
-Você começa com pistola, 140 de sucata, 12 madeiras, 4 componentes e 2 granadas. Explosões próximas ferem o sobrevivente; a parede bloqueia o dano de explosão em inimigos. **B** abre o catálogo. **M** mostra as áreas de coleta. O pátio está aberto desde o início; limpe seus infectados, recolha as três reservas com **E** e retorne pelo círculo de extração ao sul. Aproxime-se da barraca à esquerda do Núcleo e use **V** para comprar armas e materiais. Inicie a horda com **Espaço** quando estiver pronto.
+O Núcleo está sempre no setor **(0,0)**. Vá a uma das quatro bordas, aproxime-se do círculo e pressione **E** para ir ao Norte, Leste, Sul ou Oeste. **M** abre o mapa com posição, lugares visitados e direção de volta. O relógio continua enquanto o mapa está aberto.
 
-## Sistemas da campanha
+A primeira horda começa em **3min30s**, mesmo com você longe. As defesas continuam atirando e o Núcleo pode ser destruído durante a exploração. Depois de vencer, o próximo intervalo diminui progressivamente. **Não existe mais botão para iniciar hordas.** Cada cerco tem um chefe.
 
-- Refúgio persistente e quatro áreas de combate/coleta separadas; somente a área visitada fica ativa.
-- Campanha de 20 hordas e defesa infinita com quantidades, integridade e dano crescentes.
-- Nove ameaças: errante, corredor, bruto, blindado, demolidor, corrosivo, cão infectado, asa infectada e Colosso Alfa a cada cinco hordas.
-- Armeiro físico: pistola, espingarda, rifle, submetralhadora e lança-foguetes; granadas e foguetes finitos.
-- Arenas de 110 × 110 m (antes 62 × 62 m), HUD compacto e atalhos ocultáveis.
-- Barricada, torreta, muro, portão, estacas e posto de apoio; rotação, colisão, custos e três níveis por defesa.
-- Núcleo melhorável até N4, reparos e desmontagem com devolução de metade dos materiais.
-- XP e bônus do MVP preservados; balas comuns ilimitadas e pentes com recarga; explosivos consomem estoque.
-- Checkpoints independentes por modo, importação do save 0.4, configurações e pausa.
-- Construção com materiais reutilizados, prévia limitada a 10 verificações/s e grade de acesso reutilizada no clique.
+Cada entrada gera outro setor: terreno visual, obstáculos, população e loot mudam. Há locais tranquilos, multidões e domínios de chefe. As três caixas dão mais materiais nos lugares perigosos; armas escondidas são raras. E recolhe caixas próximas quando não há infectados a menos de 6 m. Você pode fugir sem eliminar todos. Ao sair, objetos não recolhidos são perdidos e o setor será gerado novamente na próxima entrada.
 
 ## Controles
 
 | Entrada | Ação |
 | --- | --- |
 | WASD / Shift | Mover / correr |
-| Mouse / clique esquerdo / R | Mirar / disparar / recarregar |
-| 1–5 | Equipar arma comprada |
-| B | Catálogo de construção; fecha a prévia quando ativa |
-| 1–6 / Q em construção | Selecionar peça / girar 90° |
-| Clique esquerdo / direito | Instalar / cancelar prévia |
-| E | Reparar perto no refúgio; recolher reserva ou extrair em expedição |
-| G / X | Melhorar estrutura próxima / confirmar desmontagem |
-| F | Abrir ou fechar portão próximo |
-| V / M | Armeiro próximo / rotas de coleta |
-| Espaço | Iniciar a próxima horda no refúgio |
-| C / H | Lançar granada em combate / mostrar ou ocultar atalhos |
-| Tab / Esc | Arsenal / pausa ou fechar painel |
-| F5 / F9 | Salvar / restaurar na preparação do refúgio |
+| Mouse / clique / R | Mirar / disparar / recarregar |
+| 1–5 | Armas possuídas |
+| C | Granada em combate ou exploração |
+| B / Q | Catálogo ou cancelar construção / girar peça |
+| 1–6 na prévia / clique / botão direito | Selecionar peça / instalar / cancelar |
+| E | Atravessar saída, recolher caixa ou reparar na base |
+| G / X / F | Melhorar defesa / desmontar com confirmação / portão |
+| V | Negociar perto do vendedor no Núcleo durante preparação |
+| M / H / Tab | Mapa contínuo / ocultar atalhos / arsenal |
+| F5 / F9 / Esc | Salvar / restaurar no Núcleo entre cercos / pausar ou fechar painel |
 
-Saves: `user://zombie_bloom_campaign_v2.json` e `user://zombie_bloom_endless_v2.json`. O save 0.4 é lido e convertido ao continuar a campanha, mantendo o arquivo antigo. Checkpoint automático após horda e extração quando não há escolhas de XP pendentes. Depois de escolher uma evolução pendente, use F5 antes de sair. Morte do jogador ou do Núcleo encerra a tentativa e permite retomar o checkpoint. Nova campanha pede confirmação se existir save.
+Campanha e infinito compartilham a exploração, mas só a campanha termina após o cerco 20. Durante invasão, sair do Núcleo é bloqueado; se já estiver longe, as saídas permitem aproximar-se de (0,0). O mapa consulta lugares, sem teleporte.
 
-## Código e validação
+Saves versão 3: `user://zombie_bloom_campaign_v3.json` e `user://zombie_bloom_endless_v3.json`. Continuar importa saves 0.4/0.5 mantendo os originais. São preservados base, compras, recursos e progressão; a exploração antiga vira o novo mapa procedural. O relógio e o RNG também são salvos. Checkpoint automático no Núcleo ao concluir cerco ou retornar sem escolhas de XP pendentes; depois de escolher evolução pendente, use F5.
 
-Ponto de entrada: `scenes/campaign/CampaignWorld.tscn`. O `GameWorld.tscn` original permanece no repositório para a suíte de regressão, com cinco hordas e todas as armas liberadas; ele não é a campanha aberta pelo menu.
+## Validação e documentação
 
 ```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/campaign_tests.gd
 godot --headless --path . --script res://tests/defense_tests.gd
+godot --headless --path . --script res://tests/sectors_tests.gd
 ```
 
-**267 verificações locais aprovadas**: 85 do MVP, 127 da campanha e 55 da expansão. O workflow repete as três suítes e exporta Windows x64. A arte é de protótipo; desempenho no PC alvo, execução nativa em Windows e balanceamento prolongado ainda exigem conferência.
+**342 verificações locais aprovadas**: 85 do MVP, 127 da campanha anterior, 55 de combate/construção e 75 dos setores/cercos automáticos. As cenas anteriores ficam para regressão; o menu abre `scenes/sectors/RoamingWorld.tscn`. O CI repete as quatro suítes e exporta Windows x64.
 
-[Regras e progressão](CAMPAIGN.md) · [Testes](TEST_REPORT.md) · [Arquitetura](ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
+[Regras dos setores e cercos](WORLD_SECTORS.md) · [Armas e construção](CAMPAIGN.md) · [Testes](TEST_REPORT.md) · [Arquitetura](ARCHITECTURE.md)
+
+Arte e áudio procedurais de protótipo. Dificuldade prolongada, FPS no PC alvo e execução nativa do exe em Windows ainda exigem aferição; os testes não substituem uma campanha humana completa.

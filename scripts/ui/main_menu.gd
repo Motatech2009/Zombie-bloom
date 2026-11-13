@@ -77,20 +77,20 @@ func show_main() -> void:
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
-	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nCampanha de 20 hordas ou defesa sem fim.", 17, UI.MUTED)
+	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nSetores imprevisíveis. Cercos automáticos.", 17, UI.MUTED)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content, 6)
 	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
 	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
-	if FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+	if FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
 		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
-	if FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
+	if FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
 		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "DEFESA 0.5   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "SETORES 0.6   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -102,7 +102,7 @@ func choose_mode(mode: String) -> void:
 
 func start_game() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
-	if FileAccess.file_exists(campaign.save_path(campaign.next_mode)):
+	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v3.json"):
 		clear_content()
 		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
 		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
@@ -115,16 +115,16 @@ Quer começar outro refúgio?",20,UI.MUTED)
 
 func begin_campaign() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
-	get_tree().change_scene_to_file("res://scenes/campaign/CampaignWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/sectors/RoamingWorld.tscn")
 
 func continue_campaign() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = true
-	get_tree().change_scene_to_file("res://scenes/campaign/CampaignWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/sectors/RoamingWorld.tscn")
 
 func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
-	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–5 armas\nB catálogo de construção · Q girar peça\n1–6 peças na prévia · Clique instalar\nE reparar · G melhorar perto · X desmontar\nF abrir/fechar portão · V armeiro próximo\nM rotas de coleta · ESPAÇO próxima horda\nC granada · H atalhos · TAB arsenal\nF5 salvar · F9 restaurar\nESC pausar / fechar / cancelar\n\nNa preparação, construa e reforce a base.\nO armeiro vende armas e materiais por sucata.\nLimpe as quatro áreas para recolher suas reservas.\nE volta pela zona de extração ao sul.\nAs áreas liberam após hordas 0, 1, 3 e 5.\n\nBalas comuns livres; explosivos são finitos.\nO Núcleo e cada defesa podem ser melhorados.\nVença 20 hordas ou resista no infinito. Perder o Núcleo\nencerra a tentativa; retome seu checkpoint.",17,UI.MUTED)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–5 armas\nB construir · Q girar · 1–6 peças na prévia\nE reparar / recolher / atravessar a saída\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa de setores · TAB arsenal\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nArmas escondidas são raras; busque as caixas.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nVolte antes do alarme ou enfrente a distância.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 

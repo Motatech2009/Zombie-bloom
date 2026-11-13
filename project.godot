@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Zombie Bloom"
-config/description="Campanha de 20 hordas, defesa infinita, explosivos e construção do refúgio."
+config/description="Setores procedurais, cercos automáticos e defesa persistente do Núcleo."
 run/main_scene="res://scenes/main/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 

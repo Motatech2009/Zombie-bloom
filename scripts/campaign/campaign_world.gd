@@ -3,6 +3,7 @@ const CHECKPOINT = "user://zombie_bloom_arena_campaign.json"
 static var resume_requested: bool = false
 static var next_mode: String = "campaign"
 var game_mode: String = "campaign"
+var checkpoint_enabled: bool = true
 var layout_revision: int = 0
 var grenades: int = 2
 var rockets: int = 0
@@ -47,7 +48,7 @@ func _ready() -> void:
 	upgrades.world = self
 	add_child(upgrades)
 	waves.free()
-	waves = load("res://scripts/campaign/campaign_waves.gd").new()
+	waves = wave_script().new()
 	waves.world = self
 	add_child(waves)
 	core = CORE_SCENE.instantiate()
@@ -73,18 +74,13 @@ func _ready() -> void:
 	camera.look_at(player.position)
 	camera.current = true
 	hud = CanvasLayer.new()
-	hud.set_script(load("res://scripts/campaign/campaign_hud.gd"))
+	hud.set_script(hud_script())
 	hud.world = self
 	add_child(hud)
 	resources.level_earned.connect(func(): hud.request_upgrade())
 	for data in CampaignData.AREAS: areas.append({"dead":[],"cleared":false,"caches":[]})
 	create_vendor()
-	VisualFactory.ring(base_root,3,exit_pos+Vector3(0,.08,0),Color("b8de80"))
-	var sign := VisualFactory.health_label(base_root,2)
-	exit_tag = sign
-	sign.font_size = 25
-	sign.position = exit_pos+Vector3(0,2,0)
-	sign.text = "ROTAS DE COLETA\nM / ÁREAS"
+	create_travel_markers()
 	for pos in [Vector3(7,0,-4),Vector3(-7,0,4),Vector3(-5,0,-7),Vector3(7,0,7)]: spawn_pickup(pos,0,15)
 	if resume_requested:
 		resume_requested = false
@@ -377,6 +373,7 @@ func return_to_base() -> bool:
 	return true
 
 func save_checkpoint(show_notice: bool = true) -> bool:
+	if not checkpoint_enabled: return false
 	if area_index!=-1 or phase!="prep" or resources.pending>0:
 		if show_notice: notify("Salve no refúgio entre hordas, após escolher as melhorias de XP.")
 		return false
@@ -616,3 +613,23 @@ func air_aim(origin: Vector3,direction: Vector3,range_limit: float) -> Vector3:
 		distance = forward
 	if nearest==null: return direction
 	return (nearest.global_position+Vector3(0,nearest.aim_height,0)-origin).normalized()
+
+func wave_script() -> Script:
+	return load("res://scripts/campaign/campaign_waves.gd")
+
+func hud_script() -> Script:
+	return load("res://scripts/campaign/campaign_hud.gd")
+
+func exit_positions() -> Array:
+	return [exit_pos]
+
+func access_origins() -> Array[Vector2i]:
+	return [Vector2i(0,24)]
+
+func create_travel_markers() -> void:
+	VisualFactory.ring(base_root,3,exit_pos+Vector3(0,.08,0),Color("b8de80"))
+	var sign := VisualFactory.health_label(base_root,2)
+	exit_tag = sign
+	sign.font_size = 25
+	sign.position = exit_pos+Vector3(0,2,0)
+	sign.text = "ROTAS DE COLETA\nM / ÁREAS"

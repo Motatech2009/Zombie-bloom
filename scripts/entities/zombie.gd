@@ -50,7 +50,7 @@ func _physics_process(delta: float) -> void:
 	if think_left <= 0 or not is_instance_valid(target):
 		think_left = randf_range(.5, .85)
 		choose_target()
-		path = world.arena.route(global_position, target.global_position)
+		path = world.route_for_enemy(self,target.global_position) if world.has_method("route_for_enemy") else world.arena.route(global_position, target.global_position)
 		path_index = 1 if path.size() > 1 else 0
 	var goal: Vector3 = target.global_position
 	if path_index < path.size():

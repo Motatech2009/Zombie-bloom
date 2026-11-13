@@ -1,3 +1,15 @@
+# Arquitetura atual — Setores 0.6
+
+Menu → scenes/sectors/RoamingWorld.tscn. RoamingWorld deriva CampaignWorld e substitui serviços por factories de script, preservando os modos anteriores para regressão. SectorGenerator gera descritores por seed/coordenada/visita; SectorArena compõe piso, obstáculos e navegação. RoamingWaves administra preparação, alertas, spawn automático, chefe e contagens de horda separadas da população de exploração. RoamingHUD adiciona mapa sem pausa, coordenadas e direção ao Núcleo.
+
+Base permanece no SceneTree em (0,0); o setor ativo é uma segunda raiz em coordenada × 120 m, enquanto seus pisos têm 110 m. Transições descartam apenas a raiz exploratória. Inimigos recebem rotas da arena correta, convertidas para coordenadas globais; drops e hazards também têm identidade de região. Perigos do Núcleo continuam ativos ao retornar e a conclusão de um cerco só limpa os perigos da base. Até 36 inimigos de cerco e 24 de setor, no máximo 60.
+
+Núcleo, defesas e combate distante usam física real, não simulação agregada. Os demais setores não são residentes nem persistem layout: histórico guarda visitas/último risco. Snapshot 3 salva relógio e estado RNG em string, preservando os 64 bits; migração de 1/2 produz cópia. Salvar exige preparação na base. Helpers de revisão não escrevem arquivos do jogador.
+
+Regras em WORLD_SECTORS.md e CAMPAIGN.md. Quatro suítes e evidências em docs/ e TEST_REPORT.md. As seções abaixo descrevem versões históricas.
+
+---
+
 # Arquitetura atual — Defesa 0.5
 
 A composição segue `CampaignWorld`. `next_mode` escolhe campanha ou infinito; `game_mode` e a versão 2 dos snapshots isolam os arquivos. A migração do save 0.4 produz cópia validada. O menu consulta caminhos leves e só carrega os serviços da campanha ao entrar, evitando reter dependências desnecessárias.

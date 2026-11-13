@@ -55,5 +55,5 @@ PASS: infinite mode starts the following wave normally
 PASS: infinite checkpoint saves past campaign length
 PASS: checkpoint restores finite explosive ammunition
 PASS: infinite mode rejects applying a campaign snapshot
-BUILD BENCHMARK {"existing_80_ms":6.21,"max_ms":1.799,"median_ms":0.444,"placements":8,"preview_path_checks":0,"renderer":"headless"}
+BUILD BENCHMARK {"existing_80_ms":0.454,"max_ms":0.378,"median_ms":0.223,"placements":8,"preview_path_checks":0,"renderer":"headless"}
 DEFENSE RESULT: 55 checks, 0 failures

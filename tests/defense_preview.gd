@@ -5,6 +5,7 @@ func _initialize() -> void: call_deferred("run")
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = "endless"
 	var world: Node3D = load("res://scenes/campaign/CampaignWorld.tscn").instantiate()
+	world.checkpoint_enabled = false
 	root.add_child(world)
 	current_scene = world
 	world.player.position = Vector3(6,0,9)

@@ -68,7 +68,7 @@ func _physics_process(delta: float) -> void:
 				enemy.take_damage(14.0*tier)
 				hit = true
 		if hit: cooldown = .8
-	if spec.id == "station" and cooldown <= 0 and world.phase == "prep":
+	if spec.id == "station" and cooldown <= 0 and (world.phase == "prep" or (world.has_method("base_preparing") and world.base_preparing())):
 		world.player.health.heal(5*tier) if global_position.distance_to(world.player.global_position)<5 else 0
 		for building in get_tree().get_nodes_in_group("buildings"):
 			if building.global_position.distance_to(global_position)<6: building.health.heal(3*tier)

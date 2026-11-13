@@ -58,7 +58,9 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	elif pos.distance_to(world.player.global_position)>12: reason = "Aproxime-se: alcance de 12 m."
 	elif get_tree().get_nodes_in_group("campaign_structure").size()>=120: reason = "Limite de 120 estruturas."
 	elif not world.can_pay(CampaignData.PIECES[selected].cost): reason = "Materiais insuficientes."
-	elif pos.distance_to(world.vendor_pos)<3.5 or pos.distance_to(world.exit_pos)<3.5: reason = "Mantenha o vendedor e a saída livres."
+	elif pos.distance_to(world.vendor_pos)<3.5: reason = "Mantenha o vendedor livre."
+	for exit in world.exit_positions():
+		if pos.distance_to(exit)<3.5: reason = "Mantenha as saídas livres."
 	if not reason.is_empty(): return false
 	var size: Vector3 = CampaignData.PIECES[selected].size
 	var query := PhysicsShapeQueryParameters3D.new()
@@ -108,7 +110,9 @@ func preserves_access(pos: Vector3,size: Vector3) -> bool:
 		if not access_grid.is_point_solid(cell):
 			access_grid.set_point_solid(cell)
 			changed.append(cell)
-	var valid_path := not access_grid.get_id_path(Vector2i(0,24),Vector2i.ZERO).is_empty()
+	var valid_path := true
+	for origin in world.access_origins():
+		if access_grid.get_id_path(origin,Vector2i.ZERO).is_empty(): valid_path = false; break
 	for cell in changed: access_grid.set_point_solid(cell,false)
 	return valid_path
 

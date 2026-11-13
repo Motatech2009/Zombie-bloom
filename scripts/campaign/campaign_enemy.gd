@@ -1,5 +1,6 @@
 extends "res://scripts/entities/zombie.gd"
 var field_enemy: bool = false
+var is_boss: bool = false
 var encounter_index: int = -1
 var aim_height: float = 1.15
 var acid_left: float = 2.5
@@ -91,7 +92,7 @@ func _physics_process(delta: float) -> void:
 		choose_target()
 		think_left = .6+fmod(float(encounter_index)*.13,.35)
 		if spec.id!="flyer":
-			path = world.arena.route(global_position,target.global_position)
+			path = world.route_for_enemy(self,target.global_position) if world.has_method("route_for_enemy") else world.arena.route(global_position,target.global_position)
 			path_index = 1 if path.size()>1 else 0
 	var goal: Vector3 = target.global_position
 	var flat := goal-global_position
@@ -142,6 +143,9 @@ func line_of_sight() -> bool:
 	return hit.is_empty() or hit.collider==target
 
 func choose_target() -> void:
+	if not field_enemy and world.area_index!=-1:
+		target = world.core
+		return
 	if field_enemy or spec.id=="hound": target = world.player
 	else:
 		super.choose_target()

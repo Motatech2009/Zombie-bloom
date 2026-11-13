@@ -1,3 +1,19 @@
+# Validação dos Setores 0.6 — 2026-11-12
+
+**342 verificações aprovadas:** 85 do MVP, 127 da campanha anterior, 55 de combate/construção e 75 novas de setores/cercos. Godot 4.6.3 oficial, Linux. Logs atuais em docs/integration-results.txt, campaign-results.txt, defense-results.txt e sectors-results.txt.
+
+A nova suíte verifica determinismo por visita e mudança ao revisitar, amostra com cinco riscos, arsenais raros, quatro saídas e mapa sem teleporte/pausa, translação de colisões/navegação/loot, conservação e reivindicação única de caixas, preservação das instâncias de base, relógio que dispara a primeira horda com o sobrevivente longe, chefe desde a primeira onda, contagens separadas de hostis, retorno permitido durante invasão e avanço bloqueado, corrosão remota, todos os 20 slots de chefe, cinco arquétipos, timer/RNG/histórico em saves, migração e infinito automático além da horda 20.
+
+Verificação física adicional: um chefe ativado junto ao Núcleo moveu-se e aplicou dano enquanto o jogador estava em outro setor; uma torreta continuou disparando sobre um alvo da base. Não foi usado dano agregado para simular uma base distante. O resto das conclusões de onda/limpeza em testes usa dano de fixture e não representa uma partida humana completa.
+
+Conferência em janela 1280×800: saída Norte por E, entrada procedural em (0,−1), aviso de setor infestado com 91 infectados, relógio em contagem durante exploração e mapa 7×7 com Núcleo (0,0), posição e retorno Sul. M manteve a simulação e o jogador recebeu dano durante a consulta, conforme a regra de mapa contínuo. O helper tests/sectors_preview.gd apenas posiciona o jogador junto à saída para revisão e desativa gravação de saves.
+
+Importação sem erros de script. O ambiente usa renderização por CPU Mesa llvmpipe, sem saída ALSA. Desempenho no hardware alvo, exe nativo no Windows, qualidade sonora e balanceamento prolongado não estão certificados. O CI repete as quatro suítes e exporta Windows; seu resultado é confirmado separadamente para o commit entregue.
+
+---
+
+## Histórico 0.5
+
 # Validação da Defesa 0.5 — 2026-11-12
 
 **267 verificações aprovadas:** 85 do MVP, 127 da campanha ampliada e 55 da expansão. Godot 4.6.3 oficial, Linux. Logs atuais: `docs/integration-results.txt`, `docs/campaign-results.txt` e `docs/defense-results.txt`.

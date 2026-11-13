@@ -9,10 +9,12 @@ var life: float = .85
 var elapsed: float = 0
 var model: Node3D
 var area_id: int = -1
+var region_key: String = ""
 
 func _ready() -> void:
 	add_to_group("campaign_projectiles")
 	area_id = world.area_index
+	if world.has_method("region_at"): region_key = world.region_at(start)
 	position = start
 	model = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,Color("a8d95e") if kind=="acid" else Color("f2b563"),true)
 	if kind=="acid":
@@ -21,7 +23,10 @@ func _ready() -> void:
 		warning.global_position = destination*Vector3(1,0,1)+Vector3(0,.08,0)
 
 func _physics_process(delta: float) -> void:
-	if world.area_index!=area_id or world.phase=="ended": queue_free(); return
+	if world.phase=="ended": queue_free(); return
+	if world.has_method("region_active"):
+		if not world.region_active(region_key): queue_free(); return
+	elif world.area_index!=area_id: queue_free(); return
 	var old := position
 	elapsed += delta
 	var t := minf(1,elapsed/life)

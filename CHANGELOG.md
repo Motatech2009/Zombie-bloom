@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 — 2026-11-12
+
+- Núcleo fixo e setores procedurais cardinalmente conectados; geração nova por visita.
+- Cinco biomas/riscos, populações de 0 a 140, loot crescente e arsenais raros.
+- Hordas automáticas com avisos, relógio salvo e chefe em toda onda.
+- Núcleo/defesas/invasores permanecem na física enquanto o jogador explora.
+- Mapa contínuo com coordenadas e orientação, sem teleporte.
+- Saves versão 3 com timer/RNG/histórico e importação de versões anteriores.
+- Quatro suítes, 342 verificações aprovadas.
+
+
 ## 0.5.0 — 2026-11-12
 
 - Construção com prévia/material/grade reutilizados; script pré-carregado e limite de 120 peças.

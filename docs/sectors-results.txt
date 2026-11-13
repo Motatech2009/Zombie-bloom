@@ -1,0 +1,78 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: sector generation is deterministic for the same visit inputs
+PASS: re-entry visit changes the generated sector
+PASS: procedural sample includes quiet, patrolled, dense, infested and boss sectors
+PASS: hidden weapons are rare outcomes rather than guaranteed rewards
+PASS: rare stash references a valid purchasable weapon
+PASS: core initializes as the fixed origin sector
+PASS: core has four physical cardinal exits
+PASS: manual wave start cannot skip the first countdown
+PASS: map selection does not teleport a player away from a physical exit
+PASS: sector map keeps the world clock running
+PASS: map cell selects information without moving player
+PASS: east exit enters a generated neighboring square
+PASS: core and defenses stay physically active during exploration
+PASS: active sector uses its own distant physical space
+PASS: sector visit records its coordinates and last observed risk
+PASS: procedural population materializes at a valid spawn point
+PASS: sector enemy targets survivor in translated world coordinates
+PASS: sector navigation translates between local and global cells
+PASS: field rewards do not double-apply the sector offset
+PASS: field loot remains collectable after coordinate translation
+PASS: resource cache grants its rolled share exactly once 0
+PASS: resource cache grants its rolled share exactly once 1
+PASS: resource cache grants its rolled share exactly once 2
+PASS: three caches conserve the complete sector resource roll
+PASS: rare hidden armory unlocks a real weapon
+PASS: hidden weapon cannot be claimed twice in the same visit
+PASS: west exit returns from east square to the core
+PASS: return preserves the original defense instances
+PASS: return restores the stable four core markers
+PASS: east sector can be revisited
+PASS: revisit replaces geometry, population and loot claims
+PASS: re-entry increments the sector visit record
+PASS: countdown starts the first horde while survivor is away
+PASS: first wave already has a boss that targets the remote core
+PASS: remote boss AI physically reaches and damages the core while player remains away
+PASS: base turret still fires at enemies while active exploration is another sector
+PASS: wave counters do not include exploration enemies
+PASS: active invasion blocks moving farther from the core
+PASS: off-screen base projectile retains the core region identity
+PASS: corrosive damage can reach the core while player explores elsewhere
+PASS: survivor can return into an ongoing invasion
+PASS: return does not erase hazards belonging to the base
+PASS: wave victory resets a timed preparation interval
+PASS: every wave has a boss slot 1
+PASS: every wave has a boss slot 2
+PASS: every wave has a boss slot 3
+PASS: every wave has a boss slot 4
+PASS: every wave has a boss slot 5
+PASS: every wave has a boss slot 6
+PASS: every wave has a boss slot 7
+PASS: every wave has a boss slot 8
+PASS: every wave has a boss slot 9
+PASS: every wave has a boss slot 10
+PASS: every wave has a boss slot 11
+PASS: every wave has a boss slot 12
+PASS: every wave has a boss slot 13
+PASS: every wave has a boss slot 14
+PASS: every wave has a boss slot 15
+PASS: every wave has a boss slot 16
+PASS: every wave has a boss slot 17
+PASS: every wave has a boss slot 18
+PASS: every wave has a boss slot 19
+PASS: every wave has a boss slot 20
+PASS: boss cycle includes five different behavior archetypes
+PASS: version-three checkpoint saves exploration history and timer
+PASS: world RNG string and exploration metadata survive JSON serialization
+PASS: restore preserves remaining time and exact 64-bit RNG state
+PASS: invalid negative horde clock is rejected
+PASS: malformed RNG state is rejected before applying
+PASS: malformed sector coordinates are rejected
+PASS: old manual-wave save converts without changing its source
+PASS: cold restart restores core campaign, timer and visited map
+PASS: infinite mode can enter a generated sector between waves
+PASS: timed infinite wave twenty-one starts with a boss while away
+PASS: remote wave completion keeps exploration and the infinite loop alive
+SECTORS RESULT: 75 checks, 0 failures
