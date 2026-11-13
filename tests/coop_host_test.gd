@@ -23,6 +23,8 @@ func run() -> void:
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].position.distance_to(world.player.position)>4,"server simulates remote movement for peer %d" % id)
 	for id in world.avatars:
+		if id!=1: check(world.avatars[id].roll_cooldown>0 and world.avatars[id].roll_cooldown<5,"server owns the remote roll cooldown for peer %d" % id)
+	for id in world.avatars:
 		if id!=1: world.spawn_loot(world.avatars[id].position,{"medkit":1})
 	world.horde_left = 0
 	world.waves._physics_process(.01)

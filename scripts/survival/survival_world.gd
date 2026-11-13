@@ -76,7 +76,10 @@ func _process(delta: float) -> void:
 		camera.look_at(target)
 		for actor in avatars.values():
 			actor.position = actor.position.lerp(actor.target_position,minf(1,delta*14))
-			if not actor.health.dead: VisualFactory.animate_human(actor.rig,Time.get_ticks_msec()/1000.0,actor.position.distance_to(actor.target_position),0,true)
+			actor.roll_cooldown = maxf(0,actor.roll_cooldown-delta)
+			actor.roll_left = maxf(0,actor.roll_left-delta)
+			actor.clock += delta
+			if not actor.health.dead: actor.animate_pose(actor.position.distance_to(actor.target_position))
 		for enemy in client_enemies.values(): enemy.position = enemy.position.lerp(enemy.get_meta("target",enemy.position),minf(1,delta*14))
 		notice_left = maxf(0,notice_left-delta)
 		return
@@ -91,6 +94,12 @@ func _process(delta: float) -> void:
 	rockets = player.bag.count("rocket")
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Consume Space here so it never reaches the legacy manual-wave action.
+	if event.is_action_pressed("roll"):
+		if not event.is_echo() and hud.mode.is_empty() and not builder.active:
+			var frame := local_input(player)
+			send_action("roll",{"direction":player.movement_direction(frame.move) if frame.move.length_squared()>.01 else frame.aim})
+		return
 	if event.is_action_pressed("inventory"):
 		if hud.mode=="inventory": hud.close_modal()
 		elif hud.mode.is_empty(): hud.show_inventory()
@@ -134,6 +143,8 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 	player = actor
 	var result := false
 	match action:
+		"roll":
+			if data.get("direction") is Vector3 and not (peer==1 and builder.active): result = actor.start_roll(data.direction)
 		"grenade": result = throw_for(actor)
 		"travel":
 			if data.get("direction") is int: result = step_sector(data.direction)
@@ -191,6 +202,7 @@ func step_sector(direction: int) -> bool:
 	var i := 0
 	for actor in avatars.values():
 		actor.cancel_gather()
+		actor.stop_roll()
 		if actor!=player: actor.position = entry+Vector3(i%2*1.2,0,i/2*1.2)
 		i += 1
 	if area_index!=-1: scale_field_population()
@@ -327,6 +339,7 @@ func nearest_source(actor: Node3D) -> Node3D:
 	return result
 
 func tick_gather(actor: Node3D,delta: float) -> void:
+	if actor.roll_left>0: actor.cancel_gather(); return
 	if is_client: return
 	if actor.gather_target==null:
 		for other in avatars.values():
@@ -483,7 +496,7 @@ func shop_service(id: String) -> bool:
 func throw_grenade() -> bool: return throw_for(player)
 
 func throw_for(actor: Node3D) -> bool:
-	if is_client or phase not in ["combat","expedition"] or actor.bag.count("grenade")==0 or actor.weapons.cooldown>0: return false
+	if is_client or actor.roll_left>0 or phase not in ["combat","expedition"] or actor.bag.count("grenade")==0 or actor.weapons.cooldown>0: return false
 	var aim: Vector3 = actor.aim
 	var shot: Node3D = projectile("grenade",actor.position+Vector3(0,1.2,0),actor.position+aim*14+Vector3(0,.15,0),105,4.5,.85)
 	if shot==null: return false
@@ -527,7 +540,7 @@ func choose_team_upgrade(index: int) -> bool:
 	return result
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier}
+	return {"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
 
 func valid_profile(data: Variant) -> bool:
 	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
@@ -535,7 +548,7 @@ func valid_profile(data: Variant) -> bool:
 		if not bounded(value,0,100000): return false
 	for value in data.gun:
 		if not bounded(value,.01,100000): return false
-	return bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
+	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
 
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.bag.restore(data.bag)
@@ -550,6 +563,8 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.health.dead = data.hp<=0
 	actor.downed = actor.health.dead
 	actor.rig.rotation.z = PI*.5 if actor.downed else 0.0
+	actor.roll_cooldown = float(data.get("roll_cd",0))
+	if not is_client: actor.stop_roll()
 	actor.speed_multiplier = data.speed
 	actor.weapons.sync_hand()
 
@@ -667,7 +682,7 @@ func spawn_acid(point: Vector3,radius: float,power: float) -> Node3D:
 	return pool
 
 func use_medkit(actor: Node3D) -> bool:
-	if actor.weapons.cooldown>0 or actor.health.current>=actor.health.maximum or not actor.bag.remove("medkit",1): return false
+	if actor.roll_left>0 or actor.weapons.cooldown>0 or actor.health.current>=actor.health.maximum or not actor.bag.remove("medkit",1): return false
 	actor.health.heal(45)
 	actor.weapons.cooldown = 1
 	return true
@@ -747,7 +762,7 @@ func net_state(peer: int) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left})
+		actors.append({"id":id,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id})
@@ -829,6 +844,10 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.gather_duration = state.duration
 		actor.gather_kind = state.kind
 		actor.slow_left = float(state.get("slow",0))
+		actor.roll_left = float(state.get("roll",0))
+		actor.roll_cooldown = float(state.get("roll_cd",0))
+		actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
+		if state.down: actor.stop_roll()
 		actor.weapons.hand_weapon = int(state.gun)
 		actor.weapons.visual_item = state.get("held","")
 		if actor.weapons.last_model!=actor.weapons.hand_weapon or actor.weapons.last_item!=actor.weapons.visual_item: actor.weapons.rebuild_model()

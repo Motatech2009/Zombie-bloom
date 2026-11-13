@@ -17,6 +17,8 @@ var airdrop_text: Label
 var airdrop_map_info: Label
 var map_focus: Variant = null
 var drop_map_stamp: String = ""
+var roll_text: Label
+var roll_bar: ProgressBar
 
 func make_panel(left: float,top: float,right: float,bottom: float,preset: int) -> PanelContainer:
 	var panel := UI.panel(root)
@@ -99,7 +101,7 @@ func create_bottom() -> void:
 		belt.add_child(button)
 		hotbar.append(button)
 	hints = make_panel(-300,-119,-18,-16,Control.PRESET_BOTTOM_RIGHT)
-	var hint_box := UI.vbox(hints,6)
+	var hint_box := UI.vbox(hints,3)
 	var actions := UI.hbox(hint_box,5)
 	for entry in [["map","M",show_routes],["bag","I",show_inventory],["build","B",show_build_catalog]]:
 		var button := UI.button(actions,entry[1],entry[2])
@@ -109,6 +111,13 @@ func create_bottom() -> void:
 		button.custom_minimum_size = Vector2(76,38)
 		var style := compact_style(); style.content_margin_top = 3; style.content_margin_bottom = 3
 		button.add_theme_stylebox_override("normal",style)
+	var roll_row := UI.hbox(hint_box,8)
+	roll_text = UI.label(roll_row,"",11,UI.LIME)
+	roll_bar = UI.meter(roll_row,UI.LIME)
+	roll_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roll_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	roll_bar.max_value = 5
+	roll_bar.custom_minimum_size.y = 3
 	location_text = UI.label(hint_box,"",11,UI.MUTED)
 	location_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	next_button = Button.new(); root.add_child(next_button); next_button.hide()
@@ -148,6 +157,9 @@ func _process(delta: float) -> void:
 	wood_count.text = str(world.stock.wood)
 	parts_count.text = str(world.stock.parts)
 	status_text.text = "CONGELADO · %.1f s" % actor.slow_left if actor.slow_left>0 else "CAÍDO · Aguarde um aliado" if actor.health.dead else ""
+	roll_text.text = "ESPAÇO · ROLANDO" if actor.roll_left>0 else "ESPAÇO · %.1f s" % actor.roll_cooldown if actor.roll_cooldown>0 else "ESPAÇO · ROLAMENTO PRONTO"
+	roll_text.modulate = UI.MUTED if actor.health.dead else UI.TEXT if actor.roll_cooldown>0 else UI.LIME
+	roll_bar.value = 5-actor.roll_cooldown
 	var hand: String = actor.bag.hand()
 	weapon_text.text = ItemBag.TITLES.get(hand,"MÃOS LIVRES").to_upper()
 	held_icon.texture = ItemIcons.get_icon(hand)

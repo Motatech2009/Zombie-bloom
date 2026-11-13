@@ -1,4 +1,4 @@
-# Zombie Bloom — Fortaleza e Suprimentos 0.9
+# Zombie Bloom — Fortaleza e Suprimentos 0.9.1
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
@@ -6,7 +6,9 @@ Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa 
 
 ## Jogar
 
-**Novo na 0.9:** drops por proximidade; dez defesas com evolução visual de materiais; quatro fortificações novas e airdrop protegido a cada dez minutos. [Regras da fortaleza e das quedas](FORTRESS.md) · [Modelos e ícones](ASSETS.md).
+**Novo na 0.9.1:** rolamento no Espaço, animação, janela de esquiva de 0,20 s e recarga de cinco segundos controlada pelo anfitrião. O HUD mostra quando está pronto. Mantém saves v6.
+
+**Da 0.9:** drops por proximidade; dez defesas com evolução visual de materiais; quatro fortificações novas e airdrop protegido a cada dez minutos. [Regras da fortaleza e das quedas](FORTRESS.md) · [Modelos e ícones](ASSETS.md).
 
 Windows: baixe o artefato **ZombieBloom-Windows-x64** do Actions do commit mais recente desta branch, extraia e execute **ZombieBloom.exe**. Código-fonte: importe `project.godot` na Godot 4.6.3 e pressione F5. Modelos e efeitos são de protótipo.
 
@@ -34,6 +36,7 @@ Instruções completas, reconexão e limites: [MULTIPLAYER.md](MULTIPLAYER.md).
 | Entrada | Ação |
 | --- | --- |
 | WASD / Shift | Mover / correr |
+| Espaço | Rolar na direção do movimento; parado, seguir a mira. Recarga de 5 s |
 | Mouse / clique / R | Mirar / usar item ou disparar / recarregar |
 | 1–9 / I ou Tab | Selecionar espaço da barra / mochila e depósito |
 | C | Atalho de granada |
@@ -60,10 +63,11 @@ godot --headless --path . --script res://tests/sectors_tests.gd
 godot --headless --path . --script res://tests/survival_tests.gd
 godot --headless --path . --script res://tests/arsenal_tests.gd
 godot --headless --path . --script res://tests/fortress_tests.gd
+godot --headless --path . --script res://tests/roll_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**688 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual, 100 de fortaleza e 73 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
+**730 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual, 100 de fortaleza, 33 de rolamento e 82 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 

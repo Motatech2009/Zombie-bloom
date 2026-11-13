@@ -1,0 +1,36 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: Space binds to the roll action
+PASS: roll uses the same screen axes as walking
+PASS: keyboard auto-repeat does not trigger a roll
+PASS: inventory blocks Space from rolling
+PASS: construction preview blocks Space from rolling
+PASS: a real Space press starts the roll and exactly five seconds of recharge
+PASS: standing still rolls toward the aim
+PASS: Space never starts or advances a timed horde
+PASS: rolling interrupts gathering and reloading
+PASS: repeated commands cannot redirect or restart the active roll
+PASS: weapons cannot fire or reload during a tumble
+PASS: grenades and medkits are blocked while rolling
+PASS: the initial 0.20 seconds provide a brief dodge window
+PASS: roll traverses the world through physics rather than teleporting
+PASS: the character performs a visible forward somersault
+PASS: damage returns before the roll animation ends
+PASS: roll ends upright without a residual visual offset
+PASS: cooldown counts down from the initial key press
+PASS: roll remains locked after the animation until recharge finishes
+PASS: a roll is still rejected immediately before the five-second boundary
+PASS: invalid or oversized network directions are rejected
+PASS: recharged roll accepts a second activation with safe aim fallback
+PASS: saved player profile preserves the roll recharge
+PASS: restoring preserves recharge and clears transient tumble animation
+PASS: existing version-six saves remain compatible
+PASS: profile validation rejects an out-of-range recharge
+PASS: roll starts in front of a solid wall
+PASS: solid walls block the complete roll without tunneling
+PASS: cryo slow also reduces roll travel
+PASS: downing stops a roll and prevents rolling while down
+PASS: revive restores an upright character
+PASS: HUD shows recharge text and a compact progress bar
+PASS: ended sessions reject roll commands
+ROLL RESULT: 33 checks, 0 failures

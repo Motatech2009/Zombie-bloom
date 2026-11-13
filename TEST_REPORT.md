@@ -1,3 +1,17 @@
+# Validação do Rolamento 0.9.1 — 2026-11-13
+
+**730 verificações locais aprovadas:** 615 nas sete suítes anteriores, 33 de rolamento e 82 de rede (25 do anfitrião +19 por convidado). Godot 4.6.3 oficial, Linux. Logs em docs/roll-results.txt e nos registros de regressão/rede.
+
+A suíte nova verifica a tecla física Espaço, direção de movimento compatível com os eixos da câmera, mira quando parado, bloqueio em menus/construção, repetição de teclado ignorada e ausência de interferência nas hordas automáticas. Confere início com exatamente 5 s de recarga, bloqueio de reativação antes do prazo, nova ativação ao vencer, rejeição de direções inválidas, cancelamento de coleta/recarga e bloqueio de tiros, kits e granadas durante o rolamento.
+
+Física real: deslocamento ao longo de vários quadros, animação de cambalhota, proteção inicial de 0,20 s seguida de retorno do dano antes do fim da animação, retorno à pose vertical, parede sólida bloqueando a trajetória e criogênico reduzindo o alcance. Queda encerra o movimento e reanimação restaura a pose. Perfil salva a recarga, valida limites, mantém saves v6 antigos e encerra a animação transitória ao restaurar. HUD mostra texto e barra compacta.
+
+ENet com quatro processos reais: cada convidado solicita o rolamento por RPC confiável e recebe duração, direção e recarga; a repetição da solicitação durante a recarga é rejeitada pelo anfitrião. Mantém coleta, armas, depósito, construções, airdrop, multiplicador e troca de setores. Rede por loopback, sem medir latência/perda entre casas. A animação dos convidados depende dos snapshots do anfitrião; não foi adicionada predição local.
+
+Revisão gráfica em janela: Espaço executa o rolamento; o HUD apresenta o estado ROLANDO, o contador e a barra de recarga no painel de atalhos. Modelos da fortaleza preservados. Renderização Linux/Mesa por CPU, áudio Dummy. Não houve execução nativa em Windows nem campanha humana completa. CI repete as oito suítes, a rede e a exportação Windows no commit entregue.
+
+---
+
 # Validação da Fortaleza 0.9 — 2026-11-13
 
 **688 verificações locais aprovadas:** 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual, 100 de fortaleza e 73 de rede (22 do anfitrião +17 por convidado). Godot 4.6.3 oficial, Linux. Logs atuais em docs/fortress-results.txt e nos arquivos das suítes anteriores/rede.

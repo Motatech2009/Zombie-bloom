@@ -54,6 +54,9 @@ jobs:
           godot --headless --path . --script res://tests/fortress_tests.gd 2>&1 | tee fortress-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' fortress-tests.log; then exit 1; fi
           grep -E 'FORTRESS RESULT: [0-9]+ checks, 0 failures' fortress-tests.log
+          godot --headless --path . --script res://tests/roll_tests.gd 2>&1 | tee roll-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' roll-tests.log; then exit 1; fi
+          grep -E 'ROLL RESULT: [0-9]+ checks, 0 failures' roll-tests.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
       - name: Install matching export templates
         shell: bash
@@ -74,7 +77,7 @@ jobs:
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
           cp README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+          cp docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

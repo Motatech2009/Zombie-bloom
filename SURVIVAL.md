@@ -1,4 +1,4 @@
-# Sobrevivência 0.9
+# Sobrevivência 0.9.1
 
 ## Construção e depósito
 
@@ -44,3 +44,11 @@ Versão 6, separada por campanha/infinito. Salva bolsa, depósito, cota consumid
 Leia [MULTIPLAYER.md](MULTIPLAYER.md) para abrir a sala.
 
 As dez defesas, troca de materiais e os airdrops periódicos estão em [FORTRESS.md](FORTRESS.md).
+
+## Rolamento
+
+Espaço inicia um rolamento de 0,42 s na direção de WASD; parado, segue a mira. Recarga de cinco segundos contada desde a ativação, com texto e barra no HUD. Velocidade de 13 m/s, sem multiplicar com corrida ou bônus; a lentidão criogênica reduz também o alcance do rolamento. Colide com construções e obstáculos. Os primeiros 0,20 s protegem contra dano; o restante da animação continua vulnerável.
+
+Interrompe coleta e recarga da arma. Durante a animação não dispara, usa kits, lança granadas nem coleta caixas. Não pode começar caído, com partida encerrada, com menu aberto ou em prévia de construção. Segurar Espaço não repete a ação. Ao viajar, cair ou restaurar um checkpoint, a pose transitória é encerrada. A recarga fica no perfil salvo; saves v6 anteriores continuam válidos.
+
+No cooperativo, comandos de rolamento são confiáveis e o anfitrião controla movimento, colisão, proteção e recarga. Animação, direção e contador são replicados para os convidados. Não há predição local: o início visual no convidado depende da latência até o anfitrião.

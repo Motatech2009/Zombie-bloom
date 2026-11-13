@@ -24,6 +24,13 @@ func run() -> void:
 	await create_timer(2).timeout
 	link.test_input.move = Vector2.ZERO
 	check(world.player.position.distance_to(start)>3,"replicated client avatar follows movement accepted by the host")
+	link.command("roll",{"direction":Vector3.RIGHT})
+	await create_timer(.15).timeout
+	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"reliable roll command replicates its active animation and five-second cooldown")
+	var roll_before: float = world.player.roll_cooldown
+	link.command("roll",{"direction":Vector3.LEFT})
+	await create_timer(.15).timeout
+	check(world.player.roll_cooldown<roll_before and world.player.roll_direction==Vector3.RIGHT,"host rejects repeated roll RPCs during recharge")
 	deadline = Time.get_ticks_msec()+12000
 	while world.phase!="combat" and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	link.test_input.fire = true

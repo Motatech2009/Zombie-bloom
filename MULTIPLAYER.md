@@ -1,6 +1,6 @@
-# Jogar com amigos — cooperativo 0.9
+# Jogar com amigos — cooperativo 0.9.1
 
-Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores.
+Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores. Espaço solicita rolamento; o anfitrião valida a recarga de 5 s e replica a animação e o contador para todos. Atualizem todos os PCs para a 0.9.1.
 
 ## Na mesma rede
 

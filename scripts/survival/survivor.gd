@@ -16,6 +16,45 @@ var downed: bool = false
 var slow_left: float = 0
 var previous_reload: bool = false
 var target_position := Vector3.ZERO
+const ROLL_DURATION: float = .42
+const ROLL_RECHARGE: float = 5.0
+const ROLL_SPEED: float = 13.0
+var roll_left: float = 0
+var roll_cooldown: float = 0
+var roll_direction := Vector3.FORWARD
+
+static func movement_direction(input: Vector2) -> Vector3:
+	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
+
+func start_roll(direction: Vector3) -> bool:
+	if proxy or world.is_client or health.dead or world.phase=="ended" or roll_cooldown>0 or not direction.is_finite(): return false
+	direction.y = 0
+	if direction.length_squared()>1.01: return false
+	if direction.length_squared()<.01: direction = aim
+	if direction.length_squared()<.01: direction = Vector3.FORWARD
+	roll_direction = direction.normalized()
+	roll_left = ROLL_DURATION
+	roll_cooldown = ROLL_RECHARGE
+	invulnerable = maxf(invulnerable,.20)
+	weapons.reload_left = 0
+	cancel_gather()
+	return true
+
+func stop_roll() -> void:
+	roll_left = 0
+	rig.rotation.x = 0
+	rig.position = Vector3.ZERO
+
+func animate_pose(moving: float) -> void:
+	rig.position = Vector3.ZERO
+	VisualFactory.animate_human(rig,clock,moving,recoil,true)
+	if roll_left>0:
+		rig.rotation.y = atan2(-roll_direction.x,-roll_direction.z)
+		rig.rotation.x = -TAU*(1-roll_left/ROLL_DURATION)
+		# Rotate around the torso instead of the feet, keeping the tumble above ground.
+		rig.position = Vector3.UP*.85-rig.basis*(Vector3.UP*.85)
+	else:
+		rig.rotation.x = 0
 
 func _ready() -> void:
 	super._ready()
@@ -32,7 +71,9 @@ func read_input() -> Dictionary:
 	return world.local_input(self)
 
 func _physics_process(delta: float) -> void:
-	if proxy or health.dead or world.phase=="ended": return
+	if proxy or world.phase=="ended": return
+	roll_cooldown = maxf(0,roll_cooldown-delta)
+	if health.dead: return
 	var frame := read_input()
 	clock += delta
 	slow_left = maxf(0,slow_left-delta)
@@ -43,11 +84,15 @@ func _physics_process(delta: float) -> void:
 		if powers[id]<=0: powers.erase(id)
 	shield_ring.visible = shield>0 and power_left("shield")>0
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
-	var direction := Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
+	var direction := movement_direction(input)
 	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
 	if gather_target!=null: speed *= .25
-	velocity.x = move_toward(velocity.x,direction.x*speed,delta*35)
-	velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
+	var rolling := roll_left>0
+	if rolling:
+		velocity = roll_direction*ROLL_SPEED*(.55 if slow_left>0 else 1.0)
+	else:
+		velocity.x = move_toward(velocity.x,direction.x*speed,delta*35)
+		velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
 	velocity.y = -1
 	move_and_slide()
 	var point: Vector3 = frame.get("aim",Vector3.FORWARD)
@@ -55,7 +100,12 @@ func _physics_process(delta: float) -> void:
 	bag.selected = clampi(int(frame.get("slot",bag.selected)),0,8)
 	weapons.sync_hand()
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-aim.x,-aim.z),minf(1,delta*24))
-	VisualFactory.animate_human(rig,clock,input.length(),recoil,true)
+	animate_pose(input.length())
+	if rolling:
+		roll_left = maxf(0,roll_left-delta)
+		if roll_left==0: stop_roll(); velocity = Vector3.ZERO
+		previous_reload = frame.get("reload",false)
+		return
 	if frame.get("fire",false) and not (world.builder.active and peer_id==1):
 		cancel_gather()
 		if bag.hand()=="grenade": world.throw_for(self)
@@ -75,11 +125,13 @@ func cancel_gather() -> void:
 
 func die() -> void:
 	downed = true
+	stop_roll()
 	cancel_gather()
 	rig.rotation.z = PI*.5
 	world.survivor_down(self)
 
 func revive(hp: float = 40) -> void:
+	stop_roll()
 	var maximum := health.maximum
 	health.setup(maximum)
 	health.current = minf(hp,maximum)

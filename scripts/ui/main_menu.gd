@@ -95,7 +95,7 @@ func show_main() -> void:
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "FORTALEZA 0.9   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "FORTALEZA 0.9.1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -129,7 +129,7 @@ func continue_campaign() -> void:
 func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
-	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nESPAÇO rolamento · recarga de 5 segundos\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 

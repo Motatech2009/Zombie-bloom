@@ -40,7 +40,7 @@ func _process(delta: float) -> void:
 		if transfer>0 and actor.bag.remove(id,transfer): ammo[slot] += transfer
 
 func reload() -> bool:
-	if hand_weapon<0 or reload_left>0 or ammo[slot]>=capacity() or actor.bag.count(ItemBag.AMMO_IDS[slot])<=0: return false
+	if actor.roll_left>0 or hand_weapon<0 or reload_left>0 or ammo[slot]>=capacity() or actor.bag.count(ItemBag.AMMO_IDS[slot])<=0: return false
 	reload_total = maxf(.3,float(spec().values.reload)*reload_multiplier)
 	reload_left = reload_total
 	return true
@@ -53,7 +53,7 @@ func capacity(index: int = -1) -> int:
 	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier))
 
 func shoot(direction: Vector3) -> bool:
-	if world.is_client or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
+	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
 	var result := false
 	if slot in [6,8]: result = special_shot(direction)
