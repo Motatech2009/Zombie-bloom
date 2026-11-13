@@ -23,6 +23,7 @@ func run() -> void:
 	link.test_input = {"move":Vector2(1,0),"aim":Vector3.FORWARD,"slot":0}
 	await create_timer(2).timeout
 	link.test_input.move = Vector2.ZERO
+	check(world.player.rig.get_node("ArmR").rotation.x>0,"replicated armed pose keeps the right arm facing forward")
 	check(world.player.position.distance_to(start)>3,"replicated client avatar follows movement accepted by the host")
 	link.command("roll",{"direction":Vector3.RIGHT})
 	await create_timer(.15).timeout
@@ -67,6 +68,9 @@ func run() -> void:
 	deadline = Time.get_ticks_msec()+7000
 	while world.sector_coord==Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.airdrops.crate!=null and world.descriptor.risk==4,"client sees the real supply crate and high-risk drop sector")
+	var house: Node3D = world.raid_house(0)
+	check(house!=null and house.guard_total==int(house.data.guards)*8,"guest builds the same house layout and cooperative guard requirement")
+	check(house.activated and house.dead==[0] and house.contents.scrap==house.data.reward.scrap-7,"guest receives house lock progress and exact remaining supplies")
 	check(world.sector_coord==Vector2i(0,-1) and world.field_root!=null,"reliable scene revision loads the same generated northern sector")
 	deadline = Time.get_ticks_msec()+7000
 	while world.sector_coord!=Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

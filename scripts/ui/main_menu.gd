@@ -10,6 +10,7 @@ var clock: float = 0
 func _ready() -> void:
 	get_tree().paused = false
 	Controls.setup()
+	ClayStyle.prewarm()
 	GameSettings.load_settings()
 	sun = VisualFactory.lighting(self)
 	sun.shadow_enabled = GameSettings.shadows
@@ -95,7 +96,7 @@ func show_main() -> void:
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "FORTALEZA 0.9.1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "REFÚGIO DE ARGILA 0.10   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -157,7 +158,7 @@ func show_multiplayer() -> void:
 	name_field.max_length = 16
 	content.add_child(name_field)
 	var address := LineEdit.new()
-	address.placeholder_text = "IP do anfitrião"
+	address.placeholder_text = "IP, IP:porta ou endereço da rede virtual"
 	address.text = "127.0.0.1"
 	content.add_child(address)
 	var port := SpinBox.new()
@@ -172,6 +173,10 @@ func show_multiplayer() -> void:
 	var resume_check := CheckButton.new()
 	resume_check.text = "Continuar o refúgio salvo deste modo"
 	content.add_child(resume_check)
+	var internet_check := CheckButton.new()
+	internet_check.text = "Tentar abrir a porta no roteador (UPnP / internet)"
+	content.add_child(internet_check)
+	UI.label(content,"Em casas diferentes: use IP público com porta aberta ou o IP do Tailscale. Veja CONEXÃO no menu da sala.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var status := UI.label(content,"LAN: use o IP local. Internet: o anfitrião precisa receber UDP na porta escolhida.",15,UI.MUTED)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var coop := get_node("/root/Coop")
@@ -182,7 +187,9 @@ func show_multiplayer() -> void:
 		load("res://scripts/campaign/campaign_world.gd").next_mode = "endless" if mode_picker.selected==0 else "campaign"
 		load("res://scripts/campaign/campaign_world.gd").resume_requested = resume_check.button_pressed
 		coop.nickname = name_field.text.strip_edges().left(16)
-		if coop.host_session(int(port.value))==OK: get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+		if coop.host_session(int(port.value))==OK:
+			if internet_check.button_pressed: coop.internet.enable(int(port.value))
+			get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
 	,true)
 	UI.button(content,"ENTRAR NO IP",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text))
 	UI.button(content,"CANCELAR / VOLTAR",func(): coop.close_session(); show_main())

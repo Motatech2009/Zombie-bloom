@@ -15,9 +15,12 @@ var received_snapshots: int = 0
 var max_snapshot_raw: int = 0
 var max_snapshot_packed: int = 0
 var test_input: Dictionary = {}
+var internet := InternetRoom.new()
+var server_port: int = 24567
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(internet)
 	# All traffic is host-authoritative; clients never need peer-to-peer relaying.
 	multiplayer.server_relay = false
 	multiplayer.connected_to_server.connect(_connected)
@@ -37,11 +40,15 @@ func host_session(port: int = 24567) -> Error:
 	var result := peer.create_server(port,3,3)
 	if result!=OK: peer = null; status_changed.emit("Não foi possível abrir a porta UDP."); return result
 	multiplayer.multiplayer_peer = peer
+	server_port = port
 	mode = "host"
 	status_changed.emit("Sala aberta / UDP %d / até quatro jogadores" % port)
 	return OK
 
 func join_session(address: String,port: int = 24567,player_name: String = "Sobrevivente") -> Error:
+	var endpoint := InternetRoom.parse_endpoint(address,port)
+	if endpoint.is_empty(): status_changed.emit("Endereço inválido. Use IP, IP:porta ou nome do anfitrião."); return ERR_INVALID_PARAMETER
+	address = endpoint.address; port = int(endpoint.port)
 	close_session()
 	nickname = player_name.strip_edges().left(16)
 	if nickname.is_empty(): nickname = "Sobrevivente"
@@ -65,6 +72,7 @@ func bind_world(next_world: Node3D) -> void:
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
+	if is_instance_valid(internet): internet.disable()
 	mode = "offline"
 	world = null
 	scene_sent.clear()

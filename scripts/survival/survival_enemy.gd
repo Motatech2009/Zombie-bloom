@@ -15,6 +15,7 @@ var rush_hits: Dictionary = {}
 var snare_left: float = 0
 var stun_left: float = 0
 var special_clock: float = 1
+var replica_motion: float = 0
 
 func _ready() -> void:
 	super._ready()
@@ -28,6 +29,7 @@ func _ready() -> void:
 		remove_child(old_rig); old_rig.queue_free()
 	else:
 		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
+	ClayStyle.apply_tree(rig)
 	var bar := Node3D.new()
 	bar.set_script(load("res://scripts/survival/enemy_bar.gd"))
 	bar.actor = self
@@ -140,3 +142,27 @@ func normal_step(delta: float) -> void:
 	if snare_left>0: spec.values.speed = speed*.55
 	super._physics_process(delta)
 	spec.values.speed = speed
+
+func animate_replica(delta: float) -> void:
+	if health.dead: return
+	clock += delta
+	if spec.id=="hound":
+		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7*minf(1,replica_motion)
+	elif spec.id=="flyer":
+		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
+		rig.position.y = sin(clock*4)*.12
+	else:
+		rig.rotation.x = 0
+		VisualFactory.animate_human(rig,clock*float(spec.values.speed)/2,replica_motion,0,false)
+		animate_cast()
+
+func animate_cast() -> void:
+	if windup<=0 or not rig.has_node("ArmL"): return
+	rig.get_node("ArmL").rotation.x = 1.6+sin(Time.get_ticks_msec()*.015)*.1
+	rig.get_node("ArmR").rotation.x = 1.6-sin(Time.get_ticks_msec()*.015)*.1
+	rig.rotation.x = -.15
+
+func _process(_delta: float) -> void:
+	if proxy or health.dead: return
+	if windup>0: animate_cast()
+	else: rig.rotation.x = 0

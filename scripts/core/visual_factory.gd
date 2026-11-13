@@ -2,11 +2,12 @@ class_name VisualFactory
 extends RefCounted
 ## All geometry is original and generated locally. No external assets required.
 static var materials: Dictionary = {}
+static var clay_enabled: bool = true
 
 static func material(color: Color, glow: bool = false) -> StandardMaterial3D:
 	var key := color.to_html() + str(glow)
 	if not materials.has(key):
-		var mat := StandardMaterial3D.new()
+		var mat := StandardMaterial3D.new() if glow or not clay_enabled else ClayStyle.material(color)
 		mat.albedo_color = color
 		mat.roughness = 0.9
 		if glow:
@@ -17,8 +18,8 @@ static func material(color: Color, glow: bool = false) -> StandardMaterial3D:
 	return materials[key]
 
 static func box(parent: Node3D, size: Vector3, pos: Vector3, color: Color, glow: bool = false) -> MeshInstance3D:
-	var mesh := BoxMesh.new()
-	mesh.size = size
+	var mesh: Mesh = ClayStyle.rounded_box(size) if clay_enabled else BoxMesh.new()
+	if mesh is BoxMesh: mesh.size = size
 	return mesh_node(parent, mesh, pos, color, glow)
 
 static func cylinder(parent: Node3D, radius: float, height: float, pos: Vector3, color: Color, glow: bool = false) -> MeshInstance3D:
@@ -67,7 +68,7 @@ static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
 		arm.position = Vector3(side * .43, 1.33, 0)
 		box(arm, Vector3(.22, .62, .24), Vector3(0, -.28, 0), color.darkened(.15))
 		if armed:
-			arm.rotation.x = -1.1
+			arm.rotation.x = 1.1
 	if armed:
 		var gun := box(rig, Vector3(.16, .16, .9), Vector3(.34, 1.1, -.64), Color("17272d"))
 		gun.name = "Gun"
@@ -79,8 +80,10 @@ static func animate_human(rig: Node3D, clock: float, moving: float, recoil: floa
 	var stride := sin(clock * 11.0) * minf(moving, 1.0) * .65
 	rig.get_node("LegL").rotation.x = stride
 	rig.get_node("LegR").rotation.x = -stride
-	rig.get_node("ArmL").rotation.x = (-1.1 if armed else -.7) - stride * .28 - recoil
-	rig.get_node("ArmR").rotation.x = (-1.1 if armed else -.7) + stride * .28 - recoil
+	rig.get_node("ArmL").rotation.x = (1.1 if armed else .7) - stride * .16 - recoil*.25
+	rig.get_node("ArmR").rotation.x = (1.1 if armed else .7) + stride * .16 - recoil*.25
+	rig.get_node("ArmL").rotation.z = .12 if armed else .05
+	rig.get_node("ArmR").rotation.z = -.08 if armed else -.05
 	rig.position.y = absf(sin(clock * 11.0)) * .055 * moving
 	rig.rotation.z = sin(clock * 5.0) * .025
 

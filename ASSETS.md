@@ -1,4 +1,4 @@
-# Assets da fortaleza 0.9
+# Assets e acabamento 0.10
 
 A expansão acrescenta **35 modelos** em `assets/fortress/`: dez defesas × três níveis, quatro modelos do Núcleo e a caixa aérea com paraquedas. São 68 modelos editáveis no total, somando os 33 da versão anterior. Cinco SVGs novos (arame, muralha, canhão, torre elétrica e airdrop) levam o total a 38 ícones.
 
@@ -38,3 +38,11 @@ godot --headless --path . --script res://tests/export_models.gd
 Esse comando sobrescreve os TSCNs gerados; edições feitas diretamente nas cenas devem ser portadas à fábrica antes de regenerar. O runtime instancia os modelos salvos. `ItemIcons` carrega e mantém as texturas em cache; `ItemSlot` mantém ícone, atalho, quantidade e estado de seleção sem reconstruir controles por quadro.
 
 `tests/arsenal_preview.gd` é uma fixture sem gravação de checkpoint para revisar o HUD, as nove armas, seis variantes de infectados e objetos no chão. Não representa o inventário inicial e fica excluída do executável.
+
+## Acabamento procedural 0.10
+
+Os 68 TSCNs e 38 SVGs anteriores continuam disponíveis. Em execução, `scripts/clay/clay_style.gd` aplica texturas de 128 px e meshes com cantos suavizados. São cinco famílias de cor/normal compartilhadas e cache limitado de meshes. Não há imagens externas para baixar.
+
+`clay_scenery.gd` gera cenário e vegetação; `scenery_motion.gd` anima coroas/faixas; `house_layout.gd` distribui as casas; `raid_house.gd` monta a casa, seus detalhes e o objetivo de limpeza. Casas possuem três acabamentos, interior e tampa de saque animada. São modelos gerados em código, sem TSCN separado por casa.
+
+Os dois exportadores de modelos desativam o acabamento durante a gravação das primitivas; ele é aplicado em execução, evitando duplicar os mapas de textura nos TSCNs. Não altere nomes de nós de animação (ArmL, ArmR, LegL, LegR, Gun, Door, Head e Parachute).

@@ -21,6 +21,7 @@ func refresh_model() -> void:
 	if is_instance_valid(model): remove_child(model); model.queue_free()
 	model = load("res://assets/models/"+("weapon_" if next in ItemBag.WEAPON_IDS else "item_")+next+".tscn").instantiate()
 	add_child(model)
+	ClayStyle.apply_tree(model)
 	model.position.y = .12
 
 func _process(delta: float) -> void:

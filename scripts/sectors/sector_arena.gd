@@ -32,3 +32,9 @@ func props() -> void:
 			VisualFactory.box(body,Vector3(block.size.x+.3,.2,block.size.z+.3),Vector3(0,block.size.y+.1,0),Color("2b4247"))
 		VisualFactory.collider(body,block.size,Vector3(0,block.size.y/2,0))
 		mark_solid(block.pos,Vector2(block.size.x+1.2,block.size.z+1.2))
+
+	for house_data in descriptor.get("houses",[]):
+		var house := Node3D.new(); house.set_script(load("res://scripts/clay/raid_house.gd"))
+		house.world = world; house.data = house_data; house.position = house_data.pos; house.rotation.y = house_data.yaw
+		add_child(house)
+	ClayScenery.decorate(self,int(descriptor.seed),int(descriptor.biome))

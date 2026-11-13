@@ -72,6 +72,10 @@ func run() -> void:
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
 	check(world.step_sector(0),"the complete party crosses the northern exit")
 	check(world.airdrops.at_sector() and world.descriptor.risk==4 and world.airdrops.crate!=null,"server loads the guarded airdrop into the same procedural party sector")
+	var house: Node3D = world.raid_house(0)
+	check(house!=null and house.guard_total==int(house.data.guards)*8,"house scene and guard objective use the same four-player scaling")
+	house.activated = true; house.dead.append(0); house.contents.scrap -= 7; house.set_physics_process(false)
+	check(world.net_state(1).houses[0].dead==[0],"host includes authoritative house progress in snapshots")
 	check(world.descriptor.count==world.descriptor.base_count*8,"procedural field population also uses the exact x8 multiplier")
 	await create_timer(2).timeout
 	world.travel_cooldown = 0

@@ -22,6 +22,7 @@ const ROLL_SPEED: float = 13.0
 var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
+var replica_motion: float = 0
 
 static func movement_direction(input: Vector2) -> Vector3:
 	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
@@ -47,8 +48,22 @@ func stop_roll() -> void:
 
 func animate_pose(moving: float) -> void:
 	rig.position = Vector3.ZERO
-	VisualFactory.animate_human(rig,clock,moving,recoil,true)
+	VisualFactory.animate_human(rig,clock*(1.35 if moving>1.1 else 1.0),moving,recoil,true)
+	var gun: Node3D = rig.get_node("Gun")
+	gun.position = Vector3(.34,1.1,-.64+recoil*.12)
+	gun.rotation = Vector3.ZERO
+	if weapons.reload_left>0:
+		var progress := 1-weapons.reload_left/maxf(.01,weapons.reload_total)
+		gun.rotation.z = -.4*sin(progress*PI)
+		rig.get_node("ArmL").rotation = Vector3(.5+sin(progress*TAU)*.25,0,.65)
+	elif gather_progress>0:
+		rig.get_node("ArmL").rotation.x = .65+sin(clock*8)*.15
+		gun.rotation.x = .5
 	if roll_left>0:
+		rig.get_node("LegL").rotation.x = 1.0
+		rig.get_node("LegR").rotation.x = 1.0
+		rig.get_node("ArmL").rotation = Vector3(.4,0,.2)
+		rig.get_node("ArmR").rotation = Vector3(.4,0,-.2)
 		rig.rotation.y = atan2(-roll_direction.x,-roll_direction.z)
 		rig.rotation.x = -TAU*(1-roll_left/ROLL_DURATION)
 		# Rotate around the torso instead of the feet, keeping the tumble above ground.
@@ -100,7 +115,7 @@ func _physics_process(delta: float) -> void:
 	bag.selected = clampi(int(frame.get("slot",bag.selected)),0,8)
 	weapons.sync_hand()
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-aim.x,-aim.z),minf(1,delta*24))
-	animate_pose(input.length())
+	animate_pose(Vector2(velocity.x,velocity.z).length()/6.3)
 	if rolling:
 		roll_left = maxf(0,roll_left-delta)
 		if roll_left==0: stop_roll(); velocity = Vector3.ZERO

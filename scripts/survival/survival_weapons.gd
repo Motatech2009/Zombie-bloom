@@ -127,3 +127,4 @@ func rebuild_model() -> void:
 	var model_path: String = "res://assets/models/weapon_"+ItemBag.WEAPON_IDS[hand_weapon]+".tscn" if hand_weapon>=0 else "res://assets/models/item_"+visual_item+".tscn"
 	var model: Node3D = load(model_path).instantiate()
 	gun.add_child(model)
+	ClayStyle.apply_tree(model)

@@ -1,4 +1,4 @@
-# Zombie Bloom — Fortaleza e Suprimentos 0.9.1
+# Zombie Bloom — Refúgio de Argila 0.10
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
@@ -6,13 +6,16 @@ Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa 
 
 ## Jogar
 
-**Novo na 0.9.1:** rolamento no Espaço, animação, janela de esquiva de 0,20 s e recarga de cinco segundos controlada pelo anfitrião. O HUD mostra quando está pronto. Mantém saves v6.
+**Novo na 0.10:** acabamento de argila com texturas pequenas compartilhadas, cantos arredondados, braço corrigido, novas poses e animações, árvores/faixas ao vento, casas com interiores/guarnições/caixas e painel de conexão para jogar entre redes. [Regras e limites](CLAY_WORLD.md).
+
+**Da 0.9.1:** rolamento no Espaço, animação, janela de esquiva de 0,20 s e recarga de cinco segundos controlada pelo anfitrião. O HUD mostra quando está pronto. Mantém saves v6.
 
 **Da 0.9:** drops por proximidade; dez defesas com evolução visual de materiais; quatro fortificações novas e airdrop protegido a cada dez minutos. [Regras da fortaleza e das quedas](FORTRESS.md) · [Modelos e ícones](ASSETS.md).
 
 Windows: baixe o artefato **ZombieBloom-Windows-x64** do Actions do commit mais recente desta branch, extraia e execute **ZombieBloom.exe**. Código-fonte: importe `project.godot` na Godot 4.6.3 e pressione F5. Modelos e efeitos são de protótipo.
 
 - **Mochila:** 18 espaços; os primeiros nove são a barra rápida. I abre bolsa/depósito. Clique dois espaços para trocar. Munição, armas, materiais, granadas e kits ocupam espaço.
+- **Casas:** duas a quatro por setor, com entrada física, teto ocultado por proximidade e caixa rica bloqueada pela guarnição. Guardas ficam mais fortes e numerosos com risco/horda/equipe. Cinco segundos por pilha; carga vai para a mochila.
 - **Coleta:** drops no chão entram automaticamente na bolsa ao passar por perto. Caixas exigem E por 2,8 segundos por lote; armas escondidas e airdrops exigem cinco segundos. Bolsa cheia mantém excedente no local.
 - **Depósito:** leve os materiais ao Núcleo e segure E por 1,8 segundo para guardar. Construções gastam o estoque compartilhado do Núcleo. Itens carregados não pagam obras diretamente.
 - **Construção:** dez tipos de defesa, incluindo arame, muralha pesada, canhão e torre elétrica. Melhorias trocam modelos/materiais. Seis novas peças na primeira preparação; a cota aumenta em uma a cada três hordas vencidas, até doze. É compartilhada pelo grupo e renova após o cerco. Desmontar não devolve cota. Melhorias/reparos de peças existentes não consomem colocações.
@@ -28,6 +31,8 @@ O airdrop cai a cada **dez minutos**, marcado em M, em uma área infestada com e
 **JOGAR COM AMIGOS → CRIAR SALA** no PC anfitrião. Os outros informam o IP dele e a mesma porta, padrão **24567 UDP**, e clicam **ENTRAR NO IP**. Na mesma rede, use o IPv4 local do anfitrião. Pela internet, é preciso conectividade UDP até ele, por encaminhamento da porta ou rede virtual adequada; não há relay ou código de convite.
 
 Dois jogadores: **x2** infectados; três: **x4**; quatro: **x8**. A quantidade total cresce, mantendo limite de inimigos ativos e gerando o restante em levas. Grupo viaja junto entre setores. Mochilas individuais, estoque e construção compartilhados. Menus do cooperativo mantêm a simulação ativa. Segure E junto de um aliado caído por 3,5 segundos, com kit na bolsa, para reanimá-lo.
+
+Em casas diferentes, abra **Esc → CONEXÃO / AMIGOS**. O anfitrião pode solicitar configuração UPnP e copiar o endereço externo, quando o roteador permitir. Convidados podem colar IP:porta. Em CGNAT ou sem porta alcançável, o painel orienta conexão por Tailscale. Não há relay próprio nem garantia de abertura pelo roteador.
 
 Instruções completas, reconexão e limites: [MULTIPLAYER.md](MULTIPLAYER.md).
 
@@ -64,11 +69,15 @@ godot --headless --path . --script res://tests/survival_tests.gd
 godot --headless --path . --script res://tests/arsenal_tests.gd
 godot --headless --path . --script res://tests/fortress_tests.gd
 godot --headless --path . --script res://tests/roll_tests.gd
+godot --headless --path . --script res://tests/clay_tests.gd
+godot --headless --path . --script res://tests/internet_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**730 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual, 100 de fortaleza, 33 de rolamento e 82 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
+**807 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão e 93 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 
 Verificação de rede foi por loopback, sem latência/perda simulada. Conexão real entre casas, desempenho no hardware alvo, execução nativa no Windows e balanceamento de uma campanha humana completa ainda precisam de playtest. O artefato Windows só deve ser considerado exportado após sucesso do Actions do commit entregue.
+
+Celular fica para a próxima etapa: esta versão ainda é Windows, sem controles de toque nem APK.

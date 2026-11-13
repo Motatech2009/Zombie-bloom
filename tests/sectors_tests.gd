@@ -65,6 +65,7 @@ func run() -> void:
 	world = load("res://scenes/sectors/RoamingWorld.tscn").instantiate()
 	root.add_child(world)
 	current_scene = world
+	world.world_rng.seed = 8417
 	await frames()
 	world.waves.set_physics_process(false)
 	world.set_process(false)

@@ -1,4 +1,4 @@
-# Sobrevivência 0.9.1
+# Sobrevivência 0.10
 
 ## Construção e depósito
 
@@ -52,3 +52,7 @@ Espaço inicia um rolamento de 0,42 s na direção de WASD; parado, segue a mira
 Interrompe coleta e recarga da arma. Durante a animação não dispara, usa kits, lança granadas nem coleta caixas. Não pode começar caído, com partida encerrada, com menu aberto ou em prévia de construção. Segurar Espaço não repete a ação. Ao viajar, cair ou restaurar um checkpoint, a pose transitória é encerrada. A recarga fica no perfil salvo; saves v6 anteriores continuam válidos.
 
 No cooperativo, comandos de rolamento são confiáveis e o anfitrião controla movimento, colisão, proteção e recarga. Animação, direção e contador são replicados para os convidados. Não há predição local: o início visual no convidado depende da latência até o anfitrião.
+
+## Casas e aparência 0.10
+
+Casas procedurais fora da base podem ser invadidas. Aproxime para ativar os defensores, elimine a guarnição e segure E na caixa interna por cinco segundos por pilha. Guardas e saque são compartilhados, com carga em bolsas individuais. Saque não entra no banco sem voltar ao Núcleo. O cenário é recriado ao reentrar no setor. O telhado se oculta por proximidade apenas visualmente; paredes continuam bloqueando tiros e movimento. [Regras completas](CLAY_WORLD.md).

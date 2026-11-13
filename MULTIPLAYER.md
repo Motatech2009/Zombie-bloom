@@ -1,6 +1,6 @@
-# Jogar com amigos — cooperativo 0.9.1
+# Jogar com amigos — cooperativo 0.10
 
-Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores. Espaço solicita rolamento; o anfitrião valida a recarga de 5 s e replica a animação e o contador para todos. Atualizem todos os PCs para a 0.9.1.
+Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores. Espaço solicita rolamento; o anfitrião valida a recarga de 5 s e replica a animação e o contador para todos. Atualizem todos os PCs para a 0.10.
 
 ## Na mesma rede
 
@@ -33,3 +33,20 @@ O inventário, o mapa e todos os menus do cooperativo mantêm a simulação em a
 É uma versão para testes entre amigos. O teste automatizado executa quatro processos reais via loopback, cobrindo entrada, movimento, tiro, munição, transações, escala e troca de setores, além de seleção/modelo/consumo do Arco Tesla e avisos do novo Criogênico. Isso não certifica uma conexão entre casas, perda de pacotes, latência alta ou sessões prolongadas. O servidor é o PC do anfitrião; não há migração automática se ele sair.
 
 A queda aérea é compartilhada: coordenada, temporizador, escolta e conteúdo são controlados pelo anfitrião. Os modelos dos níveis das fortificações também são replicados. Drops de chão coletam na bolsa do sobrevivente mais próximo sem interação. A comunicação de snapshots é comprimida; continuam valendo as limitações de latência/conectividade descritas acima.
+
+## Painel de conexão 0.10
+
+Ao criar a sala, pode marcar **Tentar abrir a porta no roteador (UPnP / internet)**. Também pode solicitar depois em **Esc → CONEXÃO / AMIGOS**. O painel mostra LAN/VPN, status da configuração e endereço externo copiável quando obtido. Quem entra pode colar **IP:porta**, mantendo também a entrada tradicional de endereço e porta separados.
+
+A descoberta e as operações no roteador rodam em thread. A concessão UDP dura 900 s, renova a cada 300 s e é removida quando o anfitrião encerra/desativa. Somente o pedido explícito abre a porta; LAN/VPN continua disponível sem UPnP. A opção exige roteador compatível e IPv4 público direto, além do firewall permitir o jogo. Mensagem de porta configurada não é teste externo de conectividade.
+
+### Alternativa para casas diferentes
+
+1. Anfitrião e convidados instalam Tailscale pelas fontes oficiais e usam suas próprias contas.
+2. O anfitrião compartilha a máquina da sala com os amigos na opção **Share** do painel do Tailscale; cada convidado aceita o convite.
+3. Anfitrião abre a sala normalmente. Os convidados entram pelo IP **100.x** da máquina do anfitrião e pela porta UDP da sala (padrão **24567**).
+4. Mantenham o Tailscale e o jogo abertos; o firewall e as permissões da rede virtual precisam permitir a conexão.
+
+[Guia oficial de compartilhamento de servidor de jogo](https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server). Não é necessário ter a mesma rede doméstica. Não foi criada conta/configuração externa nesta entrega. Sem UPnP/porta acessível ou rede virtual, não existe relay próprio que contorne o bloqueio da operadora.
+
+Casas são geradas pela mesma descrição em todos os PCs. Conteúdo e progresso da limpeza vêm do anfitrião; não são concedidos pelo convidado. Modelos de personagens recebem poses de recarga/disparo/rolamento e infectados animam também nos clientes. As 93 verificações ENet usam quatro processos em loopback; as 31 verificações auxiliares usam roteador simulado. Nenhuma certifica conectividade de uma operadora específica.

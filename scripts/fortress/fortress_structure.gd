@@ -29,6 +29,7 @@ func refresh_visual() -> void:
 	for child in model.get_children(): model.remove_child(child); child.queue_free()
 	var visual: Node3D = load("res://assets/fortress/"+spec.id+"_"+str(tier)+".tscn").instantiate()
 	visual.name = "Visual"; model.add_child(visual)
+	ClayStyle.apply_tree(visual)
 	head = visual.get_node_or_null("Head")
 	set_open_visual()
 

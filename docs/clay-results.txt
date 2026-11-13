@@ -1,0 +1,38 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: clay materials are shared across objects
+PASS: 128px tiled color and normal textures use world-space projection
+PASS: surface textures are generated once and reused
+PASS: rounded box meshes are cached and bounded to 108 triangles
+PASS: soft corners preserve the original collision dimensions
+PASS: armed hand points forward through walk/recoil phase 0.0
+PASS: armed hand points forward through walk/recoil phase 0.5
+PASS: armed hand points forward through walk/recoil phase 1.2
+PASS: armed hand points forward through walk/recoil phase 3.0
+PASS: houses are deterministic for the procedural visit and remain bounded
+PASS: houses preserve the central return and exit lanes
+PASS: regional interaction targets remain separated from the hidden armory
+PASS: generation removes solid props overlapping houses
+PASS: party enters a real generated exploration sector
+PASS: each generated house becomes an enterable scene
+PASS: navigation reaches the interior through the physical doorway
+PASS: nearby local player reveals the interior with an opaque cutaway
+PASS: supply crate stays locked before the house is cleared
+PASS: approaching a house materializes its first authoritative guard
+PASS: house guards have stronger health and belong to the field
+PASS: a real guard death advances only its house objective
+PASS: house guardians do not complete the ordinary sector population
+PASS: defeating every generated guard unlocks the house supply crate
+PASS: house supplies require five seconds of gathering
+PASS: house resources are not granted before the collection duration
+PASS: completed collection transfers one large stack into the bag
+PASS: house cargo never credits the core bank remotely
+PASS: a wall blocks supply theft through the rear of the house
+PASS: house progress and remaining loot are replicated separately
+PASS: house supplies are not duplicated in generic loot snapshots
+PASS: joining the party scales house guards and re-locks pending supplies
+PASS: leaving restores solo guard requirements without respawning defeated slots
+PASS: moving away restores the complete house roof
+PASS: return to the persistent base unloads exploration houses
+PASS: unloaded house scenes leave no active guard directors behind
+CLAY RESULT: 35 checks, 0 failures

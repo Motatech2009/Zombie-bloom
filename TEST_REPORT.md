@@ -1,3 +1,21 @@
+# Validação do Refúgio de Argila 0.10 — 2026-11-13
+
+**807 verificações locais aprovadas:** 648 nas oito suítes anteriores, 35 de argila/casas, 31 de conexão e 93 de rede (27 do anfitrião +22 por convidado). Godot 4.6.3 oficial, Linux. Registros em docs/clay-results.txt, docs/internet-results.txt e logs de regressão/rede.
+
+Texturas e geometria: recursos de material/textura/mesh compartilhados, mapas 128 px, projeção no mundo, limites geométricos de 108 triângulos e preservação das dimensões. Posição numérica da mão direita confirma o braço à frente nas fases de caminhada/disparo. Casas determinísticas por visita, limite de duas a quatro, preservação dos corredores, remoção de sobreposição de props, separação entre caixas/arsenal e caminho de navegação até o interior.
+
+Fluxo real de casa: viagem a um setor, instanciação de casa, cutaway local, bloqueio de saque antes da limpeza, materialização/morte de guardas reais reforçados, contagem separada da população comum e liberação da caixa após a guarnição. Coleta exige cinco segundos, concede uma pilha na bolsa e não no banco; parede impede saque pelo exterior. Estado replica sem duplicar a caixa. Entrada/saída de jogador altera a quantidade exigida; retorno ao Núcleo descarrega os diretores das casas. A suíte de setores fixa o RNG do cenário para sempre exercitar o fluxo de inimigo/spawn/tradução, antes condicionado a um setor aleatório com população.
+
+Rede com quatro processos ENet/UDP: mantém os fluxos anteriores e acrescenta braço correto nos convidados, geometria das casas, guarnição multiplicada por oito, mortos registrados e conteúdo exato da caixa. Campo e base, arsenal, rolamento, airdrop e transações anteriores continuam passando. Apenas loopback; sem simulação de latência/perda nem teste entre duas casas.
+
+Conexão auxiliar: valida endereços privados/CGNAT, endpoint IP:porta/hostname/IPv6, entradas inválidas, worker assíncrono, repetição bloqueada, renovação, remoção, cancelamento com resultado tardio e erro do roteador sem falso sucesso. Usa roteador simulado; não realizou descoberta/mapeamento no roteador residencial de alguém. A configuração externa depende da rede real e não substitui um relay.
+
+Revisão gráfica em janela 1280×800: texturas sutis, casa completa com telhado/janela/entrada, cutaway sem janelas flutuantes, braços para a frente, tampa da caixa e painel de conexão com controles legíveis. Fixtures `tests/clay_preview.gd` não gravam saves nem representam uma partida normal. Renderização por CPU/Mesa e áudio Dummy não medem desempenho no hardware alvo.
+
+CI repete dez suítes, quatro processos de rede e exportação Windows. Execução nativa no Windows, balanceamento prolongado, roteadores/operadoras reais e desempenho móvel permanecem para playtest. Não foi criada versão de celular.
+
+---
+
 # Validação do Rolamento 0.9.1 — 2026-11-13
 
 **730 verificações locais aprovadas:** 615 nas sete suítes anteriores, 33 de rolamento e 82 de rede (25 do anfitrião +19 por convidado). Godot 4.6.3 oficial, Linux. Logs em docs/roll-results.txt e nos registros de regressão/rede.

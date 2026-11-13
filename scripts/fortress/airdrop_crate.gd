@@ -6,6 +6,7 @@ var label: Label3D
 func _ready() -> void:
 	if not world.is_client: add_to_group("survival_sources")
 	cargo = load("res://assets/fortress/airdrop.tscn").instantiate(); add_child(cargo)
+	ClayStyle.apply_tree(cargo)
 	cargo.position.y = 24*pow(float(director.state.land)/AirdropDirector.LANDING,1.5)
 	VisualFactory.ring(self,2,Vector3(0,.12,0),Color("e8b565"))
 	label = VisualFactory.health_label(self,3)

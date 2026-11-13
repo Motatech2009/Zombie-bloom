@@ -6,6 +6,7 @@ func save_model(node: Node3D,path: String) -> void:
 	var scene := PackedScene.new(); assert(scene.pack(node)==OK)
 	assert(ResourceSaver.save(scene,path)==OK); node.free()
 func _initialize() -> void:
+	VisualFactory.clay_enabled = false
 	for i in range(FortressData.pieces().size()):
 		for tier in range(1,4): save_model(FortressModels.defense(i,tier),"res://assets/fortress/"+FortressData.pieces()[i].id+"_"+str(tier)+".tscn")
 	for tier in range(1,5): save_model(FortressModels.core(tier),"res://assets/fortress/core_"+str(tier)+".tscn")

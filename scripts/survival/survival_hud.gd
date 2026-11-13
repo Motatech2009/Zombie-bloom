@@ -145,6 +145,9 @@ func create_bottom() -> void:
 	gather_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	gather_label.offset_left = -220; gather_label.offset_right = 220; gather_label.offset_top = 99; gather_label.offset_bottom = 125
 	gather_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for text in [quota_text,notice_text,build_text,airdrop_text,gather_label]:
+		text.add_theme_color_override("font_outline_color",Color(0,0,0,.8))
+		text.add_theme_constant_override("outline_size",3)
 
 func _process(delta: float) -> void:
 	choice_cooldown = maxf(0,choice_cooldown-delta)
@@ -329,6 +332,7 @@ func show_pause() -> void:
 	if not world.is_client:
 		var save := UI.button(box,"SALVAR REFÚGIO",func(): world.save_checkpoint(); close_modal())
 		save.disabled = world.area_index!=-1 or world.phase!="prep" or world.resources.pending>0
+	UI.button(box,"CONEXÃO / AMIGOS",func(): close_modal(); show_connection())
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"ENCERRAR SALA" if not world.is_client else "SAIR DA SALA",menu)
 
@@ -396,3 +400,28 @@ func select_sector(coord: Vector2i) -> void:
 		world.waypoint = coord
 		map_detail.text = "AIRDROP · (%d,%d)\n%d guardas restantes. Uma escolta forte e um chefe. Elimine a escolta e segure E junto à caixa para recuperar lotes de suprimentos." % [coord.x,coord.y,world.airdrops.remaining()]
 	else: super.select_sector(coord)
+
+func show_connection() -> void:
+	if not mode.is_empty() or not world.connected_game(): return
+	var box := open_modal("connection",760)
+	UI.label(box,"JOGAR DE CASAS DIFERENTES",27,UI.LIME)
+	UI.label(box,"Use um endereço alcançável do anfitrião. Não use 127.0.0.1 no PC do amigo.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if not world.is_client:
+		var service: InternetRoom = world.network.internet
+		var info := UI.label(box,"",16,UI.TEXT); info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.button(box,"CONFIGURAR PORTA AUTOMÁTICA",func(): service.enable(world.network.server_port))
+		var copy_address := UI.button(box,"COPIAR ENDEREÇO EXTERNO",func():
+			if not service.public_address.is_empty(): DisplayServer.clipboard_set(service.public_address)
+		)
+		UI.button(box,"DESATIVAR PORTA AUTOMÁTICA",func(): service.disable())
+		var update_info := func():
+			if not is_instance_valid(info): return
+			info.text = "LAN / VPN: "+", ".join(InternetRoom.local_endpoints(world.network.server_port))+"\n\n"+service.status+"\n"+("Endereço externo: "+service.public_address if not service.public_address.is_empty() else "")
+			copy_address.disabled = service.public_address.is_empty()
+		update_info.call(); service.changed.connect(update_info)
+		info.tree_exiting.connect(func():
+			if service.changed.is_connected(update_info): service.changed.disconnect(update_info)
+		)
+	UI.label(box,"Se UPnP não funcionar ou houver CGNAT: ambos instalam Tailscale, o anfitrião compartilha seu computador com o amigo e o convidado entra pelo IP 100.x do anfitrião. Usem a mesma porta UDP da sala.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(box,"GUIA OFICIAL DE CONEXÃO",func(): OS.shell_open("https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server"))
+	UI.button(box,"VOLTAR",func(): close_modal(); show_pause(),true)
