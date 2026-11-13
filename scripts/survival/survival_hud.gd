@@ -9,43 +9,123 @@ var gather_label: Label
 var depot_buttons: Dictionary = {}
 var choice_cooldown: float = 0
 
+var held_icon: TextureRect
+var wood_count: Label
+var parts_count: Label
+var status_text: Label
+
+func make_panel(left: float,top: float,right: float,bottom: float,preset: int) -> PanelContainer:
+	var panel := UI.panel(root)
+	panel.set_anchors_and_offsets_preset(preset)
+	panel.offset_left = left; panel.offset_top = top; panel.offset_right = right; panel.offset_bottom = bottom
+	var frame := UI.style(Color(.035,.075,.1,.94),Color("344d5a"),10)
+	frame.content_margin_left = 14; frame.content_margin_right = 14
+	frame.content_margin_top = 10; frame.content_margin_bottom = 10
+	panel.add_theme_stylebox_override("panel",frame)
+	return panel
+
+func create_top() -> void:
+	var vitals := make_panel(18,14,326,112,Control.PRESET_TOP_LEFT)
+	var vitals_box := UI.vbox(vitals,5)
+	var hp_row := UI.hbox(vitals_box,9)
+	ItemIcons.image(hp_row,"health",Vector2(23,23))
+	health_text = UI.label(hp_row,"",16)
+	health_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_text = UI.label(hp_row,"",11,UI.MUTED)
+	health_bar = UI.meter(vitals_box,Color("e99b84"))
+	var core_row := UI.hbox(vitals_box,9)
+	ItemIcons.image(core_row,"core",Vector2(23,23))
+	core_text = UI.label(core_row,"",14,Color("9ddde0"))
+	core_bar = UI.meter(vitals_box,Color("70c9d5"))
+	var siege := make_panel(-158,14,158,91,Control.PRESET_CENTER_TOP)
+	var row := UI.hbox(siege,10)
+	ItemIcons.image(row,"wave",Vector2(43,43))
+	var wave_box := UI.vbox(row,1)
+	wave_text = UI.label(wave_box,"",21)
+	wave_detail = UI.label(wave_box,"",14,Color("edbd72"))
+	phase_text = UI.label(wave_box,"",10,UI.MUTED)
+	var depot := make_panel(-350,14,-18,99,Control.PRESET_TOP_RIGHT)
+	var box := UI.vbox(depot,7)
+	var header := UI.hbox(box,10)
+	UI.label(header,"ESTOQUE DO NÚCLEO",11,UI.MUTED).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pause := UI.button(header,"Ⅱ",show_pause)
+	pause.custom_minimum_size = Vector2(25,22)
+	var pause_style := UI.style(Color(0,0,0,0),Color("344d5a"),4)
+	pause_style.content_margin_left = 4; pause_style.content_margin_right = 4
+	pause_style.content_margin_top = 1; pause_style.content_margin_bottom = 1
+	pause.add_theme_stylebox_override("normal",pause_style)
+	pause.add_theme_font_size_override("font_size",12)
+	var materials := UI.hbox(box,12)
+	for id in ["scrap","wood","parts"]:
+		var pair := UI.hbox(materials,4)
+		ItemIcons.image(pair,id,Vector2(30,30))
+		var count := UI.label(pair,"",18,Color("edcf95") if id=="scrap" else UI.TEXT)
+		if id=="scrap": scrap_text = count
+		elif id=="wood": wood_count = count
+		else: parts_count = count
+	material_text = UI.label(box,"",1)
+	material_text.hide()
+
 func create_bottom() -> void:
-	super.create_bottom()
+	var held_panel := make_panel(18,-119,299,-16,Control.PRESET_BOTTOM_LEFT)
+	var held_row := UI.hbox(held_panel,10)
+	held_icon = ItemIcons.image(held_row,"pistol",Vector2(66,66))
+	var held_info := UI.vbox(held_row,3)
+	held_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	weapon_text = UI.label(held_info,"",13,Color("e2e8d8"))
+	ammo_text = UI.label(held_info,"",25,Color("edcf95"))
+	reload_bar = UI.meter(held_info,Color("edbd72"))
+	power_text = UI.label(held_info,"",11,UI.MUTED)
 	var belt := HBoxContainer.new()
 	root.add_child(belt)
 	belt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	belt.offset_left = -292
-	belt.offset_right = 292
-	belt.offset_top = -69
-	belt.offset_bottom = -10
-	belt.add_theme_constant_override("separation",3)
+	belt.offset_left = -357; belt.offset_right = 357
+	belt.offset_top = -100; belt.offset_bottom = -16
+	belt.add_theme_constant_override("separation",6)
 	for i in range(9):
 		var index := i
-		var button := UI.button(belt,"%d\n—" % (i+1),func(): world.player.bag.selected = index)
-		button.custom_minimum_size = Vector2(61,58)
-		button.add_theme_font_size_override("font_size",12)
-		var style := compact_style()
-		style.content_margin_left = 4
-		style.content_margin_right = 4
-		button.add_theme_stylebox_override("normal",style)
+		var button := ItemSlot.new()
+		button.key_number = i+1
+		button.pressed.connect(func(): world.player.bag.selected = index)
+		belt.add_child(button)
 		hotbar.append(button)
-	quota_text = UI.label(root,"",13,UI.MUTED)
-	quota_text.position = Vector2(18,81)
-	quota_text.add_theme_color_override("font_color",Color("d8e5d4"))
-	quota_text.add_theme_color_override("font_shadow_color",Color("122b33"))
-	quota_text.add_theme_constant_override("shadow_offset_y",1)
-	gather_bar = UI.meter(root,UI.LIME)
+	hints = make_panel(-300,-119,-18,-16,Control.PRESET_BOTTOM_RIGHT)
+	var hint_box := UI.vbox(hints,6)
+	var actions := UI.hbox(hint_box,5)
+	for entry in [["map","M",show_routes],["bag","I",show_inventory],["build","B",show_build_catalog]]:
+		var button := UI.button(actions,entry[1],entry[2])
+		button.icon = ItemIcons.get_icon(entry[0])
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width",27)
+		button.custom_minimum_size = Vector2(76,38)
+		var style := compact_style(); style.content_margin_top = 3; style.content_margin_bottom = 3
+		button.add_theme_stylebox_override("normal",style)
+	location_text = UI.label(hint_box,"",11,UI.MUTED)
+	location_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	next_button = Button.new(); root.add_child(next_button); next_button.hide()
+	quota_text = UI.label(root,"",12,Color("d9c79c"))
+	quota_text.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	quota_text.offset_left = -320; quota_text.offset_right = 320; quota_text.offset_top = 99; quota_text.offset_bottom = 119
+	quota_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_text = UI.label(root,"",14,Color("98d9f1"))
+	status_text.position = Vector2(30,119)
+	notice_text = UI.label(root,"",15,Color("ead4a7"))
+	notice_text.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	notice_text.offset_left = -355; notice_text.offset_right = 355
+	notice_text.offset_top = 132; notice_text.offset_bottom = 178
+	notice_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notice_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	build_text = UI.label(root,"",14,UI.LIME)
+	build_text.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	build_text.offset_left = -370; build_text.offset_right = 370; build_text.offset_top = -166; build_text.offset_bottom = -118
+	build_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	build_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	gather_bar = UI.meter(root,Color("edbd72"))
 	gather_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	gather_bar.offset_left = -130
-	gather_bar.offset_right = 130
-	gather_bar.offset_top = 90
-	gather_bar.offset_bottom = 98
-	gather_label = UI.label(root,"",15,UI.LIME)
+	gather_bar.offset_left = -130; gather_bar.offset_right = 130; gather_bar.offset_top = 85; gather_bar.offset_bottom = 94
+	gather_label = UI.label(root,"",14,Color("edcf95"))
 	gather_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	gather_label.offset_left = -210
-	gather_label.offset_right = 210
-	gather_label.offset_top = 102
-	gather_label.offset_bottom = 135
+	gather_label.offset_left = -220; gather_label.offset_right = 220; gather_label.offset_top = 99; gather_label.offset_bottom = 125
 	gather_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _process(delta: float) -> void:
@@ -54,16 +134,20 @@ func _process(delta: float) -> void:
 	var actor: Node3D = world.player
 	for i in range(9):
 		var item: Dictionary = actor.bag.slots[i]
-		hotbar[i].text = "%d\n%s%s" % [i+1,ItemBag.SHORT.get(item.id,"—")," ×%d" % item.qty if item.qty>1 else ""]
-		hotbar[i].modulate = UI.LIME if actor.bag.selected==i else Color.WHITE
+		hotbar[i].set_item(item.id,int(item.qty),actor.bag.selected==i)
+	scrap_text.text = str(world.resources.scrap)
+	wood_count.text = str(world.stock.wood)
+	parts_count.text = str(world.stock.parts)
+	status_text.text = "CONGELADO · %.1f s" % actor.slow_left if actor.slow_left>0 else "CAÍDO · Aguarde um aliado" if actor.health.dead else ""
 	var hand: String = actor.bag.hand()
 	weapon_text.text = ItemBag.TITLES.get(hand,"MÃOS LIVRES").to_upper()
+	held_icon.texture = ItemIcons.get_icon(hand)
 	if hand in ItemBag.WEAPON_IDS:
 		var index := ItemBag.WEAPON_IDS.find(hand)
-		ammo_text.text = "%d | %d" % [actor.weapons.ammo[index],actor.bag.count(ItemBag.AMMO_IDS[index])]
+		ammo_text.text = "%d / %d" % [actor.weapons.ammo[index],actor.bag.count(ItemBag.AMMO_IDS[index])]
 	else: ammo_text.text = "%d/18" % (18-actor.bag.free_slots())
-	power_text.text = "I mochila · %d espaços livres" % actor.bag.free_slots()
-	quota_text.text = "DEFESAS %d/%d nesta horda · %d jogador(es) · zumbis x%d" % [world.built_this_round,world.build_quota(),world.party_count(),world.team_multiplier()]
+	power_text.text = "BOLSA · %d espaços livres" % actor.bag.free_slots()
+	quota_text.text = "CONSTRUÇÕES %d/%d   ·   EQUIPE %d   ·   HOSTIS ×%d" % [world.built_this_round,world.build_quota(),world.party_count(),world.team_multiplier()]
 	gather_bar.visible = actor.gather_target!=null or actor.gather_progress>0
 	gather_label.visible = gather_bar.visible
 	if gather_bar.visible:
@@ -80,27 +164,30 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	return box
 
 func show_inventory() -> void:
-	var box := open_modal("inventory",1100)
+	var box := open_modal("inventory",1210)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",29,UI.LIME)
 	UI.label(box,"Clique dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"Primeiros nove espaços = barra rápida. Clique dois espaços para trocar.",15,UI.MUTED)
 	var row := UI.hbox(box,20)
 	var left := UI.vbox(row,8)
 	var grid := GridContainer.new()
-	grid.columns = 6
+	grid.columns = 9
 	grid.add_theme_constant_override("h_separation",5)
 	grid.add_theme_constant_override("v_separation",5)
 	left.add_child(grid)
 	inventory_buttons.clear()
 	for i in range(18):
 		var index := i
-		var button := UI.button(grid,"",func():
+		var button := ItemSlot.new()
+		button.key_number = index+1
+		button.pressed.connect(func():
 			if inventory_selected<0: inventory_selected = index
 			else:
 				world.send_action("swap",{"a":inventory_selected,"b":index})
 				inventory_selected = -1
 		)
-		button.custom_minimum_size = Vector2(94,72)
+		grid.add_child(button)
+		button.custom_minimum_size = Vector2(78,88)
 		button.add_theme_font_size_override("font_size",12)
 		inventory_buttons.append(button)
 	var controls := UI.hbox(left,8)
@@ -132,10 +219,12 @@ func refresh_inventory() -> void:
 	for id in depot_buttons:
 		depot_buttons[id].text = "%s ×%d / retirar" % [ItemBag.TITLES[id],world.depot_count(id)]
 		depot_buttons[id].disabled = world.depot_count(id)<=0
+		depot_buttons[id].icon = ItemIcons.get_icon(id)
+		depot_buttons[id].expand_icon = true
+		depot_buttons[id].add_theme_constant_override("icon_max_width",28)
 	for i in range(inventory_buttons.size()):
 		var item: Dictionary = world.player.bag.slots[i]
-		inventory_buttons[i].text = "%d%s\n%s\n%d" % [i+1," [barra]" if i<9 else "",ItemBag.SHORT.get(item.id,"—"),item.qty]
-		inventory_buttons[i].modulate = UI.LIME if inventory_selected==i else Color.WHITE
+		inventory_buttons[i].set_item(item.id,int(item.qty),inventory_selected==i)
 
 func show_equipment() -> void:
 	show_inventory()
@@ -149,13 +238,20 @@ func show_shop() -> void:
 	box.add_child(scroll)
 	var list := UI.vbox(scroll,7)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for i in range(1,5):
+	for i in range(1,Arsenal.WEAPONS.size()):
 		var index := i
-		var button := UI.button(list,"%s / %d sucata" % [CampaignData.WEAPONS[i].title,CampaignData.PRICES[i]],func(): world.send_action("buy",{"weapon":index}))
+		var button := UI.button(list,"%s / %d sucata" % [Arsenal.WEAPONS[i].title,Arsenal.PRICES[i]],func(): world.send_action("buy",{"weapon":index}))
+		button.icon = ItemIcons.get_icon(ItemBag.WEAPON_IDS[i])
+		button.expand_icon = true; button.add_theme_constant_override("icon_max_width",48)
+		button.tooltip_text = Arsenal.DESCRIPTIONS[i]
+		UI.label(list,Arsenal.DESCRIPTIONS[i],12,UI.MUTED)
 		button.disabled = world.player.bag.count(ItemBag.WEAPON_IDS[i])>0
-	for entry in [["light",24,12],["shell",8,18],["rifle_ammo",30,25],["rocket",3,60],["grenade",2,45],["medkit",1,30],["wood",8,35],["parts",3,45]]:
-		var id: String = entry[0]
-		UI.button(list,"%d %s / %d sucata" % [entry[1],ItemBag.TITLES[id],entry[2]],func(): world.send_action("service",{"id":id}))
+	for item in Arsenal.PACKS:
+		var id: String = item
+		var entry: Array = Arsenal.PACKS[id]
+		var button := UI.button(list,"%d %s / %d sucata" % [entry[0],ItemBag.TITLES[id],entry[1]],func(): world.send_action("service",{"id":id}))
+		button.icon = ItemIcons.get_icon(id); button.expand_icon = true; button.add_theme_constant_override("icon_max_width",38)
+
 	UI.button(box,"VOLTAR",close_modal,true)
 
 func request_upgrade() -> void:

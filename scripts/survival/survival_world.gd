@@ -15,7 +15,7 @@ var scene_revision: int = 0
 var shot_owner: int = 1
 
 static func survival_path(mode: String) -> String:
-	return "user://zombie_bloom_"+mode+"_v4.json"
+	return "user://zombie_bloom_"+mode+"_v5.json"
 
 func checkpoint_path() -> String: return survival_path(game_mode)
 func hud_script() -> Script: return load("res://scripts/survival/survival_hud.gd")
@@ -72,7 +72,7 @@ func _process(delta: float) -> void:
 		camera.look_at(target)
 		for actor in avatars.values():
 			actor.position = actor.position.lerp(actor.target_position,minf(1,delta*14))
-			VisualFactory.animate_human(actor.rig,Time.get_ticks_msec()/1000.0,actor.position.distance_to(actor.target_position),0,true)
+			if not actor.health.dead: VisualFactory.animate_human(actor.rig,Time.get_ticks_msec()/1000.0,actor.position.distance_to(actor.target_position),0,true)
 		for enemy in client_enemies.values(): enemy.position = enemy.position.lerp(enemy.get_meta("target",enemy.position),minf(1,delta*14))
 		notice_left = maxf(0,notice_left-delta)
 		return
@@ -201,7 +201,7 @@ func scale_field_population() -> void:
 	for i in range(descriptor.count):
 		var kind: int = descriptor.base_roster[i%maxi(1,descriptor.base_roster.size())]
 		if i>0 and kind==8: kind = 4
-		if descriptor.risk>=2 and i%13==0 and i>0: kind = 9+i%3
+		if descriptor.risk>=2 and i%13==0 and i>0: kind = 9+(i/13)%6
 		descriptor.roster.append(kind)
 	field_queue.clear()
 	var normal_alive := 0
@@ -221,12 +221,7 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	enemy.net_id = next_id()
 	if kind==8: enemy.spec = SectorGenerator.boss_spec(maxi(1,waves.wave if not field else maxi(waves.wave,SectorGenerator.distance(sector_coord)+2)))
 	elif kind<9: enemy.spec = CampaignData.enemy_spec(kind)
-	else:
-		enemy.spec = GameSpec.new()
-		enemy.spec.id = ["burster","screamer","mender"][clampi(kind-9,0,2)]
-		enemy.spec.title = ["Estourador","Berrador","Regenerador"][clampi(kind-9,0,2)]
-		enemy.spec.color = [Color("c16d4a"),Color("a67baf"),Color("5eb38e")][clampi(kind-9,0,2)]
-		enemy.spec.values = {"health":85.0 if kind==9 else 120.0,"speed":2.6 if kind==9 else 1.8,"damage":14.0,"interval":1.1,"scale":1.0,"xp":12,"scrap":8}
+	else: enemy.spec = InfectedRoster.extra_spec(kind)
 	enemy.is_boss = kind==8
 	enemy.world = self
 	enemy.field_enemy = field
@@ -260,6 +255,8 @@ func enemy_defeated(enemy: Node3D) -> void:
 	super.enemy_defeated(enemy)
 
 func create_caches() -> void:
+	# Keep the original rarity roll; select a larger arsenal deterministically from the visit seed.
+	if int(descriptor.rare)>=1: descriptor.rare = 1+absi(int(descriptor.seed))%(Arsenal.WEAPONS.size()-1)
 	super.create_caches()
 	for i in range(caches.size()):
 		var contents := {}
@@ -435,12 +432,12 @@ func drop_slot(actor: Node3D,index: int) -> bool:
 	return true
 
 func buy_weapon(index: int) -> bool:
-	if index<1 or index>4 or area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
+	if index<1 or index>=Arsenal.WEAPONS.size() or area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
 	var id: String = ItemBag.WEAPON_IDS[index]
 	var copy := ItemBag.new()
 	copy.restore(player.bag.dump())
-	if copy.add(id,1)!=1 or resources.scrap<int(CampaignData.PRICES[index]): return false
-	resources.scrap -= int(CampaignData.PRICES[index])
+	if copy.add(id,1)!=1 or resources.scrap<int(Arsenal.PRICES[index]): return false
+	resources.scrap -= int(Arsenal.PRICES[index])
 	player.bag.restore(copy.dump())
 	player.weapons.ammo[index] = player.weapons.capacity(index)
 	player.weapons.sync_hand()
@@ -448,7 +445,7 @@ func buy_weapon(index: int) -> bool:
 
 func shop_service(id: String) -> bool:
 	if area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
-	var packs := {"light":[24,12],"shell":[8,18],"rifle_ammo":[30,25],"rocket":[3,60],"grenade":[2,45],"medkit":[1,30],"wood":[8,35],"parts":[3,45]}
+	var packs: Dictionary = Arsenal.PACKS
 	if not packs.has(id): return false
 	var quantity: int = packs[id][0]
 	var price: int = packs[id][1]
@@ -509,7 +506,7 @@ func actor_profile(actor: Node3D) -> Dictionary:
 	return {"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier}
 
 func valid_profile(data: Variant) -> bool:
-	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=5 or not data.get("gun") is Array or data.gun.size()!=5: return false
+	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
 	for value in data.ammo:
 		if not bounded(value,0,100000): return false
 	for value in data.gun:
@@ -535,10 +532,11 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var saved_player: CharacterBody3D = player
 	player = avatars.get(1,player)
+	player.weapons.sync_hand()
 	grenades = player.bag.count("grenade")
 	rockets = player.bag.count("rocket")
 	var data := super.snapshot()
-	data.format = 4
+	data.format = 5
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
 	data.built = built_this_round
@@ -551,7 +549,7 @@ func snapshot() -> Dictionary:
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
-	if not data is Dictionary or data.get("format")!=4 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
+	if not data is Dictionary or data.get("format")!=5 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
 	for id in data.depot_items:
 		if id not in ItemBag.IDS or not bounded(data.depot_items[id],0,10000000): return false
 	for id in data.profiles:
@@ -561,27 +559,39 @@ func valid_snapshot(data: Variant) -> bool:
 		for id in item.contents:
 			if id not in ItemBag.IDS or not bounded(item.contents[id],1,1000000): return false
 	var old: Dictionary = data.duplicate(true)
+	if not data.get("owned") is Array or data.owned.size()!=Arsenal.WEAPONS.size() or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not bounded(data.get("slot"),0,Arsenal.WEAPONS.size()-1): return false
+	for i in range(Arsenal.WEAPONS.size()):
+		if not data.owned[i] is bool or not bounded(data.ammo[i],0,100000): return false
 	old.format = 3
+	# The inherited validator covers world/base data using its five-weapon schema.
+	old.owned.resize(5); old.ammo.resize(5); old.owned[0] = true; old.slot = 0
 	return super.valid_snapshot(old)
 
 func migrate_snapshot(data: Variant) -> Variant:
 	var converted = super.migrate_snapshot(data)
-	if not converted is Dictionary or converted.get("format")!=3: return converted
-	converted = converted.duplicate(true)
-	var bag := ItemBag.new()
-	for i in range(5):
-		if converted.owned[i]: bag.add(ItemBag.WEAPON_IDS[i],1)
-	bag.add("light",48)
-	var remainder := {}
-	for entry in [["grenade",int(converted.grenades)],["rocket",int(converted.rockets)]]:
-		var moved := bag.add(entry[0],entry[1])
-		if moved<entry[1]: remainder[entry[0]] = entry[1]-moved
-	converted.format = 4
-	converted.bag = bag.dump()
-	converted.depot_items = remainder
-	converted.built = 0
-	converted.profiles = {}
-	converted.loose = []
+	if not converted is Dictionary: return converted
+	if converted.get("format")==3:
+		converted = converted.duplicate(true)
+		if not converted.get("owned") is Array or converted.owned.size()<5: return data
+		var bag := ItemBag.new()
+		for i in range(5):
+			if converted.owned[i]: bag.add(ItemBag.WEAPON_IDS[i],1)
+		bag.add("light",48)
+		var remainder := {}
+		for entry in [["grenade",int(converted.get("grenades",0))],["rocket",int(converted.get("rockets",0))]]:
+			var moved := bag.add(entry[0],entry[1])
+			if moved<entry[1]: remainder[entry[0]] = entry[1]-moved
+		converted.format = 4; converted.bag = bag.dump(); converted.depot_items = remainder
+		converted.built = 0; converted.profiles = {}; converted.loose = []
+	if converted.get("format")==4:
+		converted = converted.duplicate(true)
+		if not converted.get("ammo") is Array or not converted.get("owned") is Array or converted.ammo.size() not in [5,9] or converted.owned.size() not in [5,9] or not converted.get("profiles") is Dictionary: return data
+		while converted.ammo.size()<Arsenal.WEAPONS.size(): converted.ammo.append(0)
+		while converted.owned.size()<Arsenal.WEAPONS.size(): converted.owned.append(false)
+		for profile in converted.profiles.values():
+			if not profile is Dictionary or not profile.get("ammo") is Array or profile.ammo.size() not in [5,9]: return data
+			while profile.ammo.size()<Arsenal.WEAPONS.size(): profile.ammo.append(0)
+		converted.format = 5
 	return converted
 
 func apply_snapshot(data: Dictionary) -> void:
@@ -598,7 +608,7 @@ func apply_snapshot(data: Dictionary) -> void:
 
 func load_checkpoint() -> bool:
 	if is_client or area_index!=-1 or phase!="prep": return false
-	var paths := [checkpoint_path(),frontier_path(game_mode),save_path(game_mode)]
+	var paths := [checkpoint_path(),"user://zombie_bloom_"+game_mode+"_v4.json",frontier_path(game_mode),save_path(game_mode)]
 	if game_mode=="campaign": paths.append(CHECKPOINT)
 	for path in paths:
 		if not FileAccess.file_exists(path): continue
@@ -699,14 +709,14 @@ func net_state(peer: int) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind})
+		actors.append({"id":id,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id})
 	var structures: Array = []
 	for s in get_tree().get_nodes_in_group("campaign_structure"):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
-		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened})
+		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left})
 	var loot: Array = []
 	for s in get_tree().get_nodes_in_group("survival_sources"):
 		if s.is_queued_for_deletion(): continue
@@ -717,7 +727,7 @@ func net_state(peer: int) -> Dictionary:
 			if not node.has_meta("uid"): node.set_meta("uid",next_id())
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":6.0 if enemy.is_boss else 2.5})
+		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
 	return {"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
@@ -775,8 +785,10 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.gather_progress = state.gather
 		actor.gather_duration = state.duration
 		actor.gather_kind = state.kind
+		actor.slow_left = float(state.get("slow",0))
 		actor.weapons.hand_weapon = int(state.gun)
-		if actor.weapons.last_model!=actor.weapons.hand_weapon: actor.weapons.rebuild_model()
+		actor.weapons.visual_item = state.get("held","")
+		if actor.weapons.last_model!=actor.weapons.hand_weapon or actor.weapons.last_item!=actor.weapons.visual_item: actor.weapons.rebuild_model()
 	for id in avatars.keys():
 		if not seen.has(id): avatars[id].queue_free(); avatars.erase(id)
 	seen.clear()
@@ -820,6 +832,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		s.health.maximum = state.max
 		s.health.current = state.hp
 		s.opened = state.open
+		s.disabled_left = float(state.get("emp",0))
+		s.label.text = "EMP · %.1f s" % s.disabled_left if s.disabled_left>0 else "%s N%d · %d/%d" % [s.spec.title,s.tier,ceili(s.health.current),ceili(s.health.maximum)]
+		s.label.visible = s.disabled_left>0 or s.health.current<s.health.maximum or s.position.distance_to(player.position)<5
 		s.collision_layer = 0 if state.open or s.spec.id=="spikes" else 8
 		s.model.position.y = -1.65 if state.open else 0
 	for id in client_structures.keys():
@@ -828,7 +843,14 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	for state in data.loot:
 		var id := int(state.id)
 		seen[id] = true
-		if not client_loot.has(id): client_loot[id] = VisualFactory.box(self,Vector3(.6,.45,.6),state.p+Vector3(0,.3,0),Color("a49e70"))
+		var model_id: String = str(state.contents.keys()[0]) if not state.contents.is_empty() else "cells"
+		if client_loot.has(id) and client_loot[id].get_meta("item","")!=model_id:
+			client_loot[id].queue_free(); client_loot.erase(id)
+		if not client_loot.has(id):
+			var model_path := "res://assets/models/"+("weapon_" if model_id in ItemBag.WEAPON_IDS else "item_")+model_id+".tscn"
+			client_loot[id] = load(model_path).instantiate()
+			add_child(client_loot[id])
+			client_loot[id].set_meta("item",model_id)
 		client_loot[id].visible = state.visible
 		client_loot[id].position = state.p+Vector3(0,.3,0)
 	for id in client_loot.keys():
@@ -838,9 +860,25 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var id := int(state.id)
 		seen[id] = true
 		if not client_hazards.has(id):
-			if state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,Color("e67f5f"))
+			if state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
 			else: client_hazards[id] = VisualFactory.cylinder(self,state.radius if state.pool else .15,.04 if state.pool else .25,Vector3.ZERO,Color("9dc45f") if state.pool else Color("e1af64"))
 		client_hazards[id].position = state.p
 	for id in client_hazards.keys():
 		if not seen.has(id): client_hazards[id].queue_free(); client_hazards.erase(id)
 	if phase=="ended" and hud.mode!="result": won = data.won; ending_reason = data.reason; hud.show_result()
+
+func shot_visual(from: Vector3,to: Vector3,color: Color,local: bool = true) -> void:
+	if local: effects.tracer(from,to,color); effects.flash(from)
+	if network!=null and network.mode=="host": network.shot_event(from,to,color)
+
+func frost_blast(point: Vector3) -> void:
+	effects.burst(point,Color("8bd8ef"),14)
+	for actor in avatars.values():
+		if not actor.health.dead and actor.position.distance_to(point)<4.5:
+			actor.slow_left = maxf(actor.slow_left,5)
+			actor.take_damage(8+waves.wave)
+
+func emp_blast(point: Vector3) -> void:
+	effects.burst(point,Color("9aabf0"),14)
+	for structure in get_tree().get_nodes_in_group("campaign_structure"):
+		if structure.spec.id=="turret" and structure.global_position.distance_to(point)<8: structure.disabled_left = maxf(structure.disabled_left,5)

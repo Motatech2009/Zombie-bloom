@@ -48,6 +48,9 @@ jobs:
           godot --headless --path . --script res://tests/survival_tests.gd 2>&1 | tee survival-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' survival-tests.log; then exit 1; fi
           grep -E 'SURVIVAL RESULT: [0-9]+ checks, 0 failures' survival-tests.log
+          godot --headless --path . --script res://tests/arsenal_tests.gd 2>&1 | tee arsenal-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' arsenal-tests.log; then exit 1; fi
+          grep -E 'ARSENAL RESULT: [0-9]+ checks, 0 failures' arsenal-tests.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
       - name: Install matching export templates
         shell: bash
@@ -66,9 +69,9 @@ jobs:
           godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
           test -s builds/windows/ZombieBloom.exe
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
-          cp README.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          cp README.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+          cp docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

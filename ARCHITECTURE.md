@@ -97,3 +97,10 @@ Navegação recalculada a cada 0,5–0,85 s, distribuída entre inimigos. Materi
 `Coop` é singleton ENet (até três convidados), com RPC de comandos confiáveis, input em canal separado e snapshots de estado a 10 Hz. Servidor valida remetente, tipos, finitude, frequência, proximidade, fase, saldo e capacidade; cliente renderiza proxies e transmite intenção. Descritor de cenário via RPC confiável por revisão; snapshots incompatíveis são descartados até a cena correta chegar. O grupo ocupa uma única região procedural e mantém a base física. Perfis individuais são persistidos pelo anfitrião com identidade local de reconexão; não há autenticação central ou migração de host.
 
 `SurvivalEnemy` acrescenta três variantes e poderes com aviso, proteção temporária e fúria. Avisos são incluídos na replicação de hazards. `enemy_bar.gd` projeta a posição 3D em controles do HUD para manter tamanho legível em pixels; libera os controles ao sair da árvore e mantém os modais acima das barras.
+
+
+## Arsenal/visual 0.8
+
+`Arsenal` centraliza os nove specs, preços e pacotes; a campanha anterior continua usando seus cinco specs para regressão. `ItemBag` amplia IDs e munições, mantendo índices anteriores. `SurvivalWeapons` especializa sniper perfurante e corrente Tesla com consultas físicas; os outros modelos reutilizam o contrato de disparo/recarga. O save v5 expande arrays e perfis v4; o validador herdado recebe uma ponte de cinco armas somente para validar mundo/base, enquanto posse/munição reais são validadas separadamente.
+
+`ModelFactory` gera cenas editáveis que o runtime instancia para armas, itens e humanoides. `ItemIcons` mantém texturas SVG em cache; `ItemSlot` evita reconstrução da barra/inventário por quadro. O HUD mantém os campos usados pelos diretores anteriores, com apresentação própria. Novos infectados usam telegráficos, investida física, status de lentidão e interrupção temporária de torretas. Snapshots incluem esses estados e o item segurado; RPC visual de tiros vem apenas do anfitrião.

@@ -1,3 +1,19 @@
+# Validação do Arsenal 0.8 — 2026-11-13
+
+**574 verificações locais aprovadas:** 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual e 59 de rede (20 do anfitrião +13 por convidado). Logs em docs/arsenal-results.txt e nos arquivos de regressão/rede. Godot 4.6.3 oficial, Linux.
+
+A nova suíte importa os ícones de todos os 20 itens, instancia seus modelos editáveis e confere a hierarquia de animação dos 13 modelos humanoides. Verifica nove estados de arma, seleção e modelo de cada arma nova, sniper atravessando exatamente três alvos com perda de dano, corrente Tesla de quatro alvos com perda de dano e bloqueio por parede, recarga parcial conservativa de munição pesada, compra real de Tesla/células, novos tipos na composição das hordas, telegráfico e movimento físico da investida, pulso criogênico com dano/lentidão e status replicado, EMP que interrompe e depois permite o retorno do disparo da torreta.
+
+Saves: checkpoint automático inicial válido, v5 com nove armas, validação quando a pistola está fora da bolsa, restauração do arsenal, migração v4 incluindo perfis sem mutar a origem. Setor real contém arsenal raro com Tesla, mantém cinco segundos de coleta e concede exatamente uma arma com seu pente. Inventário e vendedor são abertos na cena real.
+
+Rede: quatro processos reais por ENet/UDP, mantendo os testes anteriores e ampliando para nove estados de munição, concessão/seleção/disparo/modelo da Tesla com consumo validado no anfitrião, novo modelo de Criogênico e aviso de área nos três clientes. Também cobre depósito compartilhado, tiros anteriores, multiplicação x8 e troca de setores. Tudo em loopback; não certifica latência/perda nem internet entre casas.
+
+Revisão gráfica 1280×800, Mesa llvmpipe e áudio Dummy: HUD em blocos, nove ícones de arma, destaque dourado da seleção, item/ammo no canto inferior, seis variantes com modelos diferentes e recursos/itens reconhecíveis no chão. Mochila com duas linhas de nove ícones, quantidades, depósito com imagens e sem sobreposição de controles. Fixture `tests/arsenal_preview.gd` não grava saves e não representa o início de uma partida. O PC virtual renderiza por CPU; não mede desempenho da RX 7600 ou de outro hardware alvo. Os modelos são low-poly procedurais, editáveis em Godot; não são personagens finais com animação esquelética.
+
+Importação e suítes sem erro de script. Publicação e exportação Windows são confirmadas pelo CI no commit entregue. Não houve execução nativa em Windows nem campanha humana completa; equilíbrio prolongado permanece para playtest.
+
+---
+
 # Validação da Sobrevivência 0.7 — 2026-11-13
 
 **469 verificações aprovadas localmente:** 342 anteriores, 80 da nova suíte de sobrevivência e 47 de cooperativo (17 do servidor e dez por convidado). Godot 4.6.3 oficial, Linux. Logs em `docs/survival-results.txt`, `docs/coop-results.txt` e nos quatro arquivos de regressão.

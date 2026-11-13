@@ -86,16 +86,16 @@ func show_main() -> void:
 	UI.spacer(content, 6)
 	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
 	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
-	if FileAccess.file_exists("user://zombie_bloom_campaign_v4.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+	if FileAccess.file_exists("user://zombie_bloom_campaign_v5.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v4.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
 		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
-	if FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
+	if FileAccess.file_exists("user://zombie_bloom_endless_v5.json") or FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
 		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
 	UI.button(content,"JOGAR COM AMIGOS",show_multiplayer)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "SOBREVIVÊNCIA 0.7   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "ARSENAL 0.8   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -107,7 +107,7 @@ func choose_mode(mode: String) -> void:
 
 func start_game() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
-	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v4.json"):
+	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v5.json") or FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v4.json"):
 		clear_content()
 		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
 		UI.label(content,"O próximo checkpoint substituirá a campanha atual.

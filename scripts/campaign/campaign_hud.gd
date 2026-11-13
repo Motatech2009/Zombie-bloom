@@ -166,7 +166,9 @@ func show_build_catalog() -> void:
 		var panel := UI.panel(grid)
 		panel.custom_minimum_size = Vector2(320,190)
 		var card := UI.vbox(panel,8)
-		UI.label(card,"%d / %s" % [i+1,data.title.to_upper()],19,data.color.lightened(.3))
+		var heading := UI.hbox(card,8)
+		ItemIcons.image(heading,data.id,Vector2(42,42))
+		UI.label(heading,"%d / %s" % [i+1,data.title.to_upper()],17,data.color.lightened(.3))
 		UI.label(card,descriptions[i],15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.label(card,CampaignData.cost_text(data.cost),14).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var button := UI.button(card,"SELECIONAR",func():

@@ -162,3 +162,10 @@ func _receive_state(data: Dictionary) -> void:
 @rpc("authority","call_remote","unreliable_ordered",2)
 func _blast_visual(point: Vector3,_radius: float) -> void:
 	if mode=="client" and is_instance_valid(world): world.effects.burst(point,Color("e9a361"),12)
+
+func shot_event(from: Vector3,to: Vector3,color: Color) -> void:
+	if mode=="host": _shot_visual.rpc(from,to,color)
+
+@rpc("authority","call_remote","unreliable_ordered",2)
+func _shot_visual(from: Vector3,to: Vector3,color: Color) -> void:
+	if mode=="client" and is_instance_valid(world): world.shot_visual(from,to,color)

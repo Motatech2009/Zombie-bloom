@@ -7,6 +7,9 @@ func start() -> bool:
 
 func enemy_type(index: int) -> int:
 	if index==0: return 8
+	if wave>=12 and index%23==0: return 14
+	if wave>=8 and index%19==0: return 13
+	if wave>=4 and index%7==0: return 12
 	if wave>=9 and index%17==0: return 11
 	if wave>=7 and index%13==0: return 10
 	if wave>=5 and index%11==0: return 9

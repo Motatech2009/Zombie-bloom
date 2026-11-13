@@ -1,4 +1,4 @@
-# Sobrevivência 0.7
+# Sobrevivência 0.8
 
 ## Construção e depósito
 
@@ -17,13 +17,15 @@ Materiais no chão vão primeiro para a bolsa. Construção e vendedor gastam o 
 | Munição leve / rifle / cartuchos | 60 / 60 / 20 |
 | Foguetes / granadas / kits | 3 / 4 / 3 |
 
-Clique usa o item selecionado: dispara a arma, lança granada ou consome kit médico se estiver ferido. C mantém o atalho de granada. Cinco armas com silhuetas próprias: pistola, espingarda, rifle, submetralhadora e lança-foguetes. Todos os tipos de munição são finitos. A recarga consome apenas as balas transferidas da bolsa; trocar de item cancela a recarga. Guardar uma arma descarrega seu pente para o depósito. Descartar uma arma preserva as balas carregadas no objeto do chão; recolhê-la não cria munição adicional.
+Clique usa o item selecionado: dispara a arma, lança granada ou consome kit médico se estiver ferido. C mantém o atalho de granada. Nove armas com silhuetas próprias: pistola, espingarda, rifle, submetralhadora, lança-foguetes, revólver, rifle de precisão, metralhadora e Arco Tesla. Todos os tipos de munição são finitos. A recarga consome apenas as balas transferidas da bolsa; trocar de item cancela a recarga. Guardar uma arma descarrega seu pente para o depósito. Descartar uma arma preserva as balas carregadas no objeto do chão; recolhê-la não cria munição adicional.
 
 ## Coleta e escassez
 
 Segure E parado junto ao saque: 2,8 segundos por lote de até quatro unidades do primeiro tipo disponível; arsenal escondido exige cinco segundos. Movimento, dano e infectados a menos de 4,5 m da fonte interrompem a coleta. Bolsa cheia mantém o excedente na fonte. Não há coleta magnética nem transferência instantânea ao estoque. Uma arma repetida permanece no local até você guardar/descartar a que já carrega. Ao sair do setor, o saque abandonado é perdido, como nas versões anteriores.
 
 O estoque inicial cai para 85 sucata, seis madeiras e dois componentes. Caixas entregam aproximadamente 45% do orçamento anterior e sucata de inimigos cai pela metade (arredondamentos mínimos preservam recompensas pequenas). O dinheiro por sobreviver a uma horda continua sendo crédito direto ao Núcleo.
+
+As novidades de armas, infectados e HUD estão detalhadas em [ARSENAL.md](ARSENAL.md).
 
 ## Inimigos e chefes
 
@@ -37,6 +39,6 @@ Vida, dano e velocidade continuam crescendo com as hordas; inimigos normais rece
 
 ## Saves
 
-Versão 4, separada por campanha/infinito. Salva bolsa, depósito, cota consumida, materiais no chão da base, construções e perfis dos convidados. Saves v1–v3 migram sem sobrescrever os arquivos originais. O anfitrião mantém o checkpoint; o convidado não grava a partida compartilhada. Identidade de reconexão é local ao dispositivo; apagar seus dados locais faz o jogo tratá-lo como novo jogador. Um sobrevivente caído continua caído ao reconectar.
+Versão 5, separada por campanha/infinito. Salva bolsa, depósito, cota consumida, materiais no chão da base, construções e perfis dos convidados. Saves v1–v4 migram sem sobrescrever os arquivos originais. O anfitrião mantém o checkpoint; o convidado não grava a partida compartilhada. Identidade de reconexão é local ao dispositivo; apagar seus dados locais faz o jogo tratá-lo como novo jogador. Um sobrevivente caído continua caído ao reconectar.
 
 Leia [MULTIPLAYER.md](MULTIPLAYER.md) para abrir a sala.

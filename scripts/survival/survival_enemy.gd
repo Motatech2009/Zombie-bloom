@@ -9,11 +9,23 @@ var warning: Node3D
 var summon_casts: int = 0
 var enraged: bool = false
 var shield_left: float = 0
+var rush_left: float = 0
+var rush_direction := Vector3.ZERO
+var rush_hits: Dictionary = {}
 var special_clock: float = 1
 
 func _ready() -> void:
 	super._ready()
 	label.hide()
+	if spec.id not in ["hound","flyer"]:
+		var old_rig: Node3D = rig
+		var scale_before: Vector3 = rig.scale
+		rig = load("res://assets/models/infected_"+str(enemy_kind if not is_boss else 3 if spec.id=="armored" else 5 if spec.id=="spitter" else 8)+".tscn").instantiate()
+		rig.scale = scale_before
+		add_child(rig)
+		remove_child(old_rig); old_rig.queue_free()
+	else:
+		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
 	var bar := Node3D.new()
 	bar.set_script(load("res://scripts/survival/enemy_bar.gd"))
 	bar.actor = self
@@ -27,6 +39,21 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended": return
 	shield_left = maxf(0,shield_left-delta)
+	if rush_left>0:
+		rush_left -= delta
+		velocity = rush_direction*16
+		velocity.y = -1
+		move_and_slide()
+		rig.rotation.y = atan2(-rush_direction.x,-rush_direction.z)
+		var blocked := false
+		for i in range(get_slide_collision_count()):
+			if absf(get_slide_collision(i).get_normal().y)<.5: blocked = true
+			var body = get_slide_collision(i).get_collider()
+			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies") and not rush_hits.has(body.get_instance_id()):
+				rush_hits[body.get_instance_id()] = true
+				body.take_damage(float(spec.values.damage)*1.5)
+		if blocked: rush_left = 0
+		return
 	if is_boss and not enraged and health.current<health.maximum*.4:
 		enraged = true
 		spec.values.speed *= 1.25
@@ -37,7 +64,14 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		if windup<=0:
 			if is_instance_valid(warning): warning.queue_free()
-			if enemy_kind==10:
+			if enemy_kind==12:
+				rush_direction = (cast_point-global_position)*Vector3(1,0,1)
+				rush_direction = rush_direction.normalized()
+				rush_left = .85
+				rush_hits.clear()
+			elif enemy_kind==13: world.frost_blast(cast_point)
+			elif enemy_kind==14: world.emp_blast(cast_point)
+			elif enemy_kind==10:
 				for i in range(2): world.spawn_minion(self,6,i)
 			elif is_boss:
 				world.hostile_blast(cast_point,6,28+world.waves.wave*2)
@@ -48,12 +82,15 @@ func _physics_process(delta: float) -> void:
 			return
 		return
 	ability_left -= delta
-	if (is_boss or enemy_kind==10) and ability_left<=0:
+	if (is_boss or enemy_kind in [10,12,13,14]) and ability_left<=0:
 		choose_target()
-		cast_point = target.global_position
+		if enemy_kind in [12,13] and target.global_position.distance_to(global_position)>13:
+			super._physics_process(delta)
+			return
+		cast_point = global_position if enemy_kind==14 else target.global_position
 		windup = 1.1
-		ability_left = 8 if is_boss else 12
-		warning = VisualFactory.ring(world.effects,6 if is_boss else 2.5,cast_point+Vector3(0,.12,0),Color("e67f5f"))
+		ability_left = 8 if is_boss else 9 if enemy_kind in [12,13,14] else 12
+		warning = VisualFactory.ring(world.effects,warning_radius(),cast_point+Vector3(0,.12,0),warning_color())
 		return
 	if enemy_kind==11:
 		special_clock -= delta
@@ -86,3 +123,9 @@ func die() -> void:
 
 func _exit_tree() -> void:
 	if is_instance_valid(warning): warning.queue_free()
+
+func warning_radius() -> float:
+	return 6.0 if is_boss else 8.0 if enemy_kind==14 else 4.5 if enemy_kind==13 else 1.7 if enemy_kind==12 else 2.5
+
+func warning_color() -> Color:
+	return Color("85d9f2") if enemy_kind==13 else Color("9aabf0") if enemy_kind==14 else Color("e67f5f")

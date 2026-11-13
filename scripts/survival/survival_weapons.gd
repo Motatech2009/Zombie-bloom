@@ -1,21 +1,27 @@
 extends "res://scripts/campaign/campaign_weapons.gd"
 var hand_weapon: int = -1
+var visual_item: String = ""
+var last_item: String = ""
 var last_model: int = -2
 
 func _init() -> void:
 	super()
-	ammo.assign([12,0,0,0,0])
+	owned.resize(Arsenal.WEAPONS.size())
+	ammo.assign([12,0,0,0,0,0,0,0,0])
 
 func sync_hand() -> void:
-	for i in range(5): owned[i] = actor.bag.count(ItemBag.WEAPON_IDS[i])>0
+	owned.resize(Arsenal.WEAPONS.size())
+	ammo.resize(Arsenal.WEAPONS.size())
+	for i in range(Arsenal.WEAPONS.size()): owned[i] = actor.bag.count(ItemBag.WEAPON_IDS[i])>0
 	var next_hand := ItemBag.WEAPON_IDS.find(actor.bag.hand())
 	if next_hand!=hand_weapon: reload_left = 0
 	hand_weapon = next_hand
 	if hand_weapon>=0 and hand_weapon!=slot: equip(hand_weapon)
-	if last_model!=hand_weapon and is_instance_valid(actor.rig): rebuild_model()
+	visual_item = actor.bag.hand()
+	if (last_model!=hand_weapon or last_item!=visual_item) and is_instance_valid(actor.rig): rebuild_model()
 
 func equip(index: int) -> void:
-	if index<0 or index>=5 or actor.bag.count(ItemBag.WEAPON_IDS[index])==0: return
+	if index<0 or index>=Arsenal.WEAPONS.size() or actor.bag.count(ItemBag.WEAPON_IDS[index])==0: return
 	for i in range(9):
 		if actor.bag.slots[i].id==ItemBag.WEAPON_IDS[index]: actor.bag.selected = i; break
 	slot = index
@@ -39,28 +45,85 @@ func reload() -> bool:
 	reload_left = reload_total
 	return true
 
+func spec() -> Resource:
+	return Arsenal.WEAPONS[slot]
+
+func capacity(index: int = -1) -> int:
+	var chosen := slot if index<0 else index
+	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier))
+
 func shoot(direction: Vector3) -> bool:
 	if world.is_client or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
-	# Campaign implementation handles the raycast/projectile; overridden reload is finite for all guns.
 	world.shot_owner = actor.peer_id
-	var result := super.shoot(direction)
+	var result := false
+	if slot in [6,8]: result = special_shot(direction)
+	else: result = super.shoot(direction)
 	world.shot_owner = 1
+	if result and slot not in [6,8]:
+		var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
+		var aim: Vector3 = world.air_aim(origin,direction,float(spec().values.range))
+		var end := origin+aim*float(spec().values.range)
+		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
+		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
 	return result
+
+func special_shot(direction: Vector3) -> bool:
+	if cooldown>0 or reload_left>0 or not owned[slot]: return false
+	if ammo[slot]<=0: reload(); return false
+	ammo[slot] -= 1
+	cooldown = maxf(.04,float(spec().values.interval)/(rate_multiplier*(1.65 if actor.power_left("rapid")>0 else 1)))
+	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
+	var aim: Vector3 = world.air_aim(origin,direction,float(spec().values.range))
+	var end := origin+aim*float(spec().values.range)
+	var excludes: Array[RID] = [actor.get_rid()]
+	var victims: Array[Node3D] = []
+	var previous := origin
+	var damage: float = spec().values.damage*damage_multiplier
+	for step in range(3 if slot==6 else 1):
+		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,excludes))
+		if hit.is_empty(): break
+		end = hit.position if not hit.collider.is_in_group("enemies") else origin+aim*float(spec().values.range)
+		if not hit.collider.is_in_group("enemies"): break
+		var victim: Node3D = hit.collider
+		victims.append(victim)
+		victim.take_damage(damage*pow(.8,step))
+		excludes.append(victim.get_rid())
+		previous = hit.position
+	if slot==8 and not victims.is_empty(): end = previous
+	world.effects.tracer(origin,end,spec().color)
+	world.effects.flash(origin+aim*.9)
+	world.shot_visual(origin,end,spec().color,false)
+	if slot==8 and not victims.is_empty():
+		for chain in range(3):
+			var next: Node3D
+			var nearest := 5.5
+			for candidate in get_tree().get_nodes_in_group("enemies"):
+				if candidate in victims or candidate.health.dead: continue
+				var point: Vector3 = candidate.global_position+Vector3(0,candidate.aim_height,0)
+				var distance := previous.distance_to(point)
+				if distance>=nearest: continue
+				var trace := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(previous+Vector3.UP*.1,point,1|8))
+				if trace.is_empty(): next = candidate; nearest = distance
+			if next==null: break
+			var point: Vector3 = next.global_position+Vector3(0,next.aim_height,0)
+			next.take_damage(damage*pow(.7,chain+1))
+			world.effects.tracer(previous,point,spec().color)
+			world.shot_visual(previous,point,spec().color,false)
+			victims.append(next)
+			previous = point
+	world.audio.play_tone(880 if slot==8 else 100,.09,.13)
+	fired.emit()
+	return true
 
 func rebuild_model() -> void:
 	last_model = hand_weapon
+	last_item = visual_item
 	var gun: MeshInstance3D = actor.rig.get_node("Gun")
-	gun.visible = hand_weapon>=0
-	for child in gun.get_children(): child.queue_free()
-	if hand_weapon<0: return
+	gun.visible = hand_weapon>=0 or visual_item in ["grenade","medkit"]
+	for child in gun.get_children(): gun.remove_child(child); child.queue_free()
+	gun.mesh = null
+	if not gun.visible: return
 	gun.scale = Vector3.ONE
-	var size := Vector3(.16,.18,.42) if hand_weapon==0 else Vector3(.22,.23,.95) if hand_weapon==1 else Vector3(.2,.2,1.2) if hand_weapon==2 else Vector3(.22,.25,.65) if hand_weapon==3 else Vector3(.38,.38,1.3)
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	gun.mesh = mesh
-	if hand_weapon==1:
-		for x in [-.09,.09]: VisualFactory.box(gun,Vector3(.1,.1,.7),Vector3(x,0,-.5),Color("2c4148"))
-	elif hand_weapon in [2,3]:
-		VisualFactory.box(gun,Vector3(.12,.26,.2),Vector3(0,-.2,-.05),Color("344a4f"))
-		VisualFactory.box(gun,Vector3(.2,.15,.3),Vector3(0,.02,.6),Color("6f7355"))
-	elif hand_weapon==4: VisualFactory.cylinder(gun,.23,.25,Vector3(0,0,-.7),Color("96744c"))
+	var model_path: String = "res://assets/models/weapon_"+ItemBag.WEAPON_IDS[hand_weapon]+".tscn" if hand_weapon>=0 else "res://assets/models/item_"+visual_item+".tscn"
+	var model: Node3D = load(model_path).instantiate()
+	gun.add_child(model)

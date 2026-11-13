@@ -1,6 +1,7 @@
 extends "res://scripts/entities/building.gd"
 var piece_index: int = 0
 var tier: int = 1
+var disabled_left: float = 0
 var opened: bool = false
 var obstacle: CollisionShape3D
 var invested: Dictionary = {"scrap":0,"wood":0,"parts":0}
@@ -59,6 +60,11 @@ func _physics_process(delta: float) -> void:
 	if health.dead or world.phase == "ended": return
 	label.text = "%s N%d · %d/%d" % [spec.title,tier,ceili(health.current),ceili(health.maximum)]
 	label.visible = health.current < health.maximum or global_position.distance_to(world.player.global_position) < 5
+	disabled_left = maxf(0,disabled_left-delta)
+	if disabled_left>0:
+		label.visible = true
+		label.text = "EMP · %.1f s" % disabled_left
+		return
 	cooldown -= delta
 	if spec.id == "turret" and cooldown <= 0 and world.phase == "combat": fire_turret()
 	if spec.id == "spikes" and cooldown <= 0:
@@ -132,6 +138,7 @@ func die() -> void:
 	super.die()
 
 func fire_turret() -> void:
+	if disabled_left>0: return
 	var nearest: Node3D
 	var distance: float = spec.values.range
 	var origin := global_position+Vector3(0,1.45,0)

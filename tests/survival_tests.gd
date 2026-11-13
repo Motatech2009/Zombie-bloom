@@ -52,7 +52,7 @@ func run() -> void:
 	actor.set_physics_process(false)
 	check(world.resources.scrap==85 and world.stock.wood==6,"initial depot is scarcer than the previous arena")
 	check(actor.bag.count("pistol")==1 and actor.bag.count("light")==48,"starter weapon and finite reserve occupy real slots")
-	check(actor.weapons.owned.size()==5 and actor.weapons.ammo.size()==5,"survival weapon initializes its full inherited arsenal")
+	check(actor.weapons.owned.size()==9 and actor.weapons.ammo.size()==9,"survival weapon initializes its full inherited arsenal")
 	actor.position = Vector3(20,0,20)
 	var pile: Node3D = world.spawn_loot(actor.position,{"wood":9},0)
 	var bank_before: int = world.stock.wood
@@ -212,15 +212,16 @@ func run() -> void:
 	actor.health.setup(100); actor.position = Vector3(0,0,3)
 	world.waves.wave = 2; world.built_this_round = 3
 	var snap: Dictionary = world.snapshot()
-	check(snap.format==4 and world.valid_snapshot(JSON.parse_string(JSON.stringify(snap))),"survival v4 checkpoint validates after JSON serialization")
+	check(snap.format==5 and world.valid_snapshot(JSON.parse_string(JSON.stringify(snap))),"survival v5 checkpoint validates after JSON serialization")
 	world.built_this_round = 0; actor.bag = ItemBag.new()
 	world.apply_snapshot(snap)
 	check(world.built_this_round==3 and actor.bag.dump()==snap.bag,"snapshot restores physical inventory and spent construction budget")
 	var previous: Dictionary = snap.duplicate(true)
 	previous.format = 3
+	previous.owned.resize(5); previous.ammo.resize(5); previous.slot = 0
 	for key in ["bag","depot_items","profiles","loose","built"]: previous.erase(key)
 	var migrated = world.migrate_snapshot(previous)
-	check(world.valid_snapshot(migrated) and migrated.format==4 and previous.format==3,"v3 saves migrate to bags without mutating the source")
+	check(world.valid_snapshot(migrated) and migrated.format==5 and previous.format==3,"v3 saves migrate to bags without mutating the source")
 	var corrupt: Dictionary = snap.duplicate(true); corrupt.built = 13
 	check(not world.valid_snapshot(corrupt),"corrupt construction budget is rejected")
 	corrupt = snap.duplicate(true); corrupt.bag.slots[0].qty = 9999

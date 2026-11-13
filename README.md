@@ -1,4 +1,4 @@
-# Zombie Bloom — Sobrevivência e Cooperativo 0.7
+# Zombie Bloom — Arsenal e Identidade Visual 0.8
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
@@ -6,13 +6,15 @@ Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa 
 
 ## Jogar
 
+**Novo na 0.8:** HUD com 33 ícones originais, barra rápida visual, mochila em duas linhas, 33 modelos editáveis e equipamentos visíveis na mão e no chão. [Armas e infectados](ARSENAL.md) · [Arquivos dos modelos e ícones](ASSETS.md).
+
 Windows: baixe o artefato **ZombieBloom-Windows-x64** do Actions do commit mais recente desta branch, extraia e execute **ZombieBloom.exe**. Código-fonte: importe `project.godot` na Godot 4.6.3 e pressione F5. Modelos e efeitos são de protótipo.
 
 - **Mochila:** 18 espaços; os primeiros nove são a barra rápida. I abre bolsa/depósito. Clique dois espaços para trocar. Munição, armas, materiais, granadas e kits ocupam espaço.
 - **Coleta:** segure E parado junto ao saque por 2,8 segundos por lote de até quatro unidades; arsenal escondido exige cinco segundos. Movimento, dano e infectados próximos interrompem. Bolsa cheia mantém o excedente no local.
 - **Depósito:** leve os materiais ao Núcleo e segure E por 1,8 segundo para guardar. Construções gastam o estoque compartilhado do Núcleo. Itens carregados não pagam obras diretamente.
 - **Construção:** seis novas peças na primeira preparação; a cota aumenta em uma a cada três hordas vencidas, até doze. É compartilhada pelo grupo e renova após o cerco. Desmontar não devolve cota. Melhorias/reparos de peças existentes não consomem colocações.
-- **Combate:** cinco armas, munição finita para todas, explosivos e kits. Barras de vida legíveis em tela; chefes com ataque anunciado em área, armadura temporária, invocações e fúria. Estouradores, Berradores e Regeneradores juntam-se às nove famílias anteriores.
+- **Combate:** nove armas, munição finita para todas, explosivos e kits. Barras de vida legíveis em tela; chefes com ataque anunciado em área, armadura temporária, invocações e fúria. Investidor, Criogênico e Sabotador ampliam as famílias anteriores. Revólver, rifle de precisão, metralhadora e Arco Tesla ampliam o arsenal.
 - **Recursos:** estoque inicial menor, caixas com aproximadamente 45% dos materiais anteriores e metade da sucata por infectado. Saque precisa ser transportado. Vencer a horda continua creditando uma recompensa ao Núcleo.
 
 A primeira horda chega em **3min30s**; depois, o intervalo diminui até 100 segundos. Não há botão para iniciar hordas. O mapa M e a mochila continuam com o relógio ativo. Há setores tranquilos e outros onde fugir é melhor que tentar limpar. Saque abandonado some ao sair. Use as quatro saídas e o mapa para voltar antes do alarme.
@@ -44,7 +46,7 @@ Instruções completas, reconexão e limites: [MULTIPLAYER.md](MULTIPLAYER.md).
 
 ## Saves e validação
 
-Saves v4: `user://zombie_bloom_campaign_v4.json` e `user://zombie_bloom_endless_v4.json`. Importam v1–v3 preservando os arquivos antigos. Bolsa, depósito, cota, base e perfis dos convidados ficam no save do anfitrião. Marque **Continuar o refúgio salvo deste modo** ao abrir outra sala. No solo, cada modo mantém sua opção de continuar.
+Saves v5: `user://zombie_bloom_campaign_v5.json` e `user://zombie_bloom_endless_v5.json`. Importam v1–v4 preservando os arquivos antigos. Bolsa, depósito, cota, base e perfis dos convidados ficam no save do anfitrião. Marque **Continuar o refúgio salvo deste modo** ao abrir outra sala. No solo, cada modo mantém sua opção de continuar.
 
 ```sh
 godot --headless --path . --editor --quit
@@ -53,10 +55,11 @@ godot --headless --path . --script res://tests/campaign_tests.gd
 godot --headless --path . --script res://tests/defense_tests.gd
 godot --headless --path . --script res://tests/sectors_tests.gd
 godot --headless --path . --script res://tests/survival_tests.gd
+godot --headless --path . --script res://tests/arsenal_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**469 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência e 47 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
+**574 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual e 59 de rede com quatro processos reais. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP e exporta Windows x64.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 

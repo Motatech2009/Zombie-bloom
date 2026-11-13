@@ -44,10 +44,19 @@ func run() -> void:
 	world.phase = "prep"
 	world.horde_left = 150
 	world.stock.wood = 100
-	for actor in world.avatars.values(): actor.position = Vector3(1,0,2)
+	for actor in world.avatars.values():
+		actor.position = Vector3(1,0,2)
+		if actor.peer_id!=1:
+			actor.bag.add("tesla",1)
+			actor.weapons.ammo[8] = 2
+	var cryo: Node3D = world.make_enemy(13,Vector3(12,0,12),false,1)
+	cryo.set_physics_process(false); cryo.windup = 5; cryo.cast_point = cryo.position
 	await create_timer(4).timeout
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].bag.count("wood")==0,"client stores its withdrawn stack back into the authoritative depot")
+	for id in world.avatars:
+		if id!=1: check(world.avatars[id].weapons.ammo[8]<2,"remote Tesla fire consumes authoritative energy ammunition")
+	cryo.queue_free()
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]

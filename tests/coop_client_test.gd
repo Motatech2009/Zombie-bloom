@@ -48,6 +48,12 @@ func run() -> void:
 	link.command("store",{"slot":item_slot})
 	await create_timer(.5).timeout
 	check(world.player.bag.count("wood")==0,"store RPC returns the selected stack to the shared depot")
+	check(world.player.weapons.ammo.size()==9 and world.player.bag.count("tesla")==1,"nine-weapon private profile and a newly granted Tesla replicate")
+	link.test_input.slot = 4; link.test_input.fire = true
+	await create_timer(1.1).timeout
+	link.test_input.fire = false
+	check(world.player.weapons.hand_weapon==8 and world.player.weapons.ammo[8]<2,"new gun selection, visible model and finite ammunition replicate after remote fire")
+	check(world.client_enemies.values().any(func(enemy): return enemy.enemy_kind==13) and not world.client_hazards.is_empty(),"new infected model and its blue warning replicate to clients")
 	deadline = Time.get_ticks_msec()+7000
 	while world.sector_coord==Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.sector_coord==Vector2i(0,-1) and world.field_root!=null,"reliable scene revision loads the same generated northern sector")

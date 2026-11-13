@@ -13,6 +13,7 @@ var gather_start := Vector3.ZERO
 var gather_kind: String = ""
 var gather_duration: float = 2.8
 var downed: bool = false
+var slow_left: float = 0
 var previous_reload: bool = false
 var target_position := Vector3.ZERO
 
@@ -34,6 +35,7 @@ func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended": return
 	var frame := read_input()
 	clock += delta
+	slow_left = maxf(0,slow_left-delta)
 	invulnerable = maxf(0,invulnerable-delta)
 	recoil = move_toward(recoil,0,delta*2)
 	for id in powers.keys():
@@ -42,7 +44,7 @@ func _physics_process(delta: float) -> void:
 	shield_ring.visible = shield>0 and power_left("shield")>0
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
 	var direction := Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
-	var speed := 6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
+	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
 	if gather_target!=null: speed *= .25
 	velocity.x = move_toward(velocity.x,direction.x*speed,delta*35)
 	velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
