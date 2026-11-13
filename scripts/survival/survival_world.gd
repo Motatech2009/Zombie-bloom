@@ -922,6 +922,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			enemy.position = state.p
 			client_enemies[id] = enemy
 		var enemy: Node3D = client_enemies[id]
+		enemy.net_id = id
 		enemy.field_enemy = state.field
 		enemy.set_meta("target",state.p)
 		enemy.rig.rotation.y = state.r

@@ -33,7 +33,11 @@ func run() -> void:
 		if id==1: continue
 		var enemy: Node3D = world.make_enemy(0,world.avatars[id].position+Vector3(0,0,-3),false,id)
 		enemy.set_physics_process(false)
-	await create_timer(5).timeout
+	var targeted_input_seen := false
+	var shooting_deadline := Time.get_ticks_msec()+5000
+	while Time.get_ticks_msec()<shooting_deadline:
+		targeted_input_seen = targeted_input_seen or world.avatars.values().any(func(actor): return actor.net_input.has("target"))
+		await create_timer(.05).timeout
 	check(world.kills>0,"client shooting RPC input causes authoritative enemy deaths")
 	check(world.core.health.current==600 and world.built_this_round==0,"unsupported damage/build commands cannot mutate protected host state")
 	var private_bags := true
@@ -56,6 +60,8 @@ func run() -> void:
 			actor.weapons.ammo[8] = 2
 	var cryo: Node3D = world.make_enemy(13,Vector3(12,0,12),false,1)
 	cryo.set_physics_process(false); cryo.windup = 5; cryo.cast_point = cryo.position
+	var target_dummy: Node3D = world.make_enemy(0,Vector3(7,0,3),false,2)
+	target_dummy.set_physics_process(false); target_dummy.health.setup(10000)
 	var wire := StaticBody3D.new(); wire.set_script(world.structure_script())
 	wire.world = world; wire.piece_index = 6; wire.tier = 2; wire.position = Vector3(20,0,20)
 	world.base_root.add_child(wire)
@@ -66,7 +72,9 @@ func run() -> void:
 		if id!=1: check(world.avatars[id].bag.count("wood")==0,"client stores its withdrawn stack back into the authoritative depot")
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].weapons.ammo[8]<2,"remote Tesla fire consumes authoritative energy ammunition")
+	check(targeted_input_seen,"the host receives targeted mobile input alongside ordinary desktop input")
 	cryo.queue_free()
+	target_dummy.queue_free()
 	check(link.max_snapshot_packed>0 and link.max_snapshot_packed<link.max_snapshot_raw,"compressed authoritative snapshots reduce transport size without losing state")
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0

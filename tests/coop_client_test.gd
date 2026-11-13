@@ -22,10 +22,18 @@ func apply_controls(link: Node) -> void:
 		var finger := InputEventScreenTouch.new(); finger.index = 0; finger.pressed = true; finger.position = controls.stick_center("move")+move*72
 		controls._input(finger)
 	controls.aim_vector = screen_aim
+	world.select_hotbar(int(desired_input.get("slot",0)))
 	if desired_input.get("fire",false):
 		var finger := InputEventScreenTouch.new(); finger.index = 1; finger.pressed = true; finger.position = controls.stick_center("aim")+screen_aim*72
+		if desired_input.get("targeted",false):
+			var nearest: Node3D
+			for enemy in world.client_enemies.values():
+				if not MobileTargeting.can_fire(world.player,enemy): continue
+				if nearest==null or enemy.position.distance_to(world.player.position)<nearest.position.distance_to(world.player.position): nearest = enemy
+			if nearest!=null: finger.position = world.camera.unproject_position(MobileTargeting.point(nearest))
 		controls._input(finger)
-	world.select_hotbar(int(desired_input.get("slot",0)))
+		if desired_input.get("targeted",false):
+			finger.pressed = false; controls._input(finger)
 
 func run() -> void:
 	var tag := "1"
@@ -58,7 +66,12 @@ func run() -> void:
 	check(world.player.roll_cooldown<roll_before and world.player.roll_direction==Vector3.RIGHT,"host rejects repeated roll RPCs during recharge")
 	deadline = Time.get_ticks_msec()+12000
 	while world.phase!="combat" and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	if touch_peer:
+		desired_input.targeted = true
+		deadline = Time.get_ticks_msec()+2000
+		while world.client_enemies.is_empty() and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	desired_input.fire = true; apply_controls(link)
+	if touch_peer: check(world.touch_controls.locked_target!=null and world.local_input(world.player).has("target"),"a zombie screen tap sends target identity and scene revision through the real ENet client")
 	await create_timer(3.5).timeout
 	desired_input.fire = false; apply_controls(link)
 	var total: int = world.player.bag.count("light")+world.player.weapons.ammo[0]

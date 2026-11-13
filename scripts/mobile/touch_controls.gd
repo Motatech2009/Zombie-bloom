@@ -12,6 +12,10 @@ var buttons: Dictionary = {}
 var pad_style: StyleBoxFlat
 var pressed_style: StyleBoxFlat
 var building_layout: bool = false
+var locked_target: Node3D
+var target_revision: int = -1
+var target_slot: int = -1
+var target_ammo: int = -1
 const STICK_RADIUS: float = 72
 
 func _ready() -> void:
@@ -36,10 +40,44 @@ func stick_center(role: String) -> Vector2:
 
 func reset_fingers() -> void:
 	fingers.clear(); move_vector = Vector2.ZERO; aim_strength = 0; interact_held = false; reload_held = false
+	clear_target()
 	queue_redraw()
 
 func frame() -> Dictionary:
-	return {"move":move_vector,"aim":world.player.movement_direction(aim_vector).normalized(),"sprint":move_vector.length()>.88,"fire":aim_strength>.35 and not world.builder.active,"reload":reload_held,"interact":interact_held,"slot":world.pending_slot if world.is_client and world.pending_slot>=0 else world.player.bag.selected}
+	var input := {"move":move_vector,"aim":world.player.movement_direction(aim_vector).normalized(),"sprint":move_vector.length()>.88,"fire":aim_strength>.35 and not world.builder.active,"reload":reload_held,"interact":interact_held,"slot":world.pending_slot if world.is_client and world.pending_slot>=0 else world.player.bag.selected}
+	if not MobileTargeting.alive(locked_target) or target_revision!=scene_token() or target_slot!=world.player.bag.selected or world.builder.active or world.player.health.dead or not world.hud.mode.is_empty():
+		clear_target()
+	if target_ammo>=0 and world.player.weapons.ammo[4]<target_ammo: clear_target()
+	if is_instance_valid(locked_target):
+		var point := MobileTargeting.point(locked_target)
+		if world.camera.is_position_behind(point) or not Rect2(Vector2.ZERO,size).has_point(world.camera.unproject_position(point)):
+			clear_target(); return input
+		input.aim = MobileTargeting.direction(world.player,locked_target)
+		input.fire = not interact_held and MobileTargeting.can_fire(world.player,locked_target)
+		input.target = {"id":locked_target.net_id,"rev":target_revision}
+	return input
+
+func scene_token() -> int:
+	return world.last_scene_revision if world.is_client else world.scene_revision
+
+func clear_target() -> void:
+	locked_target = null; target_revision = -1; target_slot = -1; target_ammo = -1
+
+func select_target(point: Vector2) -> void:
+	clear_target()
+	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0: return
+	var best := 38.0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not MobileTargeting.alive(enemy) or world.camera.is_position_behind(MobileTargeting.point(enemy)): continue
+		var center: Vector2 = world.camera.unproject_position(MobileTargeting.point(enemy))
+		var feet: Vector2 = world.camera.unproject_position(enemy.global_position)
+		var distance := Geometry2D.get_closest_point_to_segment(point,feet,center).distance_to(point)
+		if distance>=best: continue
+		best = distance; locked_target = enemy
+	if locked_target!=null:
+		target_revision = scene_token(); target_slot = world.player.bag.selected
+		if world.player.bag.hand()=="launcher": target_ammo = world.player.weapons.ammo[4]
+	queue_redraw()
 
 func _input(event: InputEvent) -> void:
 	# --touch on desktop is a one-finger simulator; Android uses native multitouch.
@@ -54,6 +92,7 @@ func _input(event: InputEvent) -> void:
 	if not world.hud.mode.is_empty() or world.phase=="ended": reset_fingers(); return
 	if event is InputEventScreenTouch:
 		if not event.pressed or event.canceled:
+			if event.canceled: clear_target()
 			if fingers.has(event.index): release_finger(event.index); get_viewport().set_input_as_handled()
 			return
 		var role := ""
@@ -63,8 +102,14 @@ func _input(event: InputEvent) -> void:
 		if role.is_empty() and not world.builder.active and event.position.distance_to(stick_center("aim"))<=92: role = "aim"
 		if role.is_empty() and world.builder.active:
 			set_build_point(event.position); get_viewport().set_input_as_handled(); return
+		if role.is_empty():
+			# Leave the hotbar and top HUD to the GUI, even over a zombie.
+			if event.position.y<112 or world.hud.belt.get_global_rect().has_point(event.position): return
+			select_target(event.position); fingers[event.index] = "target"
+			get_viewport().set_input_as_handled(); return
 		if role.is_empty() or fingers.values().has(role): return
 		fingers[event.index] = role
+		if role in ["aim","interact"]: clear_target()
 		if role in ["move","aim"]: drag_stick(role,event.position)
 		elif role=="interact": interact_held = true; travel_press()
 		elif role=="reload": reload_held = true
@@ -115,6 +160,7 @@ func trigger(role: String) -> void:
 
 func _process(_delta: float) -> void:
 	if not world.hud.mode.is_empty() or world.phase=="ended": reset_fingers()
+	if world.builder.active: clear_target()
 	if building_layout!=world.builder.active: layout_controls()
 	queue_redraw()
 
@@ -130,7 +176,13 @@ func _draw() -> void:
 		draw_arc(center,STICK_RADIUS,0,TAU,48,Color("82aaa7"),2,true)
 		var vector := move_vector if role=="move" else aim_vector*aim_strength
 		draw_circle(center+vector*STICK_RADIUS*.65,26,Color("c7e58a") if role=="move" else Color("efb66d"))
-		draw_string(ThemeDB.fallback_font,center+Vector2(-60,STICK_RADIUS+20),"MOVER" if role=="move" else "MIRAR / ATIRAR",HORIZONTAL_ALIGNMENT_CENTER,120,12,UI.TEXT)
+		draw_string(ThemeDB.fallback_font,center+Vector2(-60,STICK_RADIUS+20),"MOVER" if role=="move" else "MIRA MANUAL",HORIZONTAL_ALIGNMENT_CENTER,120,12,UI.TEXT)
+	if MobileTargeting.alive(locked_target) and not world.camera.is_position_behind(MobileTargeting.point(locked_target)):
+		var center: Vector2 = world.camera.unproject_position(MobileTargeting.point(locked_target))
+		var color := UI.LIME if MobileTargeting.can_fire(world.player,locked_target) else Color("efb66d")
+		for angle in range(4): draw_arc(center,27,angle*PI/2+.15,angle*PI/2+1.15,12,color,3,true)
+		var title := "ALVO" if color==UI.LIME else "SEM TIRO"
+		draw_string(ThemeDB.fallback_font,center+Vector2(-45,-36),title,HORIZONTAL_ALIGNMENT_CENTER,90,12,color)
 	var names := {"actions":"AÇÕES","inventory":"BOLSA","roll":"ROLAR","interact":"SEGURE\nCOLETAR","reload":"RECARGA","pause":"Ⅱ","rotate":"GIRAR","place":"COLOCAR","cancel":"CANCELAR"}
 	for role in buttons:
 		var rect: Rect2 = buttons[role]

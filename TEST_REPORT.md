@@ -1,3 +1,15 @@
+# Validação da mira por toque 0.11.1 — 2026-11-13
+
+**871 verificações aprovadas:** 742 das onze suítes anteriores, 33 de mira por alvo e 96 de rede (28 anfitrião +22 por convidado desktop +24 no convidado de toque). Registros em docs/targeting-results.txt e docs/coop-results.txt.
+
+Toque seleciona um zumbi na tela e mantém mira/disparo ao soltar o dedo, permitindo movimento separado. Testes verificam consumo real de uma bala e dano no alvo, acompanhamento de movimento, interrupção por parede/alcance/morte/remoção/saída da tela, revisão do setor e cancelamento por chão, controle manual, coleta, painel, foco, cancelamento do sistema, troca de item, queda ou construção. Cães e voadores recebem tiros na altura correta. Lança-foguetes consome um foguete e encerra a trava; granadas e kits nunca são usados pela seleção de inimigo. Dispersão, recarga, cadência e custos continuam normais.
+
+O cliente envia ID autoritativo do alvo e revisão do setor no frame já existente. O anfitrião reavalia alvo vivo, distância e cobertura antes de cada disparo e recalcula a direção atual; pedido falso, obsoleto ou liberado não força tiro. Réplicas de inimigos passam a manter o ID recebido do anfitrião. ENet com quatro processos reais confere toque no zumbi, envio/recebimento desse alvo, tiro e munição no servidor junto dos convidados desktop. A fixture usa um alvo resistente em corredor livre para validar Tesla; os demais objetivos de inventário, construção, casas e viagem continuam.
+
+Revisão gráfica em janela: marcador âmbar SEM TIRO atrás do Núcleo, com munição preservada; marcador verde ALVO em zumbi acessível, vida reduzida e bala consumida; toque no chão remove marcador e interrompe a sequência. Ambiente Linux/Mesa com simulação de toque, sem novo teste desta atualização em telefone físico. CI repete doze suítes e rede e gera APK/Windows do mesmo commit, com assinatura Android verificada. Saves continuam v6 e a chave de desenvolvimento é a mesma da 0.11.
+
+---
+
 # Validação PC + Android 0.11 — 2026-11-13
 
 **836 verificações locais aprovadas:** 714 de regressão, 28 móveis e 94 de rede (27 anfitrião +22 por convidado de desktop +23 no convidado de toque). Logs em docs/mobile-results.txt e nos registros das suítes/rede.

@@ -155,7 +155,11 @@ func _input_frame(data: Dictionary) -> void:
 	var aim = data.get("aim")
 	var slot = data.get("slot")
 	if not move is Vector2 or not aim is Vector3 or not slot is int or slot<0 or slot>8 or not move.is_finite() or not aim.is_finite(): return
+	if data.has("target"):
+		var target = data.target
+		if not target is Dictionary or target.size()!=2 or not target.get("id") is int or not target.get("rev") is int or target.id<1 or target.rev<0: return
 	world.avatars[id].net_input = {"move":move.limit_length(1),"aim":Vector3(aim.x,0,aim.z).normalized(),"slot":slot,"sprint":data.get("sprint")==true,"fire":data.get("fire")==true,"reload":data.get("reload")==true,"interact":data.get("interact")==true,"time":now}
+	if data.has("target"): world.avatars[id].net_input.target = data.target.duplicate()
 
 @rpc("any_peer","call_remote","reliable",0)
 func _action(action: String,data: Dictionary) -> void:

@@ -110,10 +110,11 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
 	velocity.y = -1
 	move_and_slide()
-	var point: Vector3 = frame.get("aim",Vector3.FORWARD)
-	if point.length_squared()>.01: aim = point.normalized()
 	bag.selected = clampi(int(frame.get("slot",bag.selected)),0,8)
 	weapons.sync_hand()
+	frame = MobileTargeting.resolve(world,self,frame)
+	var point: Vector3 = frame.get("aim",Vector3.FORWARD)
+	if point.length_squared()>.01: aim = point.normalized()
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-aim.x,-aim.z),minf(1,delta*24))
 	animate_pose(Vector2(velocity.x,velocity.z).length()/6.3)
 	if rolling:

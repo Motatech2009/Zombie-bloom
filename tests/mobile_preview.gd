@@ -10,5 +10,8 @@ func run() -> void:
 	world.player.position = Vector3(0,0,8)
 	world.player.invulnerable = 3600
 	world.notice_left = 0
+	if "--target" in OS.get_cmdline_user_args():
+		var enemy: Node3D = world.make_enemy(0,Vector3(5,0,5),false,1)
+		enemy.set_physics_process(false); enemy.health.setup(100000)
 	if "--inventory" in OS.get_cmdline_user_args(): world.hud.show_inventory()
 	if "--catalog" in OS.get_cmdline_user_args(): world.hud.show_build_catalog()

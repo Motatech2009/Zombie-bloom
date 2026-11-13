@@ -1,0 +1,36 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: tapping a visible zombie locks and requests fire without holding the aim pad
+PASS: releasing the targeting tap leaves the lock active without a stuck finger
+PASS: a separate movement finger preserves the selected target
+PASS: locked aim follows a moving target instead of its original ground location
+PASS: a targeted input actually spends one round and damages the selected zombie
+PASS: cover suspends fire while keeping the selected target
+PASS: holding a blocked target cannot spend ammunition
+PASS: host independently rejects a stale fire request through cover
+PASS: fire resumes when the existing target becomes unobstructed
+PASS: host rejects a target beyond the equipped weapon's range
+PASS: a target from another scene revision cannot trigger a shot
+PASS: host never converts a released fire request into an automatic shot
+PASS: a missing network target fails closed instead of shooting into empty space
+PASS: target death stops local fire and stale remote fire before another round is consumed
+PASS: tapping empty ground cancels target lock
+PASS: manual aiming explicitly takes over from the target lock
+PASS: releasing manual aim does not restore an old target
+PASS: starting collection cancels automatic combat input
+PASS: opening a panel clears target lock so closing it cannot resume surprise fire
+PASS: backgrounding the app clears target lock
+PASS: an operating-system touch cancellation also clears automatic fire
+PASS: changing hotbar item cancels the previous weapon's lock
+PASS: grenades never auto-throw from a zombie targeting tap
+PASS: medkits never auto-use from a zombie targeting tap
+PASS: sector changes discard the old target
+PASS: construction mode cancels combat targeting
+PASS: freed target references are safely discarded
+PASS: targeted fire reaches an airborne zombie at its real height
+PASS: targeted fire reaches a low-profile zombie dog
+PASS: a launcher tap fires once and clears its lock before reload or another rocket
+PASS: a downed player cannot keep a live target lock
+PASS: a target leaving the screen cancels automatic fire
+PASS: hotbar touches remain GUI input and never select world targets underneath
+TARGETING RESULT: 33 checks, 0 failures

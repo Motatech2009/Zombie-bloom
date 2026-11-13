@@ -1,4 +1,4 @@
-# Zombie Bloom 0.11 — PC + Android
+# Zombie Bloom 0.11.1 — PC + Android
 
 O Android usa a mesma simulação, itens, casas, fortaleza, horda e protocolo ENet do PC. A sala aceita até quatro jogadores, misturando computador e celular. Recomenda-se hospedar no PC para ele manter a simulação e os saves, enquanto o Android joga como convidado. Celular pode hospedar em rede compatível, mas deve permanecer aberto e em primeiro plano.
 
@@ -25,6 +25,7 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 | Controle | Ação |
 | --- | --- |
 | Disco esquerdo | Mover; empurre até a borda para correr |
+| Toque no zumbi | Trava esse alvo e dispara acompanhando seu movimento; toque no chão para cancelar |
 | Disco direito | Mirar; arraste além da zona central para disparar/usar o item selecionado; solte para parar |
 | ROLAR | Esquiva com recarga de cinco segundos, validada pelo anfitrião |
 | RECARGA | Recarregar a arma com munição da mochila |
@@ -34,6 +35,8 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 | Setas da barra | Alternar entre os espaços 1–5 e 6–9 |
 | AÇÕES | Mapa, construção, vendedor, melhorias, portões, desmonte e save do anfitrião |
 | Ⅱ / Voltar do Android | Abrir pausa ou fechar o painel atual; cooperativo continua ativo |
+
+O alvo recebe um marcador verde quando há tiro e âmbar quando está protegido ou fora de alcance. A trava para ao morrer, sair da tela, trocar de item, entrar em construção, começar coleta ou abrir um painel. O anfitrião confere vida, alcance, cobertura e revisão do setor antes de cada tiro, inclusive quando um comando chega atrasado. Não procura outro alvo sozinho. O lança-foguetes dá um disparo por toque; granadas e kits continuam manuais. A precisão e dispersão das armas continuam valendo.
 
 Dois dedos independentes permitem mover e mirar/disparar ao mesmo tempo. Soltar um controle não libera o outro. Perder foco, cancelar um toque ou abrir um painel limpa os comandos mantidos, evitando movimento/tiro preso. Seleções recentes da barra não são desfeitas por um snapshot antigo enquanto aguardam confirmação.
 
@@ -45,7 +48,7 @@ Interface em paisagem 960×540, com proporção mantida e faixas quando necessá
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 836 verificações, incluindo 28 de entrada/UI móvel e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 871 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 
