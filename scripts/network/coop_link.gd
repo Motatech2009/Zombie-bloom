@@ -16,6 +16,8 @@ var test_input: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# All traffic is host-authoritative; clients never need peer-to-peer relaying.
+	multiplayer.server_relay = false
 	multiplayer.connected_to_server.connect(_connected)
 	multiplayer.connection_failed.connect(func(): close_session(); status_changed.emit("Não foi possível conectar. Confira IP, porta UDP e sala aberta."))
 	multiplayer.server_disconnected.connect(_server_left)
@@ -66,9 +68,11 @@ func close_session() -> void:
 	scene_sent.clear()
 	input_times.clear()
 	action_times.clear()
-	if peer!=null: peer.close()
+	# Release the high-level transport before shutting down its ENet peer.
+	var previous: ENetMultiplayerPeer = peer
 	peer = null
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	if previous!=null: previous.close()
 
 func _server_left() -> void:
 	var previous: Node3D = world
@@ -92,7 +96,7 @@ func _physics_process(delta: float) -> void:
 		snapshot_left = .1
 		for id in world.avatars:
 			if id==1 or not multiplayer.get_peers().has(id): continue
-			if peer.get_peer(id).get_state()!=ENetPacketPeer.STATE_CONNECTED: continue
+			if peer.get_peer(id).get_state()!=ENetPacketPeer.STATE_CONNECTED or peer.get_peer(id).get_channels()<3: continue
 			if int(scene_sent.get(id,-1))!=world.scene_revision:
 				_receive_scene.rpc_id(id,world.net_scene())
 				scene_sent[id] = world.scene_revision
