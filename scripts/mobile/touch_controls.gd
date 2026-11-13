@@ -63,6 +63,13 @@ func scene_token() -> int:
 func clear_target() -> void:
 	locked_target = null; target_revision = -1; target_slot = -1; target_ammo = -1
 
+func world_touch_allowed(point: Vector2) -> bool:
+	if point.y<112 or not Rect2(Vector2.ZERO,size).has_point(point) or world.hud.belt.get_global_rect().has_point(point): return false
+	if point.distance_to(stick_center("move"))<=92 or point.distance_to(stick_center("aim"))<=92: return false
+	for rect in buttons.values():
+		if rect.has_point(point): return false
+	return true
+
 func select_target(point: Vector2) -> void:
 	clear_target()
 	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0: return
@@ -104,7 +111,7 @@ func _input(event: InputEvent) -> void:
 			set_build_point(event.position); get_viewport().set_input_as_handled(); return
 		if role.is_empty():
 			# Leave the hotbar and top HUD to the GUI, even over a zombie.
-			if event.position.y<112 or world.hud.belt.get_global_rect().has_point(event.position): return
+			if not world_touch_allowed(event.position): return
 			select_target(event.position); fingers[event.index] = "target"
 			get_viewport().set_input_as_handled(); return
 		if role.is_empty() or fingers.values().has(role): return

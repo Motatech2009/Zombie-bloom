@@ -33,6 +33,8 @@ func run() -> void:
 		if id==1: continue
 		var enemy: Node3D = world.make_enemy(0,world.avatars[id].position+Vector3(0,0,-3),false,id)
 		enemy.set_physics_process(false)
+		# Keep the touch player's target alive while its first collider snapshot arrives.
+		if world.avatars[id].display_name=="Amigo 3": enemy.health.setup(1000)
 	var targeted_input_seen := false
 	var shooting_deadline := Time.get_ticks_msec()+5000
 	while Time.get_ticks_msec()<shooting_deadline:

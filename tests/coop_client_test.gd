@@ -29,11 +29,21 @@ func apply_controls(link: Node) -> void:
 			var nearest: Node3D
 			for enemy in world.client_enemies.values():
 				if not MobileTargeting.can_fire(world.player,enemy): continue
+				if not controls.world_touch_allowed(world.camera.unproject_position(MobileTargeting.point(enemy))): continue
 				if nearest==null or enemy.position.distance_to(world.player.position)<nearest.position.distance_to(world.player.position): nearest = enemy
-			if nearest!=null: finger.position = world.camera.unproject_position(MobileTargeting.point(nearest))
+			if nearest==null: return
+			finger.position = world.camera.unproject_position(MobileTargeting.point(nearest))
 		controls._input(finger)
 		if desired_input.get("targeted",false):
 			finger.pressed = false; controls._input(finger)
+
+func apply_ready_controls(link: Node) -> void:
+	apply_controls(link)
+	if not touch_peer or not desired_input.get("targeted",false) or not desired_input.get("fire",false): return
+	var deadline := Time.get_ticks_msec()+1500
+	while link.world.touch_controls.locked_target==null and Time.get_ticks_msec()<deadline:
+		await create_timer(.05).timeout
+		apply_controls(link)
 
 func run() -> void:
 	var tag := "1"
@@ -69,8 +79,8 @@ func run() -> void:
 	if touch_peer:
 		desired_input.targeted = true
 		deadline = Time.get_ticks_msec()+2000
-		while world.client_enemies.is_empty() and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
-	desired_input.fire = true; apply_controls(link)
+		while not world.client_enemies.values().any(func(enemy): return MobileTargeting.can_fire(world.player,enemy)) and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
+	desired_input.fire = true; await apply_ready_controls(link)
 	if touch_peer: check(world.touch_controls.locked_target!=null and world.local_input(world.player).has("target"),"a zombie screen tap sends target identity and scene revision through the real ENet client")
 	await create_timer(3.5).timeout
 	desired_input.fire = false; apply_controls(link)
@@ -95,7 +105,7 @@ func run() -> void:
 	await create_timer(.5).timeout
 	check(world.player.bag.count("wood")==0,"store RPC returns the selected stack to the shared depot")
 	check(world.player.weapons.ammo.size()==9 and world.player.bag.count("tesla")==1,"nine-weapon private profile and a newly granted Tesla replicate")
-	desired_input.slot = 4; desired_input.fire = true; apply_controls(link)
+	desired_input.slot = 4; desired_input.fire = true; await apply_ready_controls(link)
 	deadline = Time.get_ticks_msec()+2500
 	while world.player.weapons.ammo[8]>=2 and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	desired_input.fire = false; apply_controls(link)
