@@ -6,6 +6,8 @@ A nova suíte de 24 verificações cobre analógico flutuante, rotação ao anda
 
 A sessão ENet usa quatro processos reais em loopback, com um convidado usando eventos de toque. O servidor limita o movimento à física, aceita apenas comandos validados e conserva a autoridade de dano e inventário. Os conjuntos lentos e rápidos usam canais separados e compressão. A suíte não certifica rede de operadora, perda real em 4G, nem desempenho no Moto G45/A13.
 
+Na primeira execução remota, o cenário de troca para Tesla excedeu a janela fixa em um convidado, enquanto a execução independente do mesmo commit passou. A barreira de teste agora espera a confirmação de modelo e consumo por todos os participantes antes de o anfitrião avançar. Os mesmos critérios de dano, seleção e munição continuam obrigatórios. O teste de recarga do rolamento usa o contador de ativações confirmado pelo anfitrião, evitando confundir uma correção do temporizador previsto com uma segunda esquiva aceita.
+
 Inspeção visual em janela 1280×800 com interface móvel 960×540: HUD de combate, pausa, configurações, qualidade detalhada restaurada durante a partida e mochila com controles de fechamento visíveis. Não houve instalação física do novo APK neste ambiente.
 
 # Validação de exploração e suprimentos 0.12 — 2026-11-13

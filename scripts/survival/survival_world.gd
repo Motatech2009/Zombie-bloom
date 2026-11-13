@@ -939,7 +939,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"cast":enemy.windup})
@@ -1030,6 +1030,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.gather_duration = state.duration
 		actor.gather_kind = state.kind
 		actor.slow_left = float(state.get("slow",0))
+		actor.authoritative_roll_count = int(state.get("roll_count",0))
 		actor.roll_left = float(state.get("roll",0))
 		actor.roll_cooldown = float(state.get("roll_cd",0))
 		actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)

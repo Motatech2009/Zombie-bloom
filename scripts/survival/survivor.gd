@@ -20,6 +20,8 @@ var target_position := Vector3.ZERO
 const ROLL_DURATION: float = .42
 const ROLL_RECHARGE: float = 5.0
 const ROLL_SPEED: float = 13.0
+var roll_count: int = 0
+var authoritative_roll_count: int = 0
 var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
@@ -40,6 +42,7 @@ func start_roll(direction: Vector3) -> bool:
 	if direction.length_squared()<.01: direction = aim
 	if direction.length_squared()<.01: direction = Vector3.FORWARD
 	roll_direction = direction.normalized()
+	roll_count += 1
 	roll_left = ROLL_DURATION
 	roll_cooldown = ROLL_RECHARGE
 	invulnerable = maxf(invulnerable,.20)

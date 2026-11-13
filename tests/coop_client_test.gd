@@ -71,10 +71,14 @@ func run() -> void:
 	world.send_action("roll",{"direction":Vector3.RIGHT})
 	await create_timer(.15).timeout
 	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"predicted roll starts locally and keeps its five-second cooldown")
-	var roll_before: float = world.player.roll_cooldown
-	world.send_action("roll",{"direction":Vector3.LEFT})
-	await create_timer(.15).timeout
-	check(world.player.roll_cooldown<roll_before and world.player.roll_direction==Vector3.RIGHT,"host rejects repeated roll RPCs during recharge")
+	deadline = Time.get_ticks_msec()+3000
+	while world.player.authoritative_roll_count<1 and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
+	var roll_before: int = world.player.authoritative_roll_count
+	var snapshots_before: int = link.received_snapshots
+	link.command("roll",{"direction":Vector3.LEFT})
+	deadline = Time.get_ticks_msec()+2000
+	while link.received_snapshots<snapshots_before+4 and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
+	check(roll_before==1 and world.player.authoritative_roll_count==roll_before and world.player.roll_direction==Vector3.RIGHT,"host rejects repeated roll RPCs during recharge")
 	deadline = Time.get_ticks_msec()+12000
 	while world.phase!="combat" and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	if touch_peer:
@@ -112,8 +116,8 @@ func run() -> void:
 		check(world.player.health.current>50 and world.player.bag.count("medkit")==1,"the mobile item button uses exactly one medkit through the authoritative reliable command")
 	check(world.player.weapons.ammo.size()==9 and world.player.bag.count("tesla")==1,"nine-weapon private profile and a newly granted Tesla replicate")
 	desired_input.targeted = true; desired_input.slot = 4; desired_input.fire = true; await apply_ready_controls(link)
-	deadline = Time.get_ticks_msec()+2500
-	while world.player.weapons.ammo[8]>=2 and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	deadline = Time.get_ticks_msec()+5000
+	while (world.player.weapons.hand_weapon!=8 or world.player.weapons.ammo[8]>=2) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	desired_input.fire = false; apply_controls(link)
 	check(world.player.weapons.hand_weapon==8 and world.player.weapons.ammo[8]<2,"new gun selection, visible model and finite ammunition replicate after remote fire")
 	check(world.client_enemies.values().any(func(enemy): return enemy.enemy_kind==13) and not world.client_hazards.is_empty(),"new infected model and its blue warning replicate to clients")

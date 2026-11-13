@@ -71,6 +71,9 @@ func run() -> void:
 	world.airdrops.left = .01; world.airdrops.tick(.02)
 	world.airdrops.state.coord = [0,-1]
 	await create_timer(5).timeout
+	var weapon_deadline := Time.get_ticks_msec()+6000
+	while world.avatars.values().any(func(actor): return actor.peer_id!=1 and actor.weapons.ammo[8]>=2) and Time.get_ticks_msec()<weapon_deadline:
+		await create_timer(.05).timeout
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].bag.count("wood")==0,"client stores its withdrawn stack back into the authoritative depot")
 	for id in world.avatars:

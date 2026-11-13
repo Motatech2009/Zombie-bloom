@@ -6,7 +6,7 @@ PC e Android precisam ser atualizados juntos. Esta versão mantém os mundos e c
 
 - O analógico aparece no ponto inicial do polegar na metade esquerda. Arraste para andar e leve à borda para correr. Um segundo dedo não reposiciona o analógico que já está em uso.
 - Sem disparar, o personagem olha na direção da caminhada. Segurar ATIRAR mantém a mira independente e permite recuar ou andar de lado.
-- Um toque no infectado escolhe o alvo. Ele só recebe tiros enquanto ATIRAR estiver pressionado. Soltar para o fogo imediatamente. Um alvo escolhido atrás de uma parede fica selecionado, mas não gasta munição. Segurar o disparo assistido sem alvo escolhido procura um infectado visível e alcançável.
+- Um toque no infectado escolhe o alvo. Ele só recebe tiros enquanto ATIRAR estiver pressionado. Soltar interrompe o fogo imediatamente. Um alvo escolhido atrás de uma parede fica selecionado, mas não gasta munição. Segurar o disparo assistido sem alvo escolhido procura um infectado visível e alcançável.
 - Botões de combate usam fundo quase transparente, contorno e ícones brancos a 40% quando ociosos. O toque realça o botão. O alcance de toque permanece maior que o ícone.
 - COLETAR aparece quando há caixa, depósito, saída, reanimação ou reparo próximo. O texto indica a ação. As condições de segurança e o tempo de coleta continuam no anfitrião.
 - A barra mostra quatro espaços compactos por página, com três páginas para alcançar os nove. A bolsa conserva seus 18 espaços.
