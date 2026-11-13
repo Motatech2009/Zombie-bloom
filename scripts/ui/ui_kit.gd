@@ -117,3 +117,10 @@ static func settings(parent: Node, on_change: Callable) -> void:
 	parent.add_child(check)
 	check.toggled.connect(func(value: bool): GameSettings.shadows = value; GameSettings.save_settings(); on_change.call())
 	label(parent, "Desative sombras para reduzir o custo gráfico.", 14, MUTED)
+	if MobilePlatform.enabled():
+		var lean := CheckButton.new()
+		lean.text = "Modo leve / celular"
+		lean.button_pressed = GameSettings.mobile_performance
+		parent.add_child(lean)
+		lean.toggled.connect(func(value: bool): GameSettings.mobile_performance = value; GameSettings.save_settings(); on_change.call())
+		label(parent,"Modo leve reduz detalhes, efeitos e resolução 3D. Sombras ficam desligadas.\nSalve e reabra a partida para aplicar todos os detalhes.",14,MUTED)

@@ -69,6 +69,9 @@ jobs:
           godot --headless --path . --script res://tests/mobile_targeting_tests.gd 2>&1 | tee targeting-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' targeting-tests.log; then exit 1; fi
           grep -E 'TARGETING RESULT: [0-9]+ checks, 0 failures' targeting-tests.log
+          godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-performance-tests.log; then exit 1; fi
+          grep -E 'MOBILE PERFORMANCE RESULT: [0-9]+ checks, 0 failures' mobile-performance-tests.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
       - name: Install matching export templates
         shell: bash
@@ -89,7 +92,7 @@ jobs:
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
           cp MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+          cp docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

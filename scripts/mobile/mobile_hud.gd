@@ -1,10 +1,17 @@
 extends "res://scripts/survival/survival_hud.gd"
 var belt: HBoxContainer
 var page: int = 0
+var refresh_elapsed: float = 0
+var performance_text: Label
+var performance_elapsed: float = 0
 func _ready() -> void:
 	super._ready()
 	var controls := TouchControls.new(); controls.world = world; root.add_child(controls)
 	world.touch_controls = controls
+	if MobilePlatform.lightweight():
+		var bars := MobileEnemyBars.new(); bars.world = world; root.add_child(bars); root.move_child(bars,0)
+	performance_text = UI.label(root,"",11,UI.MUTED)
+	performance_text.position = Vector2(14,108)
 
 func place_panel(panel: Control,preset: int,rect: Rect2) -> void:
 	panel.set_anchors_and_offsets_preset(preset)
@@ -52,12 +59,20 @@ func update_page() -> void:
 	for i in range(hotbar.size()): hotbar[i].visible = i>=page*5 and i<page*5+5
 
 func _process(delta: float) -> void:
+	if mode=="upgrade" and world.resources.pending==0: close_modal()
+	refresh_elapsed += delta
+	performance_elapsed += delta
+	if refresh_elapsed<.1: return
+	delta = refresh_elapsed; refresh_elapsed = 0
 	super._process(delta)
 	if not is_instance_valid(world.touch_controls): return
 	var seconds := ceili(world.airdrops.left)
 	airdrop_text.text = "AIRDROP %02d:%02d" % [seconds/60,seconds%60] if world.airdrops.state.is_empty() or world.airdrops.state.get("collected",false) else "DROP (%d,%d)" % [world.airdrops.coord().x,world.airdrops.coord().y]
-	crosshair.visible = mode.is_empty() and world.touch_controls.aim_strength>.15 and not world.builder.active
-	crosshair.position = world.camera.unproject_position(world.player.position+world.local_input(world.player).aim*8+Vector3.UP)-Vector2(10,12)
+	crosshair.visible = mode.is_empty() and world.player.bag.hand()=="grenade" and not world.builder.active
+	if crosshair.visible: crosshair.position = world.camera.unproject_position(world.player.position+world.touch_controls.free_aim*8+Vector3.UP)-Vector2(10,12)
+	if performance_elapsed>=.5:
+		performance_elapsed = 0
+		performance_text.text = "%d FPS · %s" % [Engine.get_frames_per_second(),"LEVE" if MobilePlatform.lightweight() else "DETALHADO"]
 	notice_text.text = notice_text.text.replace("G melhora a estrutura próxima","AÇÕES melhora a estrutura próxima")
 	if mode=="depot":
 		for id in depot_buttons: depot_buttons[id].text = "%s ×%d / retirar" % [ItemBag.TITLES[id],world.depot_count(id)]

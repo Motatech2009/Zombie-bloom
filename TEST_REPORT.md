@@ -1,3 +1,21 @@
+# Validação de controles e modo leve 0.11.2 — 2026-11-13
+
+**898 verificações aprovadas:** 775 das doze suítes anteriores, 26 de controle/desempenho e 97 de rede (28 anfitrião, 22 por desktop e 25 pelo cliente de toque). Registros em docs/mobile-performance-results.txt, docs/targeting-results.txt, docs/mobile-results.txt e docs/coop-results.txt.
+
+O disco direito foi substituído por ATIRAR com área de 168×146 pontos. Segurar escolhe o zumbi visível/alcançável mais próximo, preserva o alvo tocado e procura outro após uma morte; soltar ou arrastar para fora cancela. Sem alvo válido não gasta munição. Movimento usa dedo separado. Granada/kit usam uma unidade por toque e mantêm validação no anfitrião. A rede real valida seleção assistida, seleção por toque, munição e cura única por comando confiável. Mira no cão e voador agora usa os IDs corretos dos dois tipos na fixture.
+
+Modo leve padrão em celular: cenário em 75% da resolução, UI em 960×540, sombras desativadas, materiais sem normal map/triplanar, modelos agrupados por membro com meshes compartilhados e preparação dos humanoides na entrada da partida. Evita criar o modelo legado que seria imediatamente descartado. Animação humanoide limitada a 20 Hz sem reduzir física/IA. Barras em uma única camada a 10 Hz, até 12 indicadores, priorizando alvo e chefes. Efeitos usam 20 objetos reutilizados; o limite só reduz apresentação. HUD numérico a 10 Hz e contador de FPS no aparelho. Qualidade fica estável até reabrir a partida, evitando misturar perfis após uma troca nas configurações.
+
+Tiro em alvo usa índice por ID, consultas de cobertura limitadas/armazenadas no cliente e revalidação pelo anfitrião quando a arma pode disparar. Não consulta cobertura a cada leitura de entrada ou durante recarga/cadência. Testa referências removidas, limites de efeitos/barras, mesh compartilhado, dano e consumo reais, controle sem alvo e entrada independente.
+
+Benchmark gráfico de apresentação, Mesa llvmpipe/Linux, sem IA ativa: 0, 24 e 72 inimigos, oito quadros de aquecimento e 40 amostras por caso. Com 72: chamadas de desenho 1.684 → 544 (-67,7%); meshes de inimigos 1.214 → 350 (-71,2%); nós totais 2.515 → 1.385 (-44,9%). Mediana de quadro observada 41,012 → 29,679 ms nesse ensaio. Método e amostras resumidas em docs/mobile-render-benchmark.json. Esses números não medem FPS do A13, física de uma horda ativa, aquecimento ou bateria.
+
+Revisão gráfica em janela conferiu botão grande separado da coleta, contador FPS/LEVE, estilo e membros preservados, alvo escolhido ao segurar e seis tiros consumidos em 1,8 s; ao soltar, marcador e ataque foram encerrados. Ambiente com áudio Dummy. Não houve teste desta versão em Android físico. CI repete treze suítes/rede e gera Windows/APK com assinatura verificada. Dados de mundo v6 e assinatura de desenvolvimento permanecem compatíveis.
+
+Referência técnica: https://docs.godotengine.org/en/4.6/tutorials/performance/optimizing_3d_performance.html
+
+---
+
 # Validação da mira por toque 0.11.1 — 2026-11-13
 
 **871 verificações aprovadas:** 742 das onze suítes anteriores, 33 de mira por alvo e 96 de rede (28 anfitrião +22 por convidado desktop +24 no convidado de toque). Registros em docs/targeting-results.txt e docs/coop-results.txt.

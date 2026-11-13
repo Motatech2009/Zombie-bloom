@@ -36,7 +36,7 @@ func _ready() -> void:
 	Controls.setup()
 	GameSettings.load_settings()
 	sunlight = VisualFactory.lighting(self)
-	sunlight.shadow_enabled = GameSettings.shadows
+	sunlight.shadow_enabled = GameSettings.use_shadows()
 	add_child(base_root)
 	arena.free()
 	arena = load("res://scripts/campaign/defense_arena.gd").new()

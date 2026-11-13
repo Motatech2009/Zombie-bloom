@@ -1,4 +1,4 @@
-# Zombie Bloom — PC + Android 0.11.1
+# Zombie Bloom — PC + Android 0.11.2
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
@@ -6,7 +6,7 @@ Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa 
 
 ## Jogar
 
-**Novo na 0.11.1:** toque no zumbi para travar mira e atirar, com pausa por cobertura/alcance e cancelamento após a morte. Windows e Android devem ser atualizados juntos.
+**Novo na 0.11.2:** botão grande ATIRAR com seleção assistida, toque em zumbis para escolher um alvo e modo leve para celular com modelos agrupados, barras/efeitos limitados e contador de FPS. Windows e Android devem ser atualizados juntos.
 
 **Novo na 0.11:** APK Android de teste e Windows do mesmo commit, dois controles de toque, menus adaptados e cliente móvel no mesmo mundo ENet dos PCs. [Instalação, controles e limites](MOBILE.md).
 
@@ -79,7 +79,7 @@ godot --headless --path . --script res://tests/mobile_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**871 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque e 96 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
+**898 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque, 26 de desempenho/controle assistido e 97 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 

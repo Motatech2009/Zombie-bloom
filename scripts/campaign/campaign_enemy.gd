@@ -29,15 +29,7 @@ func _ready() -> void:
 	add_child(health)
 	health.setup(float(spec.values.health)*CampaignData.health_scale(w))
 	health.died.connect(die)
-	if spec.id=="hound": dog_model()
-	elif spec.id=="flyer": flying_model()
-	else:
-		rig = VisualFactory.human(self,spec.color,false)
-		rig.scale = Vector3.ONE*factor
-		if spec.id=="armored": VisualFactory.box(rig,Vector3(.7,.65,.42),Vector3(0,1.25,0),Color("3f5261"))
-		if spec.id in ["demolisher","alpha"]:
-			VisualFactory.box(rig,Vector3(.95,.35,.5),Vector3(0,1.5,0),Color("8a3e32"))
-		if spec.id=="spitter": VisualFactory.cylinder(rig,.42,.55,Vector3(0,1.0,.25),Color("a5d45f"),true)
+	create_model(factor)
 	label = VisualFactory.health_label(self,shape.height+.25)
 	label.font_size = 22
 	label.pixel_size = .012
@@ -45,6 +37,16 @@ func _ready() -> void:
 	think_left = randf_range(0,.8)
 	clock = randf()*10
 	state = "seek"
+
+func create_model(factor: float) -> void:
+	if spec.id=="hound": dog_model()
+	elif spec.id=="flyer": flying_model()
+	else:
+		rig = VisualFactory.human(self,spec.color,false)
+		rig.scale = Vector3.ONE*factor
+		if spec.id=="armored": VisualFactory.box(rig,Vector3(.7,.65,.42),Vector3(0,1.25,0),Color("3f5261"))
+		if spec.id in ["demolisher","alpha"]: VisualFactory.box(rig,Vector3(.95,.35,.5),Vector3(0,1.5,0),Color("8a3e32"))
+		if spec.id=="spitter": VisualFactory.cylinder(rig,.42,.55,Vector3(0,1.0,.25),Color("a5d45f"),true)
 
 func dog_model() -> void:
 	rig = Node3D.new()
@@ -133,8 +135,9 @@ func _physics_process(delta: float) -> void:
 		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
 		rig.position.y = sin(clock*4)*.12
 	else: VisualFactory.animate_human(rig,clock,.5 if speed>0 else 0,0,false)
-	label.visible = health.current<health.maximum
-	label.text = "%d" % ceili(health.current)
+	if not label.has_meta("suppressed"):
+		label.visible = health.current<health.maximum
+		label.text = "%d" % ceili(health.current)
 
 func line_of_sight() -> bool:
 	var from := global_position+Vector3(0,aim_height,0)

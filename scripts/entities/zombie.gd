@@ -74,8 +74,9 @@ func _physics_process(delta: float) -> void:
 				recoil = .65
 	rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-direction.x, -direction.z), minf(1, delta * 12))
 	VisualFactory.animate_human(rig, clock * float(spec.values.speed) / 2, 1.0 if state == "move" else .15, recoil, false)
-	label.visible = health.current < health.maximum
-	label.text = "%d" % ceili(health.current)
+	if not label.has_meta("suppressed"):
+		label.visible = health.current < health.maximum
+		label.text = "%d" % ceili(health.current)
 
 func choose_target() -> void:
 	var chase_distance := 15.0 if spec.id == "runner" else 10.0

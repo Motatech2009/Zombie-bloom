@@ -15,8 +15,8 @@ PASS: host never converts a released fire request into an automatic shot
 PASS: a missing network target fails closed instead of shooting into empty space
 PASS: target death stops local fire and stale remote fire before another round is consumed
 PASS: tapping empty ground cancels target lock
-PASS: manual aiming explicitly takes over from the target lock
-PASS: releasing manual aim does not restore an old target
+PASS: the assisted fire button preserves an explicitly tapped target
+PASS: releasing the fire button clears its target
 PASS: starting collection cancels automatic combat input
 PASS: opening a panel clears target lock so closing it cannot resume surprise fire
 PASS: backgrounding the app clears target lock

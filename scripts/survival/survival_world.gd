@@ -16,6 +16,10 @@ var shot_owner: int = 1
 var airdrops := AirdropDirector.new()
 var touch_controls: TouchControls
 var pending_slot: int = -1
+var enemy_index: Dictionary = {}
+
+func target_enemy(id: int) -> Node3D:
+	return client_enemies.get(id) if is_client else enemy_index.get(id)
 
 static func survival_path(mode: String) -> String:
 	return "user://zombie_bloom_"+mode+"_v6.json"
@@ -52,7 +56,10 @@ func _ready() -> void:
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
-	if MobilePlatform.enabled(): camera.size = 30
+	if MobilePlatform.enabled():
+		MobilePlatform.configure(get_tree().root)
+		camera.size = 30
+	if MobilePlatform.lightweight(): MobileVisuals.prewarm(self)
 	ClayScenery.decorate(base_arena,8417,0)
 	player.weapons.sync_hand()
 	refresh_core_model()
@@ -107,7 +114,6 @@ func _process(delta: float) -> void:
 		return
 	super._process(delta)
 	airdrops.tick(delta)
-	for enemy in get_tree().get_nodes_in_group("enemies"): enemy.label.hide()
 	for cache in caches:
 		if cache.has_meta("weapon"):
 			cache.visible = not int(cache.get_meta("index")) in claimed and avatars.values().any(func(actor): return actor.position.distance_to(cache.global_position)<10)
@@ -168,6 +174,15 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 		"roll":
 			if data.get("direction") is Vector3 and not (peer==1 and builder.active): result = actor.start_roll(data.direction)
 		"grenade": result = throw_for(actor)
+		"consume":
+			var slot = data.get("slot")
+			var direction = data.get("aim")
+			if slot is int and slot>=0 and slot<9 and direction is Vector3 and direction.is_finite():
+				var hand: String = actor.bag.slots[slot].id
+				if hand in ["grenade","medkit"]:
+					actor.bag.selected = slot; actor.weapons.sync_hand()
+					if direction.length_squared()>.01: actor.aim = (direction*Vector3(1,0,1)).normalized()
+					result = throw_for(actor) if hand=="grenade" else use_medkit(actor)
 		"travel":
 			if data.get("direction") is int: result = step_sector(data.direction)
 		"buy":
@@ -268,6 +283,10 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	enemy.encounter_index = index
 	enemy.position = pos
 	(field_root if field else base_root).add_child(enemy)
+	if not is_client:
+		var uid: int = enemy.net_id
+		enemy_index[uid] = enemy
+		enemy.tree_exiting.connect(func(): enemy_index.erase(uid))
 	if field and descriptor.has("supply"):
 		enemy.health.setup(enemy.health.maximum*1.3)
 		enemy.spec.values.damage *= 1.15

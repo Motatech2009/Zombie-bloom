@@ -1,0 +1,89 @@
+{
+  "date": "2026-11-13",
+  "godot": "4.6.3 stable official",
+  "baseline_commit": "2d98c9f2968bd947be139e41e0b912c3255f4661",
+  "candidate": "0.11.2 lightweight rendering candidate",
+  "method": {
+    "script": "tests/mobile_benchmark.gd",
+    "seed": 8417,
+    "ui_resolution": [
+      960,
+      540
+    ],
+    "enemies": [
+      0,
+      24,
+      72
+    ],
+    "warmup_frames": 8,
+    "samples_per_case": 40,
+    "tail_sample_order": 39,
+    "physics": "Enemy AI and player physics disabled to isolate presentation; not a combat or A13 FPS benchmark",
+    "frame_limit": "uncapped; desktop touch simulation; vsync unavailable",
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)"
+  },
+  "before": [
+    {
+      "draw_calls": 172.0,
+      "enemies": 0,
+      "enemy_mesh_nodes": 0,
+      "frame_ms_median": 14.425,
+      "node_count": 365.0,
+      "primitives": 20212.0,
+      "frame_ms_tail": 17.133
+    },
+    {
+      "draw_calls": 667.0,
+      "enemies": 24,
+      "enemy_mesh_nodes": 395,
+      "frame_ms_median": 27.226,
+      "node_count": 1072.0,
+      "primitives": 81738.0,
+      "frame_ms_tail": 35.03
+    },
+    {
+      "draw_calls": 1684.0,
+      "enemies": 72,
+      "enemy_mesh_nodes": 1214,
+      "frame_ms_median": 41.012,
+      "node_count": 2515.0,
+      "primitives": 207930.0,
+      "frame_ms_tail": 50.406
+    }
+  ],
+  "after": [
+    {
+      "draw_calls": 168.4,
+      "enemies": 0,
+      "enemy_mesh_nodes": 0,
+      "frame_ms_median": 9.603,
+      "node_count": 387.0,
+      "primitives": 20087.2,
+      "frame_ms_tail": 15.29
+    },
+    {
+      "draw_calls": 295.0,
+      "enemies": 24,
+      "enemy_mesh_nodes": 116,
+      "frame_ms_median": 15.76,
+      "node_count": 719.0,
+      "primitives": 65304.1,
+      "frame_ms_tail": 22.106
+    },
+    {
+      "draw_calls": 544.0,
+      "enemies": 72,
+      "enemy_mesh_nodes": 350,
+      "frame_ms_median": 29.679,
+      "node_count": 1385.0,
+      "primitives": 158816.0,
+      "frame_ms_tail": 38.319
+    }
+  ],
+  "dense_reduction_percent": {
+    "draw_calls": 67.7,
+    "enemy_mesh_nodes": 71.17,
+    "nodes_total": 44.93
+  },
+  "limitations": "Mesa llvmpipe on Linux, not the Samsung A13; frame timings exclude active AI and do not predict phone FPS, thermals or network latency."
+}

@@ -60,6 +60,7 @@ func run() -> void:
 		if actor.peer_id!=1:
 			actor.bag.add("tesla",1)
 			actor.weapons.ammo[8] = 2
+			if actor.display_name=="Amigo 3": actor.health.current = 50
 	var cryo: Node3D = world.make_enemy(13,Vector3(12,0,12),false,1)
 	cryo.set_physics_process(false); cryo.windup = 5; cryo.cast_point = cryo.position
 	var target_dummy: Node3D = world.make_enemy(0,Vector3(7,0,3),false,2)

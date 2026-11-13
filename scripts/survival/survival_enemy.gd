@@ -20,25 +20,27 @@ var replica_motion: float = 0
 func _ready() -> void:
 	super._ready()
 	label.hide()
-	if spec.id not in ["hound","flyer"]:
-		var old_rig: Node3D = rig
-		var scale_before: Vector3 = rig.scale
-		rig = load("res://assets/models/infected_"+str(enemy_kind if not is_boss else 3 if spec.id=="armored" else 5 if spec.id=="spitter" else 8)+".tscn").instantiate()
-		rig.scale = scale_before
-		add_child(rig)
-		remove_child(old_rig); old_rig.queue_free()
-	else:
+	label.set_meta("suppressed",true)
+	if spec.id in ["hound","flyer"]:
 		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
 	ClayStyle.apply_tree(rig)
-	var bar := Node3D.new()
-	bar.set_script(load("res://scripts/survival/enemy_bar.gd"))
-	bar.actor = self
-	add_child(bar)
+	if MobilePlatform.lightweight(): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+	else:
+		var bar := Node3D.new()
+		bar.set_script(load("res://scripts/survival/enemy_bar.gd"))
+		bar.actor = self
+		add_child(bar)
 	if is_boss:
 		health.setup(health.maximum*1.6*(1+.3*(world.party_count()-1)))
 		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
 	else: health.setup(health.maximum*(1+.04*maxi(0,world.waves.wave-1)))
 	ability_left = 5+fmod(float(net_id),3)
+
+func create_model(factor: float) -> void:
+	if spec.id in ["hound","flyer"]: super.create_model(factor); return
+	rig = load("res://assets/models/infected_"+str(enemy_kind if not is_boss else 3 if spec.id=="armored" else 5 if spec.id=="spitter" else 8)+".tscn").instantiate()
+	rig.scale = Vector3.ONE*factor
+	add_child(rig)
 
 func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended": return

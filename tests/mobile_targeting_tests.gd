@@ -42,13 +42,13 @@ func run() -> void:
 	var wall := StaticBody3D.new(); wall.collision_layer = 8
 	var shape := CollisionShape3D.new(); var box := BoxShape3D.new(); box.size = Vector3(4,4,1)
 	shape.shape = box; wall.add_child(shape); world.add_child(wall); wall.position = (actor.position+enemy.position)*.5+Vector3.UP
-	await frames()
+	await create_timer(.15).timeout
 	check(not controls.frame().fire and controls.locked_target==enemy,"cover suspends fire while keeping the selected target")
 	before = actor.weapons.ammo[0]; actor.weapons.cooldown = 0; actor._physics_process(.016)
 	check(actor.weapons.ammo[0]==before,"holding a blocked target cannot spend ammunition")
-	request.fire = true
+	request.fire = true; actor.weapons.cooldown = 0
 	check(not MobileTargeting.resolve(world,actor,request.duplicate(true)).fire,"host independently rejects a stale fire request through cover")
-	wall.queue_free(); await frames()
+	wall.queue_free(); await create_timer(.15).timeout
 	check(controls.frame().fire,"fire resumes when the existing target becomes unobstructed")
 	var near: Vector3 = enemy.position
 	enemy.position = actor.position+Vector3(0,0,-30); await frames()
@@ -67,10 +67,10 @@ func run() -> void:
 	touch(controls,8,Vector2(480,230)); touch(controls,8,Vector2.ZERO,false)
 	check(controls.locked_target==null and not controls.frame().fire,"tapping empty ground cancels target lock")
 	tap_enemy(controls,enemy)
-	touch(controls,8,controls.stick_center("aim")+Vector2(0,-65))
-	check(controls.locked_target==null and controls.frame().fire,"manual aiming explicitly takes over from the target lock")
+	touch(controls,8,controls.buttons.fire.get_center())
+	check(controls.locked_target==enemy and controls.fire_held and controls.frame().fire,"the assisted fire button preserves an explicitly tapped target")
 	touch(controls,8,Vector2.ZERO,false)
-	check(not controls.frame().fire,"releasing manual aim does not restore an old target")
+	check(not controls.frame().fire,"releasing the fire button clears its target")
 	tap_enemy(controls,enemy); touch(controls,8,controls.buttons.interact.get_center())
 	check(controls.locked_target==null and controls.frame().interact and not controls.frame().fire,"starting collection cancels automatic combat input")
 	controls.reset_fingers(); tap_enemy(controls,enemy)
@@ -86,7 +86,7 @@ func run() -> void:
 	check(not controls.frame().fire and controls.locked_target==null,"changing hotbar item cancels the previous weapon's lock")
 	tap_enemy(controls,enemy)
 	check(controls.locked_target==null,"grenades never auto-throw from a zombie targeting tap")
-	world.select_hotbar(2); tap_enemy(controls,enemy)
+	world.select_hotbar(3); tap_enemy(controls,enemy)
 	check(controls.locked_target==null,"medkits never auto-use from a zombie targeting tap")
 	world.select_hotbar(0); tap_enemy(controls,enemy); world.scene_revision += 1
 	check(not controls.frame().fire and controls.locked_target==null,"sector changes discard the old target")
@@ -95,13 +95,13 @@ func run() -> void:
 	world.builder.set_active(false); controls.layout_controls()
 	tap_enemy(controls,enemy); enemy.queue_free(); await frames()
 	check(not controls.frame().fire and controls.locked_target==null,"freed target references are safely discarded")
-	var flyer: Node3D = world.make_enemy(5,Vector3(3,0,4),false,2)
+	var flyer: Node3D = world.make_enemy(7,Vector3(3,0,4),false,2)
 	flyer.set_physics_process(false); flyer.health.setup(1000)
 	await frames(); tap_enemy(controls,flyer)
 	before = actor.weapons.ammo[0]; actor.weapons.cooldown = 0; actor._physics_process(.016)
 	check(controls.locked_target==flyer and flyer.health.current<1000 and actor.weapons.ammo[0]==before-1,"targeted fire reaches an airborne zombie at its real height")
 	flyer.queue_free(); await frames()
-	var dog: Node3D = world.make_enemy(4,Vector3(3,0,4),false,3)
+	var dog: Node3D = world.make_enemy(6,Vector3(3,0,4),false,3)
 	dog.set_physics_process(false); dog.health.setup(1000)
 	await frames(); tap_enemy(controls,dog)
 	actor.weapons.cooldown = 0; actor._physics_process(.016)

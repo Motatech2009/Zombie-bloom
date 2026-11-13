@@ -13,8 +13,9 @@ func _ready() -> void:
 	Controls.setup()
 	ClayStyle.prewarm()
 	GameSettings.load_settings()
+	MobilePlatform.configure(get_tree().root)
 	sun = VisualFactory.lighting(self)
-	sun.shadow_enabled = GameSettings.shadows
+	sun.shadow_enabled = GameSettings.use_shadows()
 	add_child(Arena.new())
 	var display := Node3D.new()
 	add_child(display)
@@ -97,7 +98,7 @@ func show_main() -> void:
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "PC + ANDROID 0.11.1   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "PC + ANDROID 0.11.2   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -132,7 +133,7 @@ func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
 	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nESPAÇO rolamento · recarga de 5 segundos\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
-	if MobilePlatform.enabled(): help.text = "Controle esquerdo: mover. Empurre até a borda para correr.\nToque no zumbi: trava mira e atira. Toque no chão para cancelar.\nA trava pausa atrás de paredes ou fora de alcance e termina quando o alvo morre.\nControle direito: mira e tiro manuais. Solte para parar.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Transporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
+	if MobilePlatform.enabled(): help.text = "Controle esquerdo: mover. Empurre até a borda para correr.\nToque no zumbi: trava mira e atira. Toque no chão para cancelar.\nA trava pausa atrás de paredes ou fora de alcance e termina quando o alvo morre.\nSEGURE ATIRAR: escolhe um alvo visível e alcançável. Solte para parar.\nGranada e kit: um uso por toque no botão. Toque no cenário para apontar a granada.\nModo leve: menos detalhes e efeitos, com contador de FPS.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Transporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 
@@ -140,7 +141,7 @@ func show_settings() -> void:
 	clear_content()
 	UI.label(content, "CONFIGURAÇÕES", 35)
 	UI.spacer(content, 28)
-	UI.settings(content, func(): sun.shadow_enabled = GameSettings.shadows)
+	UI.settings(content, func(): sun.shadow_enabled = GameSettings.use_shadows())
 	UI.spacer(content, 12)
 	UI.button(content, "VOLTAR", show_main)
 

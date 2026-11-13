@@ -5,19 +5,19 @@ COOP CLIENT RESULT: 22 checks, 0 failures
 client2 exit 0
 COOP CLIENT RESULT: 22 checks, 0 failures
 client3 exit 0
-COOP CLIENT RESULT: 24 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures
 
 host
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: ENet server opens a real UDP session
 PASS: three remote clients join; four players yield x8 population
-PASS: server simulates remote movement for peer 4206415
-PASS: server simulates remote movement for peer 1886245762
-PASS: server simulates remote movement for peer 1684875934
-PASS: server owns the remote roll cooldown for peer 4206415
-PASS: server owns the remote roll cooldown for peer 1886245762
-PASS: server owns the remote roll cooldown for peer 1684875934
+PASS: server simulates remote movement for peer 715437124
+PASS: server simulates remote movement for peer 245216377
+PASS: server simulates remote movement for peer 897041886
+PASS: server owns the remote roll cooldown for peer 715437124
+PASS: server owns the remote roll cooldown for peer 245216377
+PASS: server owns the remote roll cooldown for peer 897041886
 PASS: server scales the pending horde by the exact cooperative multiplier
 PASS: client shooting RPC input causes authoritative enemy deaths
 PASS: unsupported damage/build commands cannot mutate protected host state
@@ -36,7 +36,7 @@ PASS: server loads the guarded airdrop into the same procedural party sector
 PASS: house scene and guard objective use the same four-player scaling
 PASS: host includes authoritative house progress in snapshots
 PASS: procedural field population also uses the exact x8 multiplier
-WARNING: Sending 1458 bytes unreliably which is above the MTU (1392), this will result in higher packet loss
+WARNING: Sending 1453 bytes unreliably which is above the MTU (1392), this will result in higher packet loss
      at: put_packet (modules/enet/enet_multiplayer_peer.cpp:363)
      GDScript backtrace (most recent call first):
          [0] _physics_process (res://scripts/network/coop_link.gd:116)
@@ -108,13 +108,14 @@ PASS: replicated armed pose keeps the right arm facing forward
 PASS: replicated client avatar follows movement accepted by the host
 PASS: reliable roll command replicates its active animation and five-second cooldown
 PASS: host rejects repeated roll RPCs during recharge
-PASS: a zombie screen tap sends target identity and scene revision through the real ENet client
+PASS: the assisted fire button sends a real target identity and scene revision through ENet
 PASS: client weapon consumes authoritative finite ammunition
 PASS: walking pickup is simulated by the server and replicated without an interaction command
 PASS: client HUD state sees four-player scaling
 PASS: client cannot inject core damage through an unsupported action
 PASS: server accepts the near-core withdrawal RPC and replicates the private bag
 PASS: store RPC returns the selected stack to the shared depot
+PASS: the mobile item button uses exactly one medkit through the authoritative reliable command
 PASS: nine-weapon private profile and a newly granted Tesla replicate
 PASS: new gun selection, visible model and finite ammunition replicate after remote fire
 PASS: new infected model and its blue warning replicate to clients
@@ -125,4 +126,4 @@ PASS: guest builds the same house layout and cooperative guard requirement
 PASS: guest receives house lock progress and exact remaining supplies
 PASS: reliable scene revision loads the same generated northern sector
 PASS: return scene revision preserves the shared core state
-COOP CLIENT RESULT: 24 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures

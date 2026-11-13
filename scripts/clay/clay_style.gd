@@ -38,18 +38,19 @@ static func texture(kind: String) -> Texture2D:
 	return textures[kind]
 
 static func material(color: Color,kind: String = "clay",metallic: float = 0) -> StandardMaterial3D:
-	var key := color.to_html()+kind+str(metallic)
+	var lean := MobilePlatform.lightweight()
+	var key := color.to_html()+kind+str(metallic)+str(lean)
 	if materials.has(key): return materials[key]
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.albedo_texture = texture(kind)
-	mat.normal_enabled = true
+	mat.normal_enabled = not lean
 	mat.normal_texture = normals[kind]
 	mat.normal_scale = .10
 	mat.roughness = .94 if metallic==0 else .72
 	mat.metallic = metallic
-	mat.uv1_triplanar = true
-	mat.uv1_world_triplanar = true
+	mat.uv1_triplanar = not lean
+	mat.uv1_world_triplanar = not lean
 	mat.uv1_scale = Vector3.ONE*(.45 if kind=="brick" else .7)
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	mat.set_meta("clay_surface",kind)

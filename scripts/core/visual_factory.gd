@@ -5,7 +5,7 @@ static var materials: Dictionary = {}
 static var clay_enabled: bool = true
 
 static func material(color: Color, glow: bool = false) -> StandardMaterial3D:
-	var key := color.to_html() + str(glow)
+	var key := color.to_html() + str(glow)+str(MobilePlatform.lightweight())
 	if not materials.has(key):
 		var mat := StandardMaterial3D.new() if glow or not clay_enabled else ClayStyle.material(color)
 		mat.albedo_color = color
@@ -77,6 +77,10 @@ static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
 	return rig
 
 static func animate_human(rig: Node3D, clock: float, moving: float, recoil: float, armed: bool) -> void:
+	if rig.has_meta("mobile_batch"):
+		var now := Time.get_ticks_msec()
+		if now-int(rig.get_meta("animation_at",-100))<50: return
+		rig.set_meta("animation_at",now)
 	var stride := sin(clock * 11.0) * minf(moving, 1.0) * .65
 	rig.get_node("LegL").rotation.x = stride
 	rig.get_node("LegR").rotation.x = -stride
