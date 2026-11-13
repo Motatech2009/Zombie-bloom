@@ -1,4 +1,4 @@
-# Zombie Bloom 0.11.2 — PC + Android
+# Zombie Bloom 0.12 — PC + Android
 
 O Android usa a mesma simulação, itens, casas, fortaleza, horda e protocolo ENet do PC. A sala aceita até quatro jogadores, misturando computador e celular. Recomenda-se hospedar no PC para ele manter a simulação e os saves, enquanto o Android joga como convidado. Celular pode hospedar em rede compatível, mas deve permanecer aberto e em primeiro plano.
 
@@ -49,8 +49,10 @@ Interface em paisagem 960×540, com proporção mantida e faixas quando necessá
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 898 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e 26 de desempenho/controle assistido e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 953 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 
 Fontes: [Exportação Android na Godot 4.6](https://docs.godotengine.org/en/4.6/tutorials/export/exporting_for_android.html) · [Tailscale para compartilhar um servidor de jogo](https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server).
+
+A 0.12 preserva cada geração por três minutos de partida e só renova ao entrar depois desse prazo. O mapa mostra o tempo restante. A coleta solo é mais rápida, chefes têm mais vida e deixam um pacote extra, e áreas militares podem fornecer munição. Atualize PC e Android juntos. [Detalhes](PROGRESSION.md).

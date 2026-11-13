@@ -23,7 +23,7 @@ PASS: house guards have stronger health and belong to the field
 PASS: a real guard death advances only its house objective
 PASS: house guardians do not complete the ordinary sector population
 PASS: defeating every generated guard unlocks the house supply crate
-PASS: house supplies require five seconds of gathering
+PASS: solo house supplies require three seconds of gathering
 PASS: house resources are not granted before the collection duration
 PASS: completed collection transfers one large stack into the bag
 PASS: house cargo never credits the core bank remotely

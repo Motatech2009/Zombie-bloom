@@ -18,9 +18,9 @@ Casas ficam nos quadrantes, preservando as quatro faixas de retorno. Props sobre
 
 A aproximação a 22 m ativa a guarnição. Quantidade-base: `min(12, 4 + risco×2 + horda/4)`, com divisão inteira; multiplica por x1/x2/x4/x8 conforme o grupo. São até seis guardas ativos por casa, respeitando também 24 infectados de campo e 60 ativos globais. Variantes incluem corredor, blindado, corrosivo, investidor e criogênico. Guardas têm 25% mais vida e 15% mais dano que o mesmo infectado de campo naquela horda; modificadores do setor podem somar.
 
-É preciso derrotar toda a guarnição para liberar a caixa. Mortes de guardas não completam a população comum do setor. A caixa oferece `70 + risco×30` sucata, `40 + risco×20` madeira e `12 + risco×8` componentes. Cada coleta leva cinco segundos e transfere uma pilha, limitada pela bolsa. Bolsa cheia conserva o restante; paredes impedem coleta pelo lado externo. Os recursos precisam ser transportados até o Núcleo.
+É preciso derrotar toda a guarnição para liberar a caixa. Mortes de guardas não completam a população comum do setor. A caixa oferece `70 + risco×30` sucata, `40 + risco×20` madeira e `12 + risco×8` componentes. Cada coleta leva 3 s sozinho ou 5 s em equipe e transfere uma pilha, limitada pela bolsa. Bolsa cheia conserva o restante; paredes impedem coleta pelo lado externo. Os recursos precisam ser transportados até o Núcleo.
 
-Estado, bloqueio e conteúdo são decididos pelo anfitrião e replicados sem duplicar a caixa no loot genérico. Entradas/saídas de jogadores atualizam a exigência de guardas. Como o restante do setor procedural, casas e saque são recriados ao sair e entrar novamente. Apenas a região do Núcleo é fixa; saves continuam v6.
+Estado, bloqueio e conteúdo são decididos pelo anfitrião e replicados sem duplicar a caixa no loot genérico. Entradas/saídas de jogadores atualizam a exigência de guardas. Como o restante do setor procedural, casas, guardas e saque parcial são preservados por três minutos desde a geração; só uma entrada após o prazo recria o setor. Apenas a região do Núcleo é fixa; saves continuam v6.
 
 ## Internet e próximos passos
 

@@ -70,9 +70,10 @@ static func boss_spec(number: int) -> Resource:
 	var index := maxi(0,number-1)%flavors.size()
 	var result: Resource = CampaignData.enemy_spec(flavors[index]).duplicate(true)
 	result.title = names[index]
-	result.values.health = 220.0+32*maxi(1,number)
+	var stage := maxi(1,number)
+	result.values.health = 650.0+110*stage+8.0*stage*stage
 	result.values.damage = maxf(18,float(result.values.damage))
-	result.values.xp = maxi(40,int(result.values.xp))
-	result.values.scrap = maxi(35,int(result.values.scrap))
+	result.values.xp = maxi(80+stage*6,int(result.values.xp))
+	result.values.scrap = maxi(45+stage*3,int(result.values.scrap))
 	result.color = Color("bf6953") if index!=2 else Color("a4c53d")
 	return result

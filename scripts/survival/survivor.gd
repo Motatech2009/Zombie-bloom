@@ -8,6 +8,7 @@ var net_input: Dictionary = {}
 var last_damage: int = 0
 var gather_target: Node3D
 var gather_progress: float = 0
+var gather_base_duration: float = 0
 var gather_damage_mark: int = 0
 var gather_start := Vector3.ZERO
 var gather_kind: String = ""

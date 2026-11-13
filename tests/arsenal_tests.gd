@@ -147,8 +147,8 @@ func run() -> void:
 	check(rare.get_meta("weapon")==8 and rare.get_meta("contents").has("tesla"),"rare stash can hold a new weapon beyond the original five")
 	actor.bag.remove("tesla",1); actor.weapons.ammo[8] = 0
 	actor.position = rare.global_position+Vector3(.5,0,0); actor.cancel_gather()
-	world.tick_gather(actor,4.9)
-	check(actor.bag.count("tesla")==0,"new hidden weapon still requires the full five-second gathering time")
+	world.tick_gather(actor,2.9)
+	check(actor.bag.count("tesla")==0,"new hidden weapon still requires the full three-second solo gathering time")
 	world.tick_gather(actor,.2)
 	check(actor.bag.count("tesla")==1 and actor.weapons.ammo[8]==12,"finishing the rare gather grants one Tesla with its loaded magazine")
 	world.queue_free(); await create_timer(.35).timeout

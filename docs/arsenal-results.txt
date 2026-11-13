@@ -91,6 +91,6 @@ PASS: inventory and hotbar use real icon slots
 PASS: expanded arsenal shop opens with all nine weapon entries
 PASS: survival world enters a real procedural sector with the expanded arsenal
 PASS: rare stash can hold a new weapon beyond the original five
-PASS: new hidden weapon still requires the full five-second gathering time
+PASS: new hidden weapon still requires the full three-second solo gathering time
 PASS: finishing the rare gather grants one Tesla with its loaded magazine
 ARSENAL RESULT: 93 checks, 0 failures

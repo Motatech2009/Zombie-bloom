@@ -66,6 +66,7 @@ func _process(delta: float) -> void:
 	delta = refresh_elapsed; refresh_elapsed = 0
 	super._process(delta)
 	if not is_instance_valid(world.touch_controls): return
+	performance_text.visible = mode.is_empty()
 	var seconds := ceili(world.airdrops.left)
 	airdrop_text.text = "AIRDROP %02d:%02d" % [seconds/60,seconds%60] if world.airdrops.state.is_empty() or world.airdrops.state.get("collected",false) else "DROP (%d,%d)" % [world.airdrops.coord().x,world.airdrops.coord().y]
 	crosshair.visible = mode.is_empty() and world.player.bag.hand()=="grenade" and not world.builder.active

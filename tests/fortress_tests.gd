@@ -183,12 +183,12 @@ func run() -> void:
 		for active in world.airdrops.active_guards(): active.set_physics_process(false); active.take_damage(1000000)
 		safety += 1
 	check(world.airdrops.can_open(),"crate unlocks only when all required escort guards are defeated")
-	for cache_node in world.caches: cache_node.get_parent().remove_child(cache_node); cache_node.queue_free()
-	world.caches.clear(); crate = world.airdrops.crate
+	for cache_node in world.caches: cache_node.hide(); cache_node.remove_from_group("survival_sources")
+	crate = world.airdrops.crate
 	actor.position = crate.global_position+Vector3(1,0,0)
 	actor.bag = ItemBag.new(); world.starter_bag(actor.bag); actor.cancel_gather()
-	world.tick_gather(actor,4.9)
-	check(actor.bag.count("scrap")==0,"unlocked airdrop still requires five seconds of gathering")
+	world.tick_gather(actor,2.9)
+	check(actor.bag.count("scrap")==0,"unlocked airdrop still requires three seconds of solo gathering")
 	world.tick_gather(actor,.2)
 	check(actor.bag.count("scrap")==40 and world.airdrops.state.contents.scrap==120,"finished airdrop gathering transfers one capped stack and preserves its remainder")
 	bank_before = world.resources.scrap

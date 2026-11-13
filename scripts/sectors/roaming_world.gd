@@ -119,6 +119,7 @@ func step_sector(direction: int) -> bool:
 	builder.set_active(false)
 	if not hud.mode.is_empty(): hud.close_modal()
 	if field_root!=null:
+		remember_sector()
 		clear_region_hazards(SectorGenerator.key(sector_coord))
 		remove_child(field_root)
 		field_root.queue_free()
@@ -139,7 +140,7 @@ func step_sector(direction: int) -> bool:
 		visit_serial += 1
 		var key := SectorGenerator.key(next)
 		var visits: int = int(discovered.get(key,{"visits":0}).visits)+1
-		descriptor = prepare_sector_descriptor(SectorGenerator.generate(world_rng.randi_range(1,2147483647),next,visits,waves.wave))
+		descriptor = sector_descriptor(next,visits)
 		discovered[key] = {"visits":visits,"risk":descriptor.risk}
 		if discovered.size()>8192:
 			for old_key in discovered.keys():
@@ -160,6 +161,7 @@ func step_sector(direction: int) -> bool:
 		field_dead = 0
 		for i in range(descriptor.count): field_queue.append(i)
 		field_spawn_left = .4
+		restore_sector_state()
 		phase = "combat" if waves.running else "expedition"
 	player.position = sector_offset(next)+entry
 	player.velocity = Vector3.ZERO
@@ -280,7 +282,7 @@ func enemy_defeated(enemy: Node3D) -> void:
 	if world_rng.randf()<.18: spawn_pickup(enemy.global_position,0,0,["speed","rapid","shield"][world_rng.randi_range(0,2)])
 	if enemy.field_enemy:
 		field_dead += 1
-		if field_dead==int(descriptor.count): notify("SETOR LIMPO · Recolha o que conseguir. Ao sair, este lugar será gerado de novo.")
+		if field_dead==int(descriptor.count): notify("SETOR LIMPO · Recolha os suprimentos. O mapa mostra quando a próxima entrada poderá renovar a área.")
 
 func spawn_pickup(pos: Vector3,experience: int,metal: int,power: String = "") -> Node3D:
 	var parent: Node3D = base_root if region_at(pos)=="0:0" else field_root
@@ -403,3 +405,8 @@ func load_checkpoint() -> bool:
 	return true
 
 func prepare_sector_descriptor(data: Dictionary) -> Dictionary: return data
+
+func sector_descriptor(coord: Vector2i,visits: int) -> Dictionary:
+	return prepare_sector_descriptor(SectorGenerator.generate(world_rng.randi_range(1,2147483647),coord,visits,waves.wave))
+func remember_sector() -> void: pass
+func restore_sector_state() -> void: pass

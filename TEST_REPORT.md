@@ -1,3 +1,19 @@
+# Validação de exploração e suprimentos 0.12 — 2026-11-13
+
+**953 verificações aprovadas:** 801 das treze suítes anteriores, 43 de progressão e 109 de rede (31 anfitrião +25 por desktop +28 no cliente de toque). Logs em docs/progression-results.txt e docs/coop-results.txt; registros de arsenal, casas e fortaleza atualizados para os tempos solo.
+
+O teste de progressão exerce entrada real, saque parcial, morte de um encontro específico, casa com guardião ferido e chefe com HP reduzido. Simula o relógio autoritativo nos limites 179,99/180,01 s: a mesma geração/progresso retorna antes do prazo; depois, apenas uma entrada nova renova o cenário. O boss conserva arquétipo/HP mesmo quando a horda avança. Piles no chão e seus conteúdos reaparecem uma vez. Checkpoint serializado em JSON mantém os mesmos dados e prazo; conversão numérica normaliza quantidades. Saves v6 anteriores sem memória de setores continuam aceitos. Conteúdo inválido ou prazo fora dos limites é rejeitado.
+
+Cooperativo em quatro processos ENet reais: além dos fluxos anteriores, a equipe entra, volta ao Núcleo, revisita a mesma área e retorna novamente. Convidados recebem a mesma semente, prazo compartilhado, caixa com sete munições de rifle/dois componentes e morte de guardião preservada. Restauração de checkpoint também rebobina bolsas de convidados, incluindo quem entrou após o save, evitando transportar itens de um estado futuro para um estoque restaurado.
+
+Chefes: primeiro chefe solo acima de 1.200 HP, escala adicional com participantes e crescimento nas hordas posteriores; morte real gera pacote dourado extra com munição e componentes. A coleta coloca os recursos na bolsa e não no banco. Piles no limite de 128 por região reutilizam uma pilha compatível sem perder um prêmio raro descarregado; conteúdo que volta a existir torna a pilha visível. Biomas usam sorteio estável por geração: amostra de 400 sementes distingue maior oferta militar de floresta e inclui foguetes/células/granadas/kits.
+
+Coleta solo: 1,68 s por lote comum, 3 s por lote de casa/arsenal/airdrop e 1,08 s para depósito. Equipe mantém 2,8/5/1,8 s. Entrada de participante altera a duração mantendo a fração concluída, sem progresso gratuito. Reparo e reanimação permanecem com seus tempos anteriores. Airdrop, bolsa cheia, armas carregadas e guarnições seguem validados nas regressões.
+
+Revisão visual em janela com interface móvel: mapa mostra a preservação de 02:40 e texto completo no painel lateral; contador FPS oculto durante o painel, sem sobrepor as células. Fixture não grava saves. Godot 4.6.3, Linux/Mesa e áudio Dummy; não houve teste desta atualização em Android físico nem medição de FPS no A13. CI repete catorze suítes e quatro processos de rede e exporta Windows e APK do mesmo commit, com verificação da assinatura. Balanceamento de campanha inteira ainda requer playtest.
+
+---
+
 # Validação de controles e modo leve 0.11.2 — 2026-11-13
 
 **898 verificações aprovadas:** 775 das doze suítes anteriores, 26 de controle/desempenho e 97 de rede (28 anfitrião, 22 por desktop e 25 pelo cliente de toque). Registros em docs/mobile-performance-results.txt, docs/targeting-results.txt, docs/mobile-results.txt e docs/coop-results.txt.

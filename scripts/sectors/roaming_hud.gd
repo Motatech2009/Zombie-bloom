@@ -40,6 +40,7 @@ func _process(delta: float) -> void:
 				build_text.text = "E / ARSENAL ESCONDIDO" if cache.has_meta("weapon") else "E / CAIXA DE SUPRIMENTOS"
 				break
 	if mode=="routes" and is_instance_valid(map_clock):
+		select_sector(world.waypoint)
 		map_clock.text = "NÚCLEO SOB ATAQUE · VOLTE!" if world.waves.running else "PRÓXIMA HORDA EM "+clock_text()+" · o relógio continua neste mapa"
 		map_clock.add_theme_color_override("font_color",Color("ef9274") if world.waves.running or world.horde_left<=60 else UI.LIME)
 
@@ -77,9 +78,9 @@ func show_routes() -> void:
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UI.label(side,"POSIÇÃO: (%d,%d)" % [world.sector_coord.x,world.sector_coord.y],22)
 	UI.label(side,world.return_hint(),17,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.label(side,"Saídas nas quatro bordas. Aproxime-se e pressione E para cruzar. Clicar no mapa apenas consulta o setor.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.label(side,"Saídas nas quatro bordas. Aproxime-se e pressione E para cruzar. Selecionar no mapa apenas consulta o setor.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.label(side,"? desconhecido · ! alto risco\nNorte = y−1 · Leste = x+1\nSul = y+1 · Oeste = x−1",15)
-	map_detail = UI.label(side,"Ao sair de um setor, ele muda. O risco visto em uma visita não garante o próximo. Só o Núcleo permanece fixo.",16,UI.MUTED)
+	map_detail = UI.label(side,"Cada área fica preservada por 3 minutos. Voltar antes mantém o que você deixou. Só o Núcleo permanece fixo.",16,UI.MUTED)
 	map_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(box,"FECHAR MAPA / ESC",close_modal,true)
 
@@ -90,7 +91,7 @@ func select_sector(coord: Vector2i) -> void:
 		map_detail.text = "NÚCLEO FIXO · Sua base, vendedor e defesas. "+world.return_hint()
 	elif world.discovered.has(key):
 		var info: Dictionary = world.discovered[key]
-		map_detail.text = "(%d,%d) · %d visita(s)\nÚltimo risco: %s\nA próxima entrada gera outro cenário e loot." % [coord.x,coord.y,int(info.visits),SectorGenerator.RISKS[int(info.risk)]]
+		map_detail.text = "(%d,%d) · %d visita(s)\nÚltimo risco: %s\n" % [coord.x,coord.y,int(info.visits),SectorGenerator.RISKS[int(info.risk)]]+world.sector_refresh_text(coord) if world.has_method("sector_refresh_text") else "(%d,%d) · %d visita(s)" % [coord.x,coord.y,int(info.visits)]
 	else: map_detail.text = "(%d,%d) · NÃO EXPLORADO\nPode conter poucos infectados, uma multidão ou chefe. Veja o relógio antes de avançar." % [coord.x,coord.y]
 
 func map_center() -> Vector2i: return world.sector_coord

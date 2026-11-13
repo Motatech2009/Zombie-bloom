@@ -17,6 +17,52 @@ var airdrops := AirdropDirector.new()
 var touch_controls: TouchControls
 var pending_slot: int = -1
 var enemy_index: Dictionary = {}
+var sector_memory: Dictionary = {}
+var sector_deadline: float = 0
+var pending_sector_memory: Dictionary = {}
+var field_defeated: Array[int] = []
+var remote_sector_times: Dictionary = {}
+var restoring_boss_stage: int = 0
+
+func prune_sector_memory() -> void:
+	for key in sector_memory.keys():
+		if float(sector_memory[key].expires)<=elapsed: sector_memory.erase(key)
+
+func remember_sector() -> void:
+	prune_sector_memory()
+	if sector_deadline>elapsed: sector_memory[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+
+func sector_descriptor(coord: Vector2i,visits: int) -> Dictionary:
+	prune_sector_memory()
+	var key := SectorGenerator.key(coord)
+	pending_sector_memory = sector_memory.get(key,{}).duplicate(true)
+	if not pending_sector_memory.is_empty():
+		sector_deadline = float(pending_sector_memory.expires)
+		return airdrops.decorate(SectorMemory.decode_layout(pending_sector_memory.layout))
+	sector_deadline = elapsed+SectorMemory.LIFETIME
+	return super.sector_descriptor(coord,visits)
+
+func restore_sector_state() -> void:
+	field_defeated.clear()
+	if not pending_sector_memory.is_empty(): SectorMemory.restore(self,pending_sector_memory)
+	pending_sector_memory.clear()
+
+func sector_remaining(coord: Vector2i) -> float:
+	var key := SectorGenerator.key(coord)
+	if is_client: return float(remote_sector_times.get(key,0))
+	if coord==sector_coord and area_index!=-1: return maxf(0,sector_deadline-elapsed)
+	return maxf(0,float(sector_memory.get(key,{"expires":0}).expires)-elapsed)
+
+func sector_refresh_text(coord: Vector2i) -> String:
+	var remaining := ceili(sector_remaining(coord))
+	if remaining>0: return "Área preservada por mais %02d:%02d. Caixas, casas e inimigos mantêm seu estado." % [remaining/60,remaining%60]
+	return "A próxima entrada gera outra área e renova o loot. Cada geração fica preservada por 3 minutos."
+
+func sector_times() -> Dictionary:
+	var times := {}
+	for key in sector_memory: times[key] = maxf(0,float(sector_memory[key].expires)-elapsed)
+	if area_index!=-1: times[SectorGenerator.key(sector_coord)] = maxf(0,sector_deadline-elapsed)
+	return times
 
 func target_enemy(id: int) -> Node3D:
 	return client_enemies.get(id) if is_client else enemy_index.get(id)
@@ -246,6 +292,9 @@ func step_sector(direction: int) -> bool:
 	airdrops.ensure_crate()
 	scene_revision += 1
 	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
+	elif area_index!=-1:
+		var seconds := ceili(sector_remaining(sector_coord))
+		notify("SETOR (%d,%d) · %s · %d infectados\nNova geração em %02d:%02d ao reentrar · %s" % [sector_coord.x,sector_coord.y,SectorGenerator.RISKS[descriptor.risk],descriptor.count,seconds/60,seconds%60,return_hint()])
 	return true
 
 func scale_field_population() -> void:
@@ -259,10 +308,11 @@ func scale_field_population() -> void:
 		if descriptor.risk>=2 and i%13==0 and i>0: kind = 9+(i/13)%6
 		descriptor.roster.append(kind)
 	field_queue.clear()
-	var normal_alive := 0
+	var occupied := {}
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.field_enemy and enemy.encounter_index>=0: normal_alive += 1
-	for i in range(maxi(0,field_dead+normal_alive),descriptor.count): field_queue.append(i)
+		if enemy.field_enemy and enemy.encounter_index>=0: occupied[enemy.encounter_index] = true
+	for i in range(descriptor.count):
+		if not i in field_defeated and not occupied.has(i): field_queue.append(i)
 
 func next_id() -> int:
 	var result := next_uid
@@ -274,7 +324,9 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	enemy.set_script(load("res://scripts/survival/survival_enemy.gd"))
 	enemy.enemy_kind = kind
 	enemy.net_id = next_id()
-	if kind==8: enemy.spec = SectorGenerator.boss_spec(maxi(1,waves.wave if not field else maxi(waves.wave,SectorGenerator.distance(sector_coord)+2)))
+	if kind==8:
+		var stage := restoring_boss_stage if restoring_boss_stage>0 else maxi(1,waves.wave if not field else maxi(waves.wave,SectorGenerator.distance(sector_coord)+2))
+		enemy.spec = SectorGenerator.boss_spec(stage); enemy.set_meta("boss_stage",stage)
 	elif kind<9: enemy.spec = CampaignData.enemy_spec(kind)
 	else: enemy.spec = InfectedRoster.extra_spec(kind)
 	enemy.is_boss = kind==8
@@ -310,6 +362,12 @@ func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 		if offset.length()<radius: body.take_damage(damage)
 
 func enemy_defeated(enemy: Node3D) -> void:
+	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
+		enemy.set_meta("boss_rewarded",true)
+		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
+		if reward!=null: mark_boss_drop(reward)
+		notify("CHEFE VENCIDO · Suprimentos extras no chão: munição, sucata e componentes.")
+	if enemy.field_enemy and enemy.encounter_index>=0 and not enemy.encounter_index in field_defeated: field_defeated.append(enemy.encounter_index)
 	if enemy.has_meta("house_id"):
 		var house := raid_house(int(enemy.get_meta("house_id")))
 		if house!=null: house.defeated(int(enemy.get_meta("house_guard")))
@@ -337,8 +395,11 @@ func create_caches() -> void:
 	for i in range(caches.size()):
 		var contents := {}
 		if caches[i].has_meta("weapon"):
-			contents[ItemBag.WEAPON_IDS[int(caches[i].get_meta("weapon"))]] = 1
+			var weapon: int = caches[i].get_meta("weapon")
+			contents[ItemBag.WEAPON_IDS[weapon]] = 1
+			contents[ItemBag.AMMO_IDS[weapon]] = 1 if weapon==4 else mini(16,int(Arsenal.WEAPONS[weapon].values.capacity))
 		else:
+			contents = LootTables.regional(descriptor,i)
 			for id in descriptor.reward: contents[id] = maxi(1,int(descriptor.reward[id]*.45)/3+(1 if i<int(descriptor.reward[id]*.45)%3 else 0))
 		caches[i].set_meta("contents",contents)
 		caches[i].set_meta("uid",next_id())
@@ -346,17 +407,25 @@ func create_caches() -> void:
 
 func spawn_pickup(pos: Vector3,experience: int,metal: int,power: String = "") -> Node3D:
 	if metal<=0 and experience<=0 and power.is_empty(): return null
-	return spawn_loot(pos,{"scrap":maxi(1,metal/2)} if metal>0 else {},experience,power)
+	var contents := {"scrap":maxi(1,metal/2)} if metal>0 else {}
+	if metal>0: contents.merge(LootTables.infected(int(descriptor.get("biome",-1)) if region_at(pos)!="0:0" else -1,world_rng),true)
+	return spawn_loot(pos,contents,experience,power)
+
+func mark_boss_drop(loot: Node3D) -> void:
+	loot.set_meta("boss_drop",true)
+	if not loot.has_node("BossReward"):
+		var ring := VisualFactory.ring(loot,.7,Vector3(0,.08,0),Color("efc86d")); ring.name = "BossReward"
 
 func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true) -> Node3D:
 	var parent: Node3D = base_root if region_at(pos)=="0:0" else field_root
 	if parent==null: return null
-	var items := get_tree().get_nodes_in_group("survival_loot")
+	var items := get_tree().get_nodes_in_group("survival_loot").filter(func(pile): return pile.get_parent()==parent and not pile.is_queued_for_deletion())
 	if items.size()>=128:
 		for pile in items:
-			if bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS):
+			if bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and (int(pile.loaded)==0 or not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS)):
 				for id in contents: pile.contents[id] = int(pile.contents.get(id,0))+int(contents[id])
 				pile.set_meta("xp",int(pile.get_meta("xp",0))+experience)
+				pile.show(); pile.refresh_model()
 				return pile
 		return null
 	var loot := Node3D.new()
@@ -429,6 +498,10 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 		if target.get_meta("airdrop",false) and not airdrops.can_open(): actor.cancel_gather(); return
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			if enemy.global_position.distance_to(target.global_position)<4.5: actor.cancel_gather(); return
+	var duration := collect_seconds(actor.gather_kind,actor.gather_base_duration)
+	if not is_equal_approx(duration,actor.gather_duration):
+		actor.gather_progress = actor.gather_progress/maxf(.01,actor.gather_duration)*duration
+		actor.gather_duration = duration
 	actor.gather_progress += delta
 	if actor.gather_progress<actor.gather_duration: return
 	var kind: String = actor.gather_kind
@@ -442,10 +515,14 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 func begin_gather(actor: Node3D,target: Node3D,kind: String,duration: float) -> void:
 	actor.gather_target = target
 	actor.gather_kind = kind
-	actor.gather_duration = duration
+	actor.gather_base_duration = duration
+	actor.gather_duration = collect_seconds(kind,duration)
 	actor.gather_progress = 0
 	actor.gather_damage_mark = actor.last_damage
 	actor.gather_start = actor.position
+
+func collect_seconds(kind: String,duration: float) -> float:
+	return duration*(.6 if party_count()==1 and kind in ["loot","deposit"] else 1.0)
 
 func transfer_source(actor: Node3D,source: Node3D) -> bool:
 	if not house_source_open(actor,source): return false
@@ -633,6 +710,7 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.weapons.sync_hand()
 
 func snapshot() -> Dictionary:
+	prune_sector_memory()
 	var saved_player: CharacterBody3D = player
 	player = avatars.get(1,player)
 	player.weapons.sync_hand()
@@ -641,6 +719,7 @@ func snapshot() -> Dictionary:
 	var data := super.snapshot()
 	data.format = 6
 	data.airdrops = airdrops.dump()
+	data.sector_memory = sector_memory.duplicate(true)
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
 	data.built = built_this_round
@@ -648,13 +727,14 @@ func snapshot() -> Dictionary:
 	data.profiles = profiles.duplicate(true)
 	data.loose = []
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
-		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true))})
+		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false))})
 	player = saved_player
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
 	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
 	if not AirdropDirector.valid(data.get("airdrops")): return false
+	if not bounded(data.get("elapsed"),0,1000000000) or not SectorMemory.valid(data.get("sector_memory",{}),float(data.elapsed)): return false
 	for id in data.depot_items:
 		if id not in ItemBag.IDS or not bounded(data.depot_items[id],0,10000000): return false
 	for id in data.profiles:
@@ -717,11 +797,30 @@ func apply_snapshot(data: Dictionary) -> void:
 	depot_items = data.depot_items.duplicate()
 	built_this_round = int(data.built)
 	profiles = data.profiles.duplicate(true)
+	# World supplies and every connected bag must rewind together.
+	for peer in avatars:
+		var actor: Node3D = avatars[peer]
+		actor.cancel_gather(); actor.powers.clear(); actor.shield = 0
+		if peer==1: continue
+		var profile: Dictionary = profiles.get(actor.profile_id,{})
+		if profile.is_empty():
+			profile = actor_profile(player)
+			var bag := ItemBag.new(); starter_bag(bag)
+			profile.bag = bag.dump(); profile.ammo = [12,0,0,0,0,0,0,0,0]
+			profile.hp = profile.max_hp; profile.downed = false; profile.roll_cd = 0
+		restore_profile(actor,profile)
+		actor.position = player.position+Vector3(peer%2*1.2,0,1.2)
+		actor.weapons.cooldown = .2; actor.weapons.reload_left = 0
 	airdrops.restore(data.airdrops)
+	sector_memory = data.get("sector_memory",{}).duplicate(true)
+	prune_sector_memory()
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
 		loot.get_parent().remove_child(loot)
 		loot.queue_free()
-	for item in data.loose: spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto))
+	for item in data.loose:
+		var loot := spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto))
+		if loot!=null and item.get("boss",false): mark_boss_drop(loot)
+	scene_revision += 1
 
 func load_checkpoint() -> bool:
 	if is_client or area_index!=-1 or phase!="prep": return false
@@ -837,7 +936,7 @@ func net_state(peer: int) -> Dictionary:
 	var loot: Array = []
 	for s in get_tree().get_nodes_in_group("survival_sources"):
 		if s.is_queued_for_deletion() or s.get_meta("airdrop",false) or s.has_meta("house_id"): continue
-		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible})
+		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible,"boss":bool(s.get_meta("boss_drop",false))})
 	var hazards: Array = []
 	for group in ["campaign_projectiles","acid_pools"]:
 		for node in get_tree().get_nodes_in_group(group):
@@ -845,7 +944,7 @@ func net_state(peer: int) -> Dictionary:
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"airdrops":airdrops.dump(),"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"sector_times":sector_times(),"airdrops":airdrops.dump(),"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not is_client or int(data.rev)!=last_scene_revision: return
@@ -874,6 +973,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	upgrades.offers = data.offers.duplicate(true)
 	field_dead = int(data.dead)
 	discovered = data.discovered.duplicate(true)
+	remote_sector_times = data.get("sector_times",{}).duplicate()
 	if AirdropDirector.valid(data.get("airdrops")):
 		airdrops.left = float(data.airdrops.left); airdrops.serial = int(data.airdrops.serial); airdrops.state = data.airdrops.state.duplicate(true)
 		airdrops.ensure_crate()
@@ -993,6 +1093,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			client_loot[id] = load(model_path).instantiate()
 			add_child(client_loot[id])
 			client_loot[id].set_meta("item",model_id)
+		client_loot[id].set_meta("contents",state.contents.duplicate())
+		if state.get("boss",false) and not client_loot[id].has_node("BossReward"):
+			var ring := VisualFactory.ring(client_loot[id],.7,Vector3(0,-.22,0),Color("efc86d")); ring.name = "BossReward"
 		client_loot[id].visible = state.visible
 		client_loot[id].position = state.p+Vector3(0,.3,0)
 	for id in client_loot.keys():

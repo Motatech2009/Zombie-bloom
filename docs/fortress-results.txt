@@ -84,7 +84,7 @@ PASS: supply sector supports retreat and procedural re-entry
 PASS: defeated supply guards do not respawn on a sector reroll
 PASS: re-entry starts at an undefeated guard index rather than regenerating the boss
 PASS: crate unlocks only when all required escort guards are defeated
-PASS: unlocked airdrop still requires five seconds of gathering
+PASS: unlocked airdrop still requires three seconds of solo gathering
 PASS: finished airdrop gathering transfers one capped stack and preserves its remainder
 PASS: supply event becomes collected exactly once when all contents are recovered
 PASS: airdrop resources also require transport back to the core

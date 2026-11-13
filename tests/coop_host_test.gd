@@ -89,10 +89,21 @@ func run() -> void:
 	house.activated = true; house.dead.append(0); house.contents.scrap -= 7; house.set_physics_process(false)
 	check(world.net_state(1).houses[0].dead==[0],"host includes authoritative house progress in snapshots")
 	check(world.descriptor.count==world.descriptor.base_count*8,"procedural field population also uses the exact x8 multiplier")
+	var sector_seed: int = world.descriptor.seed
+	world.caches[0].set_meta("contents",{"rifle_ammo":7,"parts":2})
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
 	check(world.step_sector(2) and world.sector_coord==Vector2i.ZERO,"the party returns to the persistent core sector")
+	await create_timer(2).timeout
+	world.travel_cooldown = 0
+	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
+	check(world.step_sector(0) and world.descriptor.seed==sector_seed,"a four-player revisit keeps the same procedural generation during its cooldown")
+	check(world.caches[0].get_meta("contents")=={"rifle_ammo":7,"parts":2} and world.raid_house(0).dead==[0],"host preserves partial supplies and house progress during the shared revisit")
+	await create_timer(2).timeout
+	world.travel_cooldown = 0
+	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
+	check(world.step_sector(2),"the party returns safely after its preserved-sector visit")
 	await create_timer(2).timeout
 	deadline = Time.get_ticks_msec()+10000
 	while world.party_count()>1 and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

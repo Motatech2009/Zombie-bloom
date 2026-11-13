@@ -21,7 +21,7 @@ Clique usa o item selecionado: dispara a arma, lança granada ou consome kit mé
 
 ## Coleta e escassez
 
-Drops de infectados são automáticos por proximidade. Nas caixas, segure E parado junto ao saque: 2,8 segundos por lote de até quatro unidades do primeiro tipo disponível; arsenal escondido exige cinco segundos. Movimento, dano e infectados a menos de 4,5 m da fonte interrompem a coleta. Bolsa cheia mantém o excedente na fonte. Drops no chão são recolhidos por proximidade; caixas mantêm a coleta demorada. Nenhuma coleta transfere materiais diretamente ao estoque. Uma arma repetida permanece no local até você guardar/descartar a que já carrega. Ao sair do setor, o saque abandonado é perdido, como nas versões anteriores.
+Drops de infectados são automáticos por proximidade. Nas caixas, segure E parado junto ao saque: 1,68 s no solo ou 2,8 s em equipe por lote de até quatro unidades do primeiro tipo disponível; arsenal escondido exige 3 s no solo ou 5 s em equipe. Movimento, dano e infectados a menos de 4,5 m da fonte interrompem a coleta. Bolsa cheia mantém o excedente na fonte. Drops no chão são recolhidos por proximidade; caixas mantêm a coleta demorada. Nenhuma coleta transfere materiais diretamente ao estoque. Uma arma repetida permanece no local até você guardar/descartar a que já carrega. Ao sair, saque parcial, inimigos e casas ficam preservados até vencer o prazo da geração de três minutos. Apenas a próxima entrada após o prazo renova a área.
 
 O estoque inicial cai para 85 sucata, seis madeiras e dois componentes. Caixas entregam aproximadamente 45% do orçamento anterior e sucata de inimigos cai pela metade (arredondamentos mínimos preservam recompensas pequenas). O dinheiro por sobreviver a uma horda continua sendo crédito direto ao Núcleo.
 
@@ -33,7 +33,7 @@ Barras em pixels de tela, com vida atual/máxima, substituem os números 3D pequ
 
 As famílias anteriores permanecem: comum, corredor, bruto, blindado, demolidor, corrosivo, cão, voador e chefe. Novas variantes: **Estourador** (horda 5, explode ao morrer), **Berrador** (horda 7, invoca dois cães) e **Regenerador** (horda 9, cura outros infectados num raio de sete metros). Também aparecem em setores de risco elevado.
 
-Chefes mantêm seus cinco arquétipos procedurais e recebem 60% mais vida, além das escalas anteriores de horda e 30% extra por companheiro. A cada oito segundos, após aviso de 1,1 segundo, atacam uma área de seis metros na última posição do alvo. O ataque causa `28 + 2 × horda` de dano; depois o chefe reduz dano recebido em 65% por dois segundos. As primeiras três ativações também invocam um cão. Abaixo de 40% de vida, entram em fúria: +25% velocidade e +30% dano. O aviso da área aparece também para convidados.
+Chefes mantêm cinco arquétipos. A vida base agora é `650 + 110n + 8n²`, multiplicada pela escala da horda e 1,6 e 50% extra por companheiro. A cada oito segundos, após aviso de 1,1 segundo, atacam uma área de seis metros na última posição do alvo. O ataque causa `28 + 2 × horda` de dano; depois o chefe reduz dano recebido em 65% por dois segundos. As primeiras três ativações também invocam um cão. Abaixo de 40% de vida, entram em fúria: +25% velocidade e +30% dano. O aviso da área aparece também para convidados.
 
 Vida, dano e velocidade continuam crescendo com as hordas; inimigos normais recebem ainda +4% de vida por horda além da primeira. Invocações não geram saque nem progresso de população, evitando cultivar recompensas. Mantêm-se limites de inimigos materializados para não multiplicar o custo de física por oito de uma vez: a população extra chega em levas.
 
@@ -55,4 +55,6 @@ No cooperativo, comandos de rolamento são confiáveis e o anfitrião controla m
 
 ## Casas e aparência 0.10
 
-Casas procedurais fora da base podem ser invadidas. Aproxime para ativar os defensores, elimine a guarnição e segure E na caixa interna por cinco segundos por pilha. Guardas e saque são compartilhados, com carga em bolsas individuais. Saque não entra no banco sem voltar ao Núcleo. O cenário é recriado ao reentrar no setor. O telhado se oculta por proximidade apenas visualmente; paredes continuam bloqueando tiros e movimento. [Regras completas](CLAY_WORLD.md).
+Casas procedurais fora da base podem ser invadidas. Aproxime para ativar os defensores, elimine a guarnição e segure E na caixa interna por 3 s no solo ou 5 s em equipe por pilha. Guardas e saque são compartilhados, com carga em bolsas individuais. Saque não entra no banco sem voltar ao Núcleo. O cenário só é recriado ao reentrar depois de vencer o prazo de três minutos da geração. O telhado se oculta por proximidade apenas visualmente; paredes continuam bloqueando tiros e movimento. [Regras completas](CLAY_WORLD.md).
+
+Chefes também deixam um pacote dourado extra de munição/componentes/sucata, com chances de consumíveis e arma rara. Áreas militares têm 80% de chance de munição por caixa; outros biomas usam tabelas diferentes. Ver [PROGRESSION.md](PROGRESSION.md).

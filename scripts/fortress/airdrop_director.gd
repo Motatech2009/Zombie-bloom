@@ -104,7 +104,7 @@ func defeated(enemy: Node3D) -> void:
 	if state.is_empty() or int(enemy.get_meta("supply_event",-1))!=int(state.serial): return
 	var index: int = enemy.get_meta("supply_index")
 	if not index in state.dead: state.dead.append(index)
-	if remaining()==0: world.notify("ESCOLTA VENCIDA · O airdrop pode ser aberto. Segure E por 5 s junto à caixa.")
+	if remaining()==0: world.notify("ESCOLTA VENCIDA · O airdrop pode ser aberto. Segure COLETAR junto à caixa.")
 
 func mark_collected() -> void:
 	if not state.is_empty() and state.contents.is_empty():

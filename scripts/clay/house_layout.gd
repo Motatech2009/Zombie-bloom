@@ -13,6 +13,7 @@ static func populate(data: Dictionary,wave: int) -> Dictionary:
 		if not houses.any(func(house): return absf(block.pos.x-house.pos.x)<block.size.x/2+8 and absf(block.pos.z-house.pos.z)<block.size.z/2+9): blocks.append(block)
 	data.blocks = blocks
 	data.houses = houses
+	for house in houses: house.reward.merge(LootTables.regional(data,100+int(house.id)),true)
 	# Keep separate interaction targets from occupying the same patch of road.
 	var placed: Array[Vector3] = []
 	for i in range(data.caches.size()+1):

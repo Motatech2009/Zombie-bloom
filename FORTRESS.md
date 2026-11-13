@@ -6,7 +6,7 @@ Drops de infectados, objetos descartados e materiais de sobreviventes caídos s�
 
 Drops de voadores caem no chão. Descartar coloca o objeto a 2,3 m, fora do raio de coleta imediata de quem descartou.
 
-**Caixas regionais continuam demoradas:** segure E por 2,8 s por lote de até quatro unidades; arsenal escondido leva cinco segundos. Movimento, dano e ameaça próxima interrompem a coleta. O airdrop é outra caixa manual, com regras abaixo. Materiais de qualquer origem só pagam construções depois de depositados no Núcleo.
+**Caixas regionais continuam demoradas:** segure E por 1,68 s no solo ou 2,8 s em equipe por lote de até quatro unidades; arsenal escondido leva 3 s no solo ou 5 s em equipe. Movimento, dano e ameaça próxima interrompem a coleta. O airdrop é outra caixa manual, com regras abaixo. Materiais de qualquer origem só pagam construções depois de depositados no Núcleo.
 
 ## Materiais e modelos das melhorias
 
@@ -39,7 +39,7 @@ A área da queda recebe risco máximo e uma população mínima de 48 + 3 × hor
 
 É preciso derrotar toda a escolta exigida e esperar a caixa pousar. Os guardas derrotados ficam registrados durante o evento: fugir e entrar novamente gera outro cenário, mas não recria o chefe já morto nem zera o progresso da escolta. Os vivos podem retornar com vida cheia. Mesmo depois de abrir o bloqueio, inimigos comuns próximos interrompem a coleta, como nas outras caixas.
 
-Segure E por **cinco segundos por lote**. Cada lote tenta transferir uma pilha do item disponível, conservando o restante se a bolsa estiver cheia. Recompensa: 160 sucata, 60 madeira, 24 componentes, munição, quatro granadas, dois kits e uma arma aleatória comprável. É necessário transportar a carga ao Núcleo. O cerco continua: decidir entre buscar a queda e defender a base é parte do risco.
+Segure E por **3 s no solo ou 5 s em equipe por lote**. Cada lote tenta transferir uma pilha do item disponível, conservando o restante se a bolsa estiver cheia. Recompensa: 160 sucata, 60 madeira, 24 componentes, munição, quatro granadas, dois kits e uma arma aleatória comprável. É necessário transportar a carga ao Núcleo. O cerco continua: decidir entre buscar a queda e defender a base é parte do risco.
 
 ## Saves e coop
 

@@ -1,10 +1,12 @@
-# Zombie Bloom — PC + Android 0.11.2
+# Zombie Bloom — PC + Android 0.12
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
 Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa infinita e cooperativo direto para até quatro jogadores. O Núcleo em (0,0) é fixo; cada nova entrada nos outros setores gera cenário, população e saque diferentes. As hordas começam pelo relógio e atacam a base mesmo quando o grupo está longe.
 
 ## Jogar
+
+**Novo na 0.12:** áreas preservadas por 3 minutos, chefes mais resistentes e com suprimentos extras, munição/consumíveis no loot regional e coleta 40% mais rápida sozinho. [Regras de exploração e saque](PROGRESSION.md).
 
 **Novo na 0.11.2:** botão grande ATIRAR com seleção assistida, toque em zumbis para escolher um alvo e modo leve para celular com modelos agrupados, barras/efeitos limitados e contador de FPS. Windows e Android devem ser atualizados juntos.
 
@@ -20,13 +22,13 @@ Windows: baixe o artefato **ZombieBloom-Windows-x64** do Actions do commit mais 
 
 - **Mochila:** 18 espaços; os primeiros nove são a barra rápida. I abre bolsa/depósito. Clique dois espaços para trocar. Munição, armas, materiais, granadas e kits ocupam espaço.
 - **Casas:** duas a quatro por setor, com entrada física, teto ocultado por proximidade e caixa rica bloqueada pela guarnição. Guardas ficam mais fortes e numerosos com risco/horda/equipe. Cinco segundos por pilha; carga vai para a mochila.
-- **Coleta:** drops no chão entram automaticamente na bolsa ao passar por perto. Caixas exigem E por 2,8 segundos por lote; armas escondidas e airdrops exigem cinco segundos. Bolsa cheia mantém excedente no local.
+- **Coleta:** drops no chão entram automaticamente na bolsa ao passar por perto. Caixas: 1,68 s por lote no solo ou 2,8 s em equipe; armas escondidas, casas e airdrops: 3 s no solo ou 5 s em equipe. Bolsa cheia mantém excedente no local.
 - **Depósito:** leve os materiais ao Núcleo e segure E por 1,8 segundo para guardar. Construções gastam o estoque compartilhado do Núcleo. Itens carregados não pagam obras diretamente.
 - **Construção:** dez tipos de defesa, incluindo arame, muralha pesada, canhão e torre elétrica. Melhorias trocam modelos/materiais. Seis novas peças na primeira preparação; a cota aumenta em uma a cada três hordas vencidas, até doze. É compartilhada pelo grupo e renova após o cerco. Desmontar não devolve cota. Melhorias/reparos de peças existentes não consomem colocações.
 - **Combate:** nove armas, munição finita para todas, explosivos e kits. Barras de vida legíveis em tela; chefes com ataque anunciado em área, armadura temporária, invocações e fúria. Investidor, Criogênico e Sabotador ampliam as famílias anteriores. Revólver, rifle de precisão, metralhadora e Arco Tesla ampliam o arsenal.
 - **Recursos:** estoque inicial menor, caixas com aproximadamente 45% dos materiais anteriores e metade da sucata por infectado. Saque precisa ser transportado. Vencer a horda continua creditando uma recompensa ao Núcleo.
 
-A primeira horda chega em **3min30s**; depois, o intervalo diminui até 100 segundos. Não há botão para iniciar hordas. O mapa M e a mochila continuam com o relógio ativo. Há setores tranquilos e outros onde fugir é melhor que tentar limpar. Saque abandonado some ao sair. Use as quatro saídas e o mapa para voltar antes do alarme.
+A primeira horda chega em **3min30s**; depois, o intervalo diminui até 100 segundos. Não há botão para iniciar hordas. O mapa M e a mochila continuam com o relógio ativo. Há setores tranquilos e outros onde fugir é melhor que tentar limpar. Saque abandonado e progresso ficam preservados até vencer o prazo de três minutos da geração; depois, uma nova entrada renova o setor. Use as quatro saídas e o mapa para voltar antes do alarme.
 
 O airdrop cai a cada **dez minutos**, marcado em M, em uma área infestada com escolta e chefe. Elimine os guardas para abrir a caixa. O evento mantém progresso durante a visita e o retorno; o próximo substitui a queda anterior.
 
@@ -79,7 +81,7 @@ godot --headless --path . --script res://tests/mobile_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**898 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque, 26 de desempenho/controle assistido e 97 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
+**953 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque, 26 de desempenho/controle assistido, 43 de progressão e 109 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 
