@@ -97,7 +97,7 @@ func create_bottom() -> void:
 		var index := i
 		var button := ItemSlot.new()
 		button.key_number = i+1
-		button.pressed.connect(func(): world.player.bag.selected = index)
+		button.pressed.connect(func(): world.select_hotbar(index))
 		belt.add_child(button)
 		hotbar.append(button)
 	hints = make_panel(-300,-119,-18,-16,Control.PRESET_BOTTOM_RIGHT)
@@ -151,6 +151,7 @@ func create_bottom() -> void:
 
 func _process(delta: float) -> void:
 	choice_cooldown = maxf(0,choice_cooldown-delta)
+	if mode=="upgrade" and world.resources.pending==0: close_modal()
 	super._process(delta)
 	var actor: Node3D = world.player
 	for i in range(9):

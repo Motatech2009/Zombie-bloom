@@ -1,3 +1,17 @@
+# Validação PC + Android 0.11 — 2026-11-13
+
+**836 verificações locais aprovadas:** 714 de regressão, 28 móveis e 94 de rede (27 anfitrião +22 por convidado de desktop +23 no convidado de toque). Logs em docs/mobile-results.txt e nos registros das suítes/rede.
+
+A suíte móvel simula InputEventScreenTouch/Drag, verifica dois dedos independentes, movimento físico, mira/disparo, soltura de um controle sem afetar o outro, zona morta, rolamento de 5 s, recarga, limpeza de comandos, bloqueio durante painel, acesso aos 18 espaços, catálogo em duas colunas e navegação dos nove slots. Construção usa alvo de toque, rotação, pagamento/cota reais e cancelamento. Segurar COLETAR deposita materiais após o tempo real de coleta. Mapa mantém relógio ativo; Voltar do Android fecha painel e perda de foco libera entradas. Snapshots atrasados não desfazem o slot recém-selecionado; confirmação libera a seleção pendente.
+
+ENet/UDP: quatro processos reais em Linux, um deles com MobilePlatform e TouchControls ativos. Esse convidado envia movimento e disparo pelos eventos de toque da aplicação; Coop.test_input fica vazio. Mantém seleção/Tesla, inventário, depósitos, construções, casas, airdrop, multiplicador e cenas dos demais clientes. É teste do mesmo protocolo com frontend móvel, sem Android nativo nem redes externas.
+
+Revisão gráfica em simulação desktop de paisagem: controles, barra paginada, mochila em seis colunas, fechamento fixo e catálogo adaptado. A fixture não grava saves. Não mede comportamento de tela sensível ao toque, FPS, temperatura, bateria ou reconexão em aparelho físico.
+
+CI instala Java 17 e SDK Android, usa templates oficiais 4.6.3, exporta APK de desenvolvimento com assinatura fixa, verifica a assinatura, o manifest e as bibliotecas ARM e exporta Windows do mesmo código. A chave de desenvolvimento é pública e serve ao protótipo; não foi feita publicação em loja. Android real, iOS, internet entre casas e balanceamento prolongado permanecem para teste. Saves continuam v6 no anfitrião.
+
+---
+
 # Validação do Refúgio de Argila 0.10 — 2026-11-13
 
 **807 verificações locais aprovadas:** 648 nas oito suítes anteriores, 35 de argila/casas, 31 de conexão e 93 de rede (27 do anfitrião +22 por convidado). Godot 4.6.3 oficial, Linux. Registros em docs/clay-results.txt, docs/internet-results.txt e logs de regressão/rede.

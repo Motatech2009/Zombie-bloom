@@ -14,12 +14,14 @@ var last_scene_revision: int = -1
 var scene_revision: int = 0
 var shot_owner: int = 1
 var airdrops := AirdropDirector.new()
+var touch_controls: TouchControls
+var pending_slot: int = -1
 
 static func survival_path(mode: String) -> String:
 	return "user://zombie_bloom_"+mode+"_v6.json"
 
 func checkpoint_path() -> String: return survival_path(game_mode)
-func hud_script() -> Script: return load("res://scripts/survival/survival_hud.gd")
+func hud_script() -> Script: return load("res://scripts/mobile/mobile_hud.gd") if MobilePlatform.enabled() else load("res://scripts/survival/survival_hud.gd")
 func wave_script() -> Script: return load("res://scripts/survival/survival_waves.gd")
 func builder_script() -> Script: return load("res://scripts/survival/survival_build.gd")
 func weapon_script() -> Script: return load("res://scripts/survival/survival_weapons.gd")
@@ -40,6 +42,8 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("medkit",1)
 
 func _ready() -> void:
+	MobilePlatform.configure(get_tree().root)
+	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
 	ClayStyle.prewarm()
 	airdrops.world = self
 	network = get_node_or_null("/root/Coop")
@@ -48,6 +52,7 @@ func _ready() -> void:
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
+	if MobilePlatform.enabled(): camera.size = 30
 	ClayScenery.decorate(base_arena,8417,0)
 	player.weapons.sync_hand()
 	refresh_core_model()
@@ -64,12 +69,23 @@ func team_multiplier() -> int: return 1 << (mini(4,party_count())-1)
 func build_quota() -> int: return mini(12,6+waves.wave/3)
 func connected_game() -> bool: return network!=null and network.mode in ["host","client"]
 
+func select_hotbar(index: int) -> void:
+	if index<0 or index>8: return
+	player.bag.selected = index
+	if is_client: pending_slot = index
+	else: player.weapons.sync_hand()
+
 func local_input(actor: Node3D) -> Dictionary:
 	var blocked: bool = hud!=null and not hud.mode.is_empty()
+	if MobilePlatform.enabled() and is_instance_valid(touch_controls):
+		var frame := touch_controls.frame()
+		if blocked:
+			frame.move = Vector2.ZERO; frame.fire = false; frame.sprint = false; frame.reload = false; frame.interact = false
+		return frame
 	var hovering_button := get_viewport().gui_get_hovered_control() is Button
 	var mouse_aim := mouse_ground(1.15)-actor.position
 	mouse_aim.y = 0
-	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":actor.bag.selected}
+	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":pending_slot if is_client and pending_slot>=0 else actor.bag.selected}
 
 func _process(delta: float) -> void:
 	if is_client:
@@ -100,6 +116,7 @@ func _process(delta: float) -> void:
 	rockets = player.bag.count("rocket")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if MobilePlatform.enabled() and (event is InputEventMouseButton or event is InputEventMouseMotion): return
 	# Consume Space here so it never reaches the legacy manual-wave action.
 	if event.is_action_pressed("roll"):
 		if not event.is_echo() and hud.mode.is_empty() and not builder.active:
@@ -113,8 +130,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not builder.active:
 		for i in range(9):
 			if event.is_action_pressed("slot_%d" % (i+1)):
-				player.bag.selected = i
-				if not is_client: player.weapons.sync_hand()
+				select_hotbar(i)
 				return
 	if event.is_action_pressed("grenade") and hud.mode.is_empty(): send_action("grenade",{}); return
 	if event.is_action_pressed("interact"):
@@ -843,7 +859,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		airdrops.left = float(data.airdrops.left); airdrops.serial = int(data.airdrops.serial); airdrops.state = data.airdrops.state.duplicate(true)
 		airdrops.ensure_crate()
 	if not data.notice.is_empty(): notice = data.notice; notice_left = .25
-	if valid_profile(data.profile): restore_profile(player,data.profile)
+	if valid_profile(data.profile):
+		restore_profile(player,data.profile)
+		if pending_slot>=0:
+			if int(data.profile.bag.selected)==pending_slot: pending_slot = -1
+			else: player.bag.selected = pending_slot
 	for house_state in data.get("houses",[]):
 		var house := raid_house(int(house_state.id))
 		if house!=null: house.apply_state(house_state)
@@ -1044,3 +1064,10 @@ func valid_fortification(entry: Variant) -> bool:
 	for id in ["scrap","wood","parts"]:
 		if not entry.invested.has(id) or not bounded(entry.invested[id],0,100000): return false
 	return true
+
+func _notification(what: int) -> void:
+	if not MobilePlatform.enabled() or not is_instance_valid(hud): return
+	if what==NOTIFICATION_WM_GO_BACK_REQUEST:
+		if phase=="ended": hud.menu()
+		elif not hud.mode.is_empty(): hud.close_modal()
+		else: hud.show_pause()

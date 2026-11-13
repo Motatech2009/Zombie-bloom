@@ -63,6 +63,9 @@ jobs:
           godot --headless --path . --script res://tests/internet_tests.gd 2>&1 | tee internet-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' internet-tests.log; then exit 1; fi
           grep -E 'INTERNET RESULT: [0-9]+ checks, 0 failures' internet-tests.log
+          godot --headless --path . --script res://tests/mobile_tests.gd 2>&1 | tee mobile-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-tests.log; then exit 1; fi
+          grep -E 'MOBILE RESULT: [0-9]+ checks, 0 failures' mobile-tests.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
       - name: Install matching export templates
         shell: bash
@@ -81,14 +84,47 @@ jobs:
           godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
           test -s builds/windows/ZombieBloom.exe
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
-          cp CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          cp MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+          cp docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
           name: ZombieBloom-Windows-x64
           path: builds/windows/
+          if-no-files-found: error
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK and development signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          python3 .ci/configure_android.py
+      - name: Export signed Android test APK
+        shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: builds/signing/development.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          mkdir -p builds/android
+          godot --headless --path . --export-debug "Android" builds/android/ZombieBloom-Android.apk 2>&1 | tee android-export.log
+          test -s builds/android/ZombieBloom-Android.apk
+          if grep -E 'SCRIPT ERROR:|ERROR:' android-export.log; then exit 1; fi
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose builds/android/ZombieBloom-Android.apk | tee android-signature.log
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging builds/android/ZombieBloom-Android.apk | tee android-manifest.log
+          grep 'android.permission.INTERNET' android-manifest.log
+          grep "native-code:.*arm64-v8a" android-manifest.log
+          cp MOBILE.md MULTIPLAYER.md builds/android/
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-Android-APK
+          path: builds/android/
           if-no-files-found: error
       - name: Upload validation logs
         if: always()

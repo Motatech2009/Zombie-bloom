@@ -8,6 +8,7 @@ var actors: Array[Node3D] = []
 var clock: float = 0
 
 func _ready() -> void:
+	MobilePlatform.configure(get_tree().root)
 	get_tree().paused = false
 	Controls.setup()
 	ClayStyle.prewarm()
@@ -48,13 +49,13 @@ func _ready() -> void:
 	var left := PanelContainer.new()
 	root.add_child(left)
 	left.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	left.offset_right = 610
+	left.offset_right = 530 if MobilePlatform.enabled() else 610
 	left.add_theme_stylebox_override("panel", UI.style(Color(.025, .07, .09, .94), Color("263c41"), 0))
 	var margin := MarginContainer.new()
 	left.add_child(margin)
-	margin.add_theme_constant_override("margin_left", 58)
-	margin.add_theme_constant_override("margin_right", 58)
-	margin.add_theme_constant_override("margin_top", 38)
+	margin.add_theme_constant_override("margin_left", 28 if MobilePlatform.enabled() else 58)
+	margin.add_theme_constant_override("margin_right", 28 if MobilePlatform.enabled() else 58)
+	margin.add_theme_constant_override("margin_top", 14 if MobilePlatform.enabled() else 38)
 	margin.add_theme_constant_override("margin_bottom", 24)
 	var menu_scroll := ScrollContainer.new()
 	margin.add_child(menu_scroll)
@@ -96,7 +97,7 @@ func show_main() -> void:
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "REFÚGIO DE ARGILA 0.10   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "PC + ANDROID 0.11   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -131,6 +132,7 @@ func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
 	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nESPAÇO rolamento · recarga de 5 segundos\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
+	if MobilePlatform.enabled(): help.text = "Controle esquerdo: mover. Empurre até a borda para correr.\nControle direito: mirar e disparar. Solte para parar de atirar.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Transporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 
@@ -193,3 +195,6 @@ func show_multiplayer() -> void:
 	,true)
 	UI.button(content,"ENTRAR NO IP",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text))
 	UI.button(content,"CANCELAR / VOLTAR",func(): coop.close_session(); show_main())
+
+func _notification(what: int) -> void:
+	if MobilePlatform.enabled() and what==NOTIFICATION_WM_GO_BACK_REQUEST and is_instance_valid(content): show_main()

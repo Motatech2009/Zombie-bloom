@@ -46,3 +46,7 @@ Os 68 TSCNs e 38 SVGs anteriores continuam disponíveis. Em execução, `scripts
 `clay_scenery.gd` gera cenário e vegetação; `scenery_motion.gd` anima coroas/faixas; `house_layout.gd` distribui as casas; `raid_house.gd` monta a casa, seus detalhes e o objetivo de limpeza. Casas possuem três acabamentos, interior e tampa de saque animada. São modelos gerados em código, sem TSCN separado por casa.
 
 Os dois exportadores de modelos desativam o acabamento durante a gravação das primitivas; ele é aplicado em execução, evitando duplicar os mapas de textura nos TSCNs. Não altere nomes de nós de animação (ArmL, ArmR, LegL, LegR, Gun, Door, Head e Parachute).
+
+## Android 0.11
+
+Três SVGs em assets/mobile formam o ícone do aplicativo e as camadas adaptativas. Mantêm os 38 ícones de itens anteriores. A interface de toque e os menus são desenhados em código, sem imagens remotas.

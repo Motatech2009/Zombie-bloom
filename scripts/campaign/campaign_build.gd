@@ -37,7 +37,7 @@ func _physics_process(delta: float) -> void:
 	for i in range(piece_specs().size()):
 		if Input.is_action_just_pressed("slot_%d" % (i+1)): selected = i
 	if Input.is_action_just_pressed("rotate_piece"): angle = fmod(angle+PI/2,TAU)
-	var point: Vector3 = world.mouse_ground(0)
+	var point: Vector3 = preview_point()
 	location = Vector3(snappedf(point.x,1),0,snappedf(point.z,1))
 	preview.global_position = location
 	preview.rotation.y = angle
@@ -139,3 +139,5 @@ func place() -> Node3D:
 
 func piece_specs() -> Array: return CampaignData.PIECES
 func structure_script() -> Script: return STRUCTURE_SCRIPT
+
+func preview_point() -> Vector3: return world.mouse_ground(0)

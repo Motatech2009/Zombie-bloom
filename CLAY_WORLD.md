@@ -30,6 +30,6 @@ Somente um IPv4 público direto obtido do roteador é anunciado como endereço e
 
 O painel inclui o guia oficial para usar Tailscale entre casas. Não existe matchmaking, relay próprio, código de convite ou servidor dedicado gerenciado. Os testes usam ENet real em loopback e um roteador simulado para o ciclo UPnP; não houve teste de um roteador residencial real nem conexão entre duas casas.
 
-Esta entrega exporta Windows. Celular é a etapa seguinte: controles de toque, mira, interface adaptada, orçamento gráfico em aparelhos reais, empacotamento Android/iOS e testes de rede móvel. Ainda não há APK.
+A partir da 0.11 há APK Android de desenvolvimento com controles de toque e conexão ao PC. Veja MOBILE.md. iOS, desempenho em aparelhos físicos e rede móvel real continuam sem validação.
 
 Fontes técnicas: [Godot 4.6 UPNP](https://docs.godotengine.org/en/4.6/classes/class_upnp.html) · [Tailscale para servidor de jogo entre amigos](https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server).

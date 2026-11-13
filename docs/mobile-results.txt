@@ -1,0 +1,31 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: mobile world creates a fixed landscape touch interface
+PASS: first mobile hotbar page shows five large slots
+PASS: second hotbar page keeps all nine slots reachable
+PASS: two independent fingers move, aim and fire simultaneously
+PASS: touch movement drives the authoritative character through actual physics
+PASS: releasing aim stops fire without releasing movement
+PASS: movement stick has a real center dead zone
+PASS: touch roll uses the same authoritative five-second cooldown
+PASS: reload remains held while its own finger is down
+PASS: clearing touch state prevents stuck actions
+PASS: mobile inventory exposes eighteen slots in six columns
+PASS: modal panels cannot drive movement or fire underneath
+PASS: mobile construction catalog uses two touch-friendly columns
+PASS: construction preview follows the touch target instead of the mouse
+PASS: touch rotate turns the preview by ninety degrees
+PASS: touch placement goes through normal quota, collision and payment validation
+PASS: touch cancel restores the combat controls
+PASS: collect button holds interaction through its own finger
+PASS: holding touch collect deposits carried materials after the real gather duration
+PASS: releasing collect ends the held interaction
+PASS: mobile map preserves the live horde clock
+PASS: secondary actions have a touch-accessible menu
+PASS: Android Back closes a panel before leaving the world
+PASS: focus loss releases every held finger action
+PASS: mobile player can review a pending team upgrade
+PASS: a team upgrade resolved elsewhere closes stale choice panels
+PASS: late snapshots cannot undo a newly tapped hotbar selection
+PASS: acknowledged selection clears its pending state
+MOBILE RESULT: 28 checks, 0 failures

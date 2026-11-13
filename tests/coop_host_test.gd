@@ -46,6 +46,7 @@ func run() -> void:
 	for enemy in get_nodes_in_group("enemies"): enemy.queue_free()
 	world.waves.running = false
 	world.phase = "prep"
+	world.resources.pending = 0; world.upgrades.offers.clear(); world.hud.close_modal()
 	world.horde_left = 150
 	world.stock.wood = 100
 	for actor in world.avatars.values():
@@ -60,7 +61,7 @@ func run() -> void:
 	world.base_root.add_child(wire)
 	world.airdrops.left = .01; world.airdrops.tick(.02)
 	world.airdrops.state.coord = [0,-1]
-	await create_timer(4).timeout
+	await create_timer(5).timeout
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].bag.count("wood")==0,"client stores its withdrawn stack back into the authoritative depot")
 	for id in world.avatars:

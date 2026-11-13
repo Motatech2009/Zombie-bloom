@@ -4,10 +4,11 @@ static var volume: float = .65
 static var shadows: bool = true
 
 static func load_settings() -> void:
+	shadows = not MobilePlatform.enabled()
 	var config := ConfigFile.new()
 	if config.load("user://settings.cfg") == OK:
 		volume = clampf(float(config.get_value("audio", "volume", .65)), 0, 1)
-		shadows = bool(config.get_value("graphics", "shadows", true))
+		shadows = bool(config.get_value("graphics", "shadows", shadows))
 	apply_audio()
 
 static func save_settings() -> void:

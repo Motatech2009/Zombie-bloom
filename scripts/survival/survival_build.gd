@@ -16,3 +16,11 @@ func place() -> Node3D:
 
 func piece_specs() -> Array: return FortressData.pieces()
 func structure_script() -> Script: return load("res://scripts/fortress/fortress_structure.gd")
+
+func preview_point() -> Vector3:
+	if MobilePlatform.enabled() and is_instance_valid(world.touch_controls): return world.touch_controls.build_target
+	return super.preview_point()
+
+func set_active(value: bool) -> void:
+	super.set_active(value)
+	if active and MobilePlatform.enabled(): world.notify("Toque no chão para posicionar. Use GIRAR, COLOCAR ou CANCELAR.")

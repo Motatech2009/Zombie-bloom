@@ -11,7 +11,7 @@ out.mkdir(parents=True, exist_ok=True)
 processes = []
 handles = []
 try:
-    for role, args in [("host", []), ("client1", ["--", "--tag=1"]), ("client2", ["--", "--tag=2"]), ("client3", ["--", "--tag=3"])]:
+    for role, args in [("host", []), ("client1", ["--", "--tag=1"]), ("client2", ["--", "--tag=2"]), ("client3", ["--", "--tag=3", "--mobile-peer"])]:
         script = "coop_host_test.gd" if role == "host" else "coop_client_test.gd"
         handle = (out / (role + ".log")).open("w")
         handles.append(handle)

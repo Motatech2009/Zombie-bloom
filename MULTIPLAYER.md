@@ -1,4 +1,4 @@
-# Jogar com amigos — cooperativo 0.10
+# Jogar com amigos — cooperativo 0.11
 
 Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores. Espaço solicita rolamento; o anfitrião valida a recarga de 5 s e replica a animação e o contador para todos. Atualizem todos os PCs para a 0.10.
 
@@ -50,3 +50,7 @@ A descoberta e as operações no roteador rodam em thread. A concessão UDP dura
 [Guia oficial de compartilhamento de servidor de jogo](https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server). Não é necessário ter a mesma rede doméstica. Não foi criada conta/configuração externa nesta entrega. Sem UPnP/porta acessível ou rede virtual, não existe relay próprio que contorne o bloqueio da operadora.
 
 Casas são geradas pela mesma descrição em todos os PCs. Conteúdo e progresso da limpeza vêm do anfitrião; não são concedidos pelo convidado. Modelos de personagens recebem poses de recarga/disparo/rolamento e infectados animam também nos clientes. As 93 verificações ENet usam quatro processos em loopback; as 31 verificações auxiliares usam roteador simulado. Nenhuma certifica conectividade de uma operadora específica.
+
+## Android + PC na 0.11
+
+Podem participar da mesma sala, até quatro dispositivos misturados. Hospede de preferência no PC e, no Android, informe o IP do computador e a mesma porta UDP 24567. Atualizem os dois para 0.11. Controles e instalação em [MOBILE.md](MOBILE.md). O teste de rede inclui um cliente com controles de toque reais na aplicação Linux; a instalação e a rede de um celular físico ainda precisam de playtest. A escolha de slot aguarda confirmação do servidor sem ser desfeita por snapshots antigos.
