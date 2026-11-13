@@ -82,9 +82,9 @@ PASS: saboteur announces a larger EMP area
 PASS: EMP disables the nearby actual turret for five seconds
 PASS: disabled turret cannot bypass EMP through its firing method
 PASS: turret resumes firing after the effect expires
-PASS: v5 serializes and validates the full nine-weapon arsenal
+PASS: v6 serializes and validates the full nine-weapon arsenal
 PASS: saving remains valid when a gun, including the starter pistol, is stored elsewhere
-PASS: v5 restores new guns and loaded ammunition
+PASS: v6 restores new guns and loaded ammunition
 PASS: v4 migration extends weapon states without modifying the original save
 PASS: migrated v4 world and guest profiles pass validation
 PASS: inventory and hotbar use real icon slots

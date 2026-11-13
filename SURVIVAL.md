@@ -1,4 +1,4 @@
-# Sobrevivência 0.8
+# Sobrevivência 0.9
 
 ## Construção e depósito
 
@@ -21,7 +21,7 @@ Clique usa o item selecionado: dispara a arma, lança granada ou consome kit mé
 
 ## Coleta e escassez
 
-Segure E parado junto ao saque: 2,8 segundos por lote de até quatro unidades do primeiro tipo disponível; arsenal escondido exige cinco segundos. Movimento, dano e infectados a menos de 4,5 m da fonte interrompem a coleta. Bolsa cheia mantém o excedente na fonte. Não há coleta magnética nem transferência instantânea ao estoque. Uma arma repetida permanece no local até você guardar/descartar a que já carrega. Ao sair do setor, o saque abandonado é perdido, como nas versões anteriores.
+Drops de infectados são automáticos por proximidade. Nas caixas, segure E parado junto ao saque: 2,8 segundos por lote de até quatro unidades do primeiro tipo disponível; arsenal escondido exige cinco segundos. Movimento, dano e infectados a menos de 4,5 m da fonte interrompem a coleta. Bolsa cheia mantém o excedente na fonte. Drops no chão são recolhidos por proximidade; caixas mantêm a coleta demorada. Nenhuma coleta transfere materiais diretamente ao estoque. Uma arma repetida permanece no local até você guardar/descartar a que já carrega. Ao sair do setor, o saque abandonado é perdido, como nas versões anteriores.
 
 O estoque inicial cai para 85 sucata, seis madeiras e dois componentes. Caixas entregam aproximadamente 45% do orçamento anterior e sucata de inimigos cai pela metade (arredondamentos mínimos preservam recompensas pequenas). O dinheiro por sobreviver a uma horda continua sendo crédito direto ao Núcleo.
 
@@ -39,6 +39,8 @@ Vida, dano e velocidade continuam crescendo com as hordas; inimigos normais rece
 
 ## Saves
 
-Versão 5, separada por campanha/infinito. Salva bolsa, depósito, cota consumida, materiais no chão da base, construções e perfis dos convidados. Saves v1–v4 migram sem sobrescrever os arquivos originais. O anfitrião mantém o checkpoint; o convidado não grava a partida compartilhada. Identidade de reconexão é local ao dispositivo; apagar seus dados locais faz o jogo tratá-lo como novo jogador. Um sobrevivente caído continua caído ao reconectar.
+Versão 6, separada por campanha/infinito. Salva bolsa, depósito, cota consumida, materiais no chão da base, construções e perfis dos convidados. Saves v1–v5 migram sem sobrescrever os arquivos originais. O anfitrião mantém o checkpoint; o convidado não grava a partida compartilhada. Identidade de reconexão é local ao dispositivo; apagar seus dados locais faz o jogo tratá-lo como novo jogador. Um sobrevivente caído continua caído ao reconectar.
 
 Leia [MULTIPLAYER.md](MULTIPLAYER.md) para abrir a sala.
+
+As dez defesas, troca de materiais e os airdrops periódicos estão em [FORTRESS.md](FORTRESS.md).

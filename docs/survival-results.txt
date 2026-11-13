@@ -74,7 +74,7 @@ PASS: boss enters rage at low health
 PASS: screamer summons two separate hounds
 PASS: regenerator heals a wounded nearby infected
 PASS: exploding infected damages nearby survivors on death
-PASS: survival v5 checkpoint validates after JSON serialization
+PASS: survival v6 checkpoint validates after JSON serialization
 PASS: snapshot restores physical inventory and spent construction budget
 PASS: v3 saves migrate to bags without mutating the source
 PASS: corrupt construction budget is rejected

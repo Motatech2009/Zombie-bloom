@@ -1,6 +1,6 @@
-# Jogar com amigos — cooperativo 0.8
+# Jogar com amigos — cooperativo 0.9
 
-Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados da 0.7 devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores.
+Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores.
 
 ## Na mesma rede
 
@@ -31,3 +31,5 @@ O grupo viaja junto: todos os sobreviventes vivos precisam estar junto à mesma 
 O inventário, o mapa e todos os menus do cooperativo mantêm a simulação em andamento. Um caído pode ser reanimado segurando E por 3,5 segundos junto dele, consumindo um kit médico de quem ajuda. Vencer a horda reanima os caídos com 40 de vida. Todos caídos, ou Núcleo destruído, encerram a partida. Ao cair, os materiais carregados vão para o chão; armas e munição ficam na bolsa.
 
 É uma versão para testes entre amigos. O teste automatizado executa quatro processos reais via loopback, cobrindo entrada, movimento, tiro, munição, transações, escala e troca de setores, além de seleção/modelo/consumo do Arco Tesla e avisos do novo Criogênico. Isso não certifica uma conexão entre casas, perda de pacotes, latência alta ou sessões prolongadas. O servidor é o PC do anfitrião; não há migração automática se ele sair.
+
+A queda aérea é compartilhada: coordenada, temporizador, escolta e conteúdo são controlados pelo anfitrião. Os modelos dos níveis das fortificações também são replicados. Drops de chão coletam na bolsa do sobrevivente mais próximo sem interação. A comunicação de snapshots é comprimida; continuam valendo as limitações de latência/conectividade descritas acima.

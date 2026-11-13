@@ -510,7 +510,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	gun.reload_left = 0
 	for s in data.structures:
 		var structure := StaticBody3D.new()
-		structure.set_script(load("res://scripts/campaign/campaign_structure.gd"))
+		structure.set_script(structure_script())
 		structure.world = self
 		structure.piece_index = int(s.piece)
 		structure.tier = int(s.tier)
@@ -645,3 +645,5 @@ func builder_script() -> Script:
 
 func create_starting_loot() -> void:
 	for pos in [Vector3(7,0,-4),Vector3(-7,0,4),Vector3(-5,0,-7),Vector3(7,0,7)]: spawn_pickup(pos,0,15)
+
+func structure_script() -> Script: return load("res://scripts/campaign/campaign_structure.gd")

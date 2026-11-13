@@ -104,3 +104,12 @@ Navegação recalculada a cada 0,5–0,85 s, distribuída entre inimigos. Materi
 `Arsenal` centraliza os nove specs, preços e pacotes; a campanha anterior continua usando seus cinco specs para regressão. `ItemBag` amplia IDs e munições, mantendo índices anteriores. `SurvivalWeapons` especializa sniper perfurante e corrente Tesla com consultas físicas; os outros modelos reutilizam o contrato de disparo/recarga. O save v5 expande arrays e perfis v4; o validador herdado recebe uma ponte de cinco armas somente para validar mundo/base, enquanto posse/munição reais são validadas separadamente.
 
 `ModelFactory` gera cenas editáveis que o runtime instancia para armas, itens e humanoides. `ItemIcons` mantém texturas SVG em cache; `ItemSlot` evita reconstrução da barra/inventário por quadro. O HUD mantém os campos usados pelos diretores anteriores, com apresentação própria. Novos infectados usam telegráficos, investida física, status de lentidão e interrupção temporária de torretas. Snapshots incluem esses estados e o item segurado; RPC visual de tiros vem apenas do anfitrião.
+
+
+## Fortaleza e suprimentos 0.9
+
+`FortressData` estende as seis peças originais preservando índices. Fábricas virtuais no builder/mundo permitem manter cenas anteriores em regressão. `FortressStructure` aplica skins de nível e comportamentos novos; toda colocação mantém a validação física, cota e grade de acesso em cache. Wire/spikes são atravessáveis; slots 1–9/0 cobrem dez peças. O gate desloca Door, não o modelo inteiro.
+
+`SurvivalLoot` solicita ao anfitrião coleta por proximidade, conservando pilhas e prioridade do jogador mais próximo. Caixas permanecem como fontes manuais. Drops de voadores são projetados no chão; descartes ficam fora do raio imediato de quem descarta.
+
+`AirdropDirector` mantém relógio de 600 s, um evento ativo, coordenada, conteúdo e índices de escolta derrotados. Decora o descritor procedural sem alterar (0,0), materializa guardas com orçamento e preserva o progresso da caixa ao reentrar. `AirdropCrate` renderiza descida e estado de abertura. V6 serializa o diretor e valida as novas peças; importa v1–v5. Eventos e skins usam os snapshots autoritativos comprimidos com DEFLATE e limite de descompressão de 2 MiB, mantendo a cena confiável por revisão.

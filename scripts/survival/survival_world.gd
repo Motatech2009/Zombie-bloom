@@ -13,9 +13,10 @@ var client_hazards: Dictionary = {}
 var last_scene_revision: int = -1
 var scene_revision: int = 0
 var shot_owner: int = 1
+var airdrops := AirdropDirector.new()
 
 static func survival_path(mode: String) -> String:
-	return "user://zombie_bloom_"+mode+"_v5.json"
+	return "user://zombie_bloom_"+mode+"_v6.json"
 
 func checkpoint_path() -> String: return survival_path(game_mode)
 func hud_script() -> Script: return load("res://scripts/survival/survival_hud.gd")
@@ -23,6 +24,7 @@ func wave_script() -> Script: return load("res://scripts/survival/survival_waves
 func builder_script() -> Script: return load("res://scripts/survival/survival_build.gd")
 func weapon_script() -> Script: return load("res://scripts/survival/survival_weapons.gd")
 func create_starting_loot() -> void: pass
+func structure_script() -> Script: return load("res://scripts/fortress/fortress_structure.gd")
 
 func make_player() -> CharacterBody3D:
 	var actor := CharacterBody3D.new()
@@ -38,6 +40,7 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("medkit",1)
 
 func _ready() -> void:
+	airdrops.world = self
 	network = get_node_or_null("/root/Coop")
 	is_client = network!=null and network.mode=="client"
 	if is_client: checkpoint_enabled = false
@@ -45,13 +48,14 @@ func _ready() -> void:
 	stock = {"wood":6,"parts":2}
 	super._ready()
 	player.weapons.sync_hand()
+	refresh_core_model()
 	if network!=null and network.mode=="host": player.display_name = network.nickname
 	if is_client:
 		player.proxy = true
 		waves.set_physics_process(false)
 		core.set_physics_process(false)
 	if network!=null: network.bind_world(self)
-	notify("BOLSA 18 espaços · 1–9 barra rápida · Segure E para coletar · Deposite no Núcleo · I mochila")
+	notify("BOLSA 18 espaços · 1–9 barra rápida · Drops automáticos · Segure E nas caixas · Deposite no Núcleo · I mochila")
 
 func party_count() -> int: return maxi(1,avatars.size())
 func team_multiplier() -> int: return 1 << (mini(4,party_count())-1)
@@ -77,6 +81,7 @@ func _process(delta: float) -> void:
 		notice_left = maxf(0,notice_left-delta)
 		return
 	super._process(delta)
+	airdrops.tick(delta)
 	for enemy in get_tree().get_nodes_in_group("enemies"): enemy.label.hide()
 	for cache in caches:
 		if cache.has_meta("weapon"):
@@ -155,7 +160,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 			var pos = data.get("pos")
 			var piece = data.get("piece")
 			var angle = data.get("angle")
-			if pos is Vector3 and piece is int and piece>=0 and piece<6 and (angle is float or angle is int) and is_finite(pos.x) and is_finite(pos.z) and is_finite(float(angle)):
+			if pos is Vector3 and piece is int and piece>=0 and piece<FortressData.pieces().size() and (angle is float or angle is int) and is_finite(pos.x) and is_finite(pos.z) and is_finite(float(angle)):
 				var previous := {"active":builder.active,"location":builder.location,"selected":builder.selected,"angle":builder.angle}
 				builder.active = true
 				builder.location = Vector3(snappedf(pos.x,1),0,snappedf(pos.z,1))
@@ -189,6 +194,7 @@ func step_sector(direction: int) -> bool:
 		if actor!=player: actor.position = entry+Vector3(i%2*1.2,0,i/2*1.2)
 		i += 1
 	if area_index!=-1: scale_field_population()
+	airdrops.ensure_crate()
 	scene_revision += 1
 	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
 	return true
@@ -228,6 +234,9 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	enemy.encounter_index = index
 	enemy.position = pos
 	(field_root if field else base_root).add_child(enemy)
+	if field and descriptor.has("supply"):
+		enemy.health.setup(enemy.health.maximum*1.3)
+		enemy.spec.values.damage *= 1.15
 	if not field: enemy.add_to_group("wave_enemies")
 	if kind==8: enemy.add_to_group("boss_enemies")
 	return enemy
@@ -248,6 +257,13 @@ func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 		if offset.length()<radius: body.take_damage(damage)
 
 func enemy_defeated(enemy: Node3D) -> void:
+	if enemy.has_meta("supply_event"):
+		airdrops.defeated(enemy)
+		if enemy.is_in_group("airdrop_guards"): enemy.remove_from_group("airdrop_guards")
+		if enemy.is_in_group("boss_enemies"): enemy.remove_from_group("boss_enemies")
+		kills += 1
+		spawn_pickup(enemy.global_position,int(enemy.spec.values.xp),int(enemy.spec.values.scrap))
+		return
 	if enemy.encounter_index<0:
 		if enemy.is_in_group("wave_enemies"): enemy.remove_from_group("wave_enemies")
 		kills += 1
@@ -272,13 +288,13 @@ func spawn_pickup(pos: Vector3,experience: int,metal: int,power: String = "") ->
 	if metal<=0 and experience<=0 and power.is_empty(): return null
 	return spawn_loot(pos,{"scrap":maxi(1,metal/2)} if metal>0 else {},experience,power)
 
-func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0) -> Node3D:
+func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true) -> Node3D:
 	var parent: Node3D = base_root if region_at(pos)=="0:0" else field_root
 	if parent==null: return null
 	var items := get_tree().get_nodes_in_group("survival_loot")
 	if items.size()>=128:
 		for pile in items:
-			if pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS):
+			if bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS):
 				for id in contents: pile.contents[id] = int(pile.contents.get(id,0))+int(contents[id])
 				pile.set_meta("xp",int(pile.get_meta("xp",0))+experience)
 				return pile
@@ -290,12 +306,13 @@ func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: Str
 	loot.contents = contents.duplicate()
 	loot.power = power
 	loot.loaded = loaded
-	loot.position = pos-parent.global_position
+	loot.position = (pos-parent.global_position)*Vector3(1,0,1)
 	loot.set_meta("contents",loot.contents)
 	loot.set_meta("uid",loot.uid)
 	loot.set_meta("xp",experience)
 	loot.set_meta("power",power)
 	loot.set_meta("loaded",loaded)
+	loot.set_meta("auto",automatic)
 	loot.add_to_group("survival_sources")
 	parent.add_child(loot)
 	return loot
@@ -304,7 +321,7 @@ func nearest_source(actor: Node3D) -> Node3D:
 	var result: Node3D
 	var distance := 2.8
 	for source in get_tree().get_nodes_in_group("survival_sources"):
-		if source.is_queued_for_deletion() or source.get_meta("contents",{}).is_empty() and int(source.get_meta("xp",0))==0 and source.get_meta("power","")=="": continue
+		if source.get_meta("auto",false) or source.is_queued_for_deletion() or source.get_meta("contents",{}).is_empty() and int(source.get_meta("xp",0))==0 and source.get_meta("power","")=="": continue
 		var d: float = source.global_position.distance_to(actor.position)
 		if d<distance: result = source; distance = d
 	return result
@@ -319,7 +336,11 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 		if actor.gather_target==null and area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): begin_gather(actor,core,"deposit",1.8)
 		if actor.gather_target==null:
 			var source := nearest_source(actor)
-			if source!=null: begin_gather(actor,source,"loot",5.0 if source.has_meta("weapon") else 2.8)
+			if source!=null:
+				if source.get_meta("airdrop",false) and not airdrops.can_open():
+					notify("Airdrop bloqueado: espere a queda e elimine a escolta (%d restantes)." % airdrops.remaining())
+					return
+				begin_gather(actor,source,"loot",5.0 if source.has_meta("weapon") or source.get_meta("airdrop",false) else 2.8)
 		if actor.gather_target==null and area_index==-1 and phase=="prep":
 			for structure in get_tree().get_nodes_in_group("buildings"):
 				if not structure.health.dead and structure.health.current<structure.health.maximum and actor.position.distance_to(structure.global_position)<2.8:
@@ -329,6 +350,7 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 	var target: Node3D = actor.gather_target
 	if not is_instance_valid(target) or target.is_queued_for_deletion() or actor.position.distance_to(actor.gather_start)>.45 or actor.last_damage!=actor.gather_damage_mark or actor.position.distance_to(target.global_position)>(4.2 if target==core else 3.1): actor.cancel_gather(); return
 	if actor.gather_kind=="loot":
+		if target.get_meta("airdrop",false) and not airdrops.can_open(): actor.cancel_gather(); return
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			if enemy.global_position.distance_to(target.global_position)<4.5: actor.cancel_gather(); return
 	actor.gather_progress += delta
@@ -350,10 +372,11 @@ func begin_gather(actor: Node3D,target: Node3D,kind: String,duration: float) -> 
 	actor.gather_start = actor.position
 
 func transfer_source(actor: Node3D,source: Node3D) -> bool:
+	if source.get_meta("airdrop",false) and not airdrops.can_open(): return false
 	var contents: Dictionary = source.get_meta("contents",{})
 	var transferred := false
 	for id in contents.keys():
-		var amount: int = mini(int(contents[id]),4 if id not in ItemBag.WEAPON_IDS else 1)
+		var amount: int = mini(int(contents[id]),ItemBag.stack(id) if source.get_meta("airdrop",false) else 4 if id not in ItemBag.WEAPON_IDS else 1)
 		var taken: int = actor.bag.add(id,amount)
 		if taken<=0: continue
 		contents[id] -= taken
@@ -370,6 +393,7 @@ func transfer_source(actor: Node3D,source: Node3D) -> bool:
 		if not power.is_empty(): actor.grant_power(power); source.set_meta("power",""); transferred = true
 		if source.has_meta("index") and not int(source.get_meta("index")) in claimed: claimed.append(int(source.get_meta("index")))
 		source.hide()
+		if source.get_meta("airdrop",false): airdrops.mark_collected()
 	actor.weapons.sync_hand()
 	if not transferred: notify("Bolsa cheia ou arma já carregada. Deposite no Núcleo ou reorganize com I.")
 	return transferred
@@ -425,7 +449,7 @@ func drop_slot(actor: Node3D,index: int) -> bool:
 	if item.id in ItemBag.WEAPON_IDS:
 		var gun := ItemBag.WEAPON_IDS.find(item.id)
 		loaded = actor.weapons.ammo[gun]
-	if spawn_loot(actor.position+Vector3(1,0,0),{item.id:item.qty},0,"",loaded)==null: return false
+	if spawn_loot(actor.position+Vector3(2.3,0,0),{item.id:item.qty},0,"",loaded)==null: return false
 	if item.id in ItemBag.WEAPON_IDS: actor.weapons.ammo[ItemBag.WEAPON_IDS.find(item.id)] = 0
 	actor.bag.slots[index] = {"id":"","qty":0}
 	actor.weapons.sync_hand()
@@ -536,7 +560,8 @@ func snapshot() -> Dictionary:
 	grenades = player.bag.count("grenade")
 	rockets = player.bag.count("rocket")
 	var data := super.snapshot()
-	data.format = 5
+	data.format = 6
+	data.airdrops = airdrops.dump()
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
 	data.built = built_this_round
@@ -544,24 +569,29 @@ func snapshot() -> Dictionary:
 	data.profiles = profiles.duplicate(true)
 	data.loose = []
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
-		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0))})
+		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true))})
 	player = saved_player
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
-	if not data is Dictionary or data.get("format")!=5 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
+	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
+	if not AirdropDirector.valid(data.get("airdrops")): return false
 	for id in data.depot_items:
 		if id not in ItemBag.IDS or not bounded(data.depot_items[id],0,10000000): return false
 	for id in data.profiles:
 		if not id is String or id.length()>64 or not valid_profile(data.profiles[id]): return false
 	for item in data.loose:
-		if not item is Dictionary or not point_valid(item.get("pos")) or not item.get("contents") is Dictionary or not bounded(item.get("xp"),0,1000000) or item.get("power") not in ["","speed","rapid","shield"] or not bounded(item.get("loaded"),0,100000): return false
+		if not item is Dictionary or not point_valid(item.get("pos")) or not item.get("contents") is Dictionary or not bounded(item.get("xp"),0,1000000) or item.get("power") not in ["","speed","rapid","shield"] or not bounded(item.get("loaded"),0,100000) or not item.get("auto") is bool: return false
 		for id in item.contents:
 			if id not in ItemBag.IDS or not bounded(item.contents[id],1,1000000): return false
 	var old: Dictionary = data.duplicate(true)
 	if not data.get("owned") is Array or data.owned.size()!=Arsenal.WEAPONS.size() or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not bounded(data.get("slot"),0,Arsenal.WEAPONS.size()-1): return false
 	for i in range(Arsenal.WEAPONS.size()):
 		if not data.owned[i] is bool or not bounded(data.ammo[i],0,100000): return false
+	if not data.get("structures") is Array or data.structures.size()>120: return false
+	for entry in data.structures:
+		if not valid_fortification(entry): return false
+	old.structures = []
 	old.format = 3
 	# The inherited validator covers world/base data using its five-weapon schema.
 	old.owned.resize(5); old.ammo.resize(5); old.owned[0] = true; old.slot = 0
@@ -592,6 +622,13 @@ func migrate_snapshot(data: Variant) -> Variant:
 			if not profile is Dictionary or not profile.get("ammo") is Array or profile.ammo.size() not in [5,9]: return data
 			while profile.ammo.size()<Arsenal.WEAPONS.size(): profile.ammo.append(0)
 		converted.format = 5
+	if converted.get("format")==5:
+		converted = converted.duplicate(true)
+		converted.format = 6
+		converted.airdrops = {"left":600.0,"serial":0,"state":{}}
+		if converted.get("loose") is Array:
+			for item in converted.loose:
+				if item is Dictionary: item.auto = true
 	return converted
 
 func apply_snapshot(data: Dictionary) -> void:
@@ -601,14 +638,15 @@ func apply_snapshot(data: Dictionary) -> void:
 	depot_items = data.depot_items.duplicate()
 	built_this_round = int(data.built)
 	profiles = data.profiles.duplicate(true)
+	airdrops.restore(data.airdrops)
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
 		loot.get_parent().remove_child(loot)
 		loot.queue_free()
-	for item in data.loose: spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded))
+	for item in data.loose: spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto))
 
 func load_checkpoint() -> bool:
 	if is_client or area_index!=-1 or phase!="prep": return false
-	var paths := [checkpoint_path(),"user://zombie_bloom_"+game_mode+"_v4.json",frontier_path(game_mode),save_path(game_mode)]
+	var paths := [checkpoint_path(),"user://zombie_bloom_"+game_mode+"_v5.json","user://zombie_bloom_"+game_mode+"_v4.json",frontier_path(game_mode),save_path(game_mode)]
 	if game_mode=="campaign": paths.append(CHECKPOINT)
 	for path in paths:
 		if not FileAccess.file_exists(path): continue
@@ -719,7 +757,7 @@ func net_state(peer: int) -> Dictionary:
 		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left})
 	var loot: Array = []
 	for s in get_tree().get_nodes_in_group("survival_sources"):
-		if s.is_queued_for_deletion(): continue
+		if s.is_queued_for_deletion() or s.get_meta("airdrop",false): continue
 		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible})
 	var hazards: Array = []
 	for group in ["campaign_projectiles","acid_pools"]:
@@ -728,7 +766,7 @@ func net_state(peer: int) -> Dictionary:
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"airdrops":airdrops.dump(),"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not is_client or int(data.rev)!=last_scene_revision: return
@@ -744,7 +782,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	horde_left = data.clock
 	core.health.maximum = data.core_max
 	core.health.current = data.core_hp
-	core_tier = int(data.core_tier)
+	if core_tier!=int(data.core_tier):
+		core_tier = int(data.core_tier)
+		refresh_core_model()
 	resources.scrap = int(data.scrap)
 	stock = data.stock.duplicate()
 	depot_items = data.depot.duplicate()
@@ -755,6 +795,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	upgrades.offers = data.offers.duplicate(true)
 	field_dead = int(data.dead)
 	discovered = data.discovered.duplicate(true)
+	if AirdropDirector.valid(data.get("airdrops")):
+		airdrops.left = float(data.airdrops.left); airdrops.serial = int(data.airdrops.serial); airdrops.state = data.airdrops.state.duplicate(true)
+		airdrops.ensure_crate()
 	if not data.notice.is_empty(): notice = data.notice; notice_left = .25
 	if valid_profile(data.profile): restore_profile(player,data.profile)
 	var seen := {}
@@ -819,7 +862,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		seen[id] = true
 		if not client_structures.has(id):
 			var s := StaticBody3D.new()
-			s.set_script(load("res://scripts/campaign/campaign_structure.gd"))
+			s.set_script(structure_script())
 			s.world = self
 			s.piece_index = int(state.piece)
 			s.position = state.p
@@ -829,14 +872,16 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			client_structures[id] = s
 		var s: Node3D = client_structures[id]
 		s.tier = int(state.tier)
+		if s.has_method("refresh_visual"): s.refresh_visual()
 		s.health.maximum = state.max
 		s.health.current = state.hp
 		s.opened = state.open
 		s.disabled_left = float(state.get("emp",0))
 		s.label.text = "EMP · %.1f s" % s.disabled_left if s.disabled_left>0 else "%s N%d · %d/%d" % [s.spec.title,s.tier,ceili(s.health.current),ceili(s.health.maximum)]
 		s.label.visible = s.disabled_left>0 or s.health.current<s.health.maximum or s.position.distance_to(player.position)<5
-		s.collision_layer = 0 if state.open or s.spec.id=="spikes" else 8
-		s.model.position.y = -1.65 if state.open else 0
+		s.collision_layer = 0 if state.open or FortressData.passable(s.spec.id) else 8
+		if s.has_method("set_open_visual"): s.set_open_visual()
+		else: s.model.position.y = -1.65 if state.open else 0
 	for id in client_structures.keys():
 		if not seen.has(id): client_structures[id].queue_free(); client_structures.erase(id)
 	seen.clear()
@@ -881,4 +926,63 @@ func frost_blast(point: Vector3) -> void:
 func emp_blast(point: Vector3) -> void:
 	effects.burst(point,Color("9aabf0"),14)
 	for structure in get_tree().get_nodes_in_group("campaign_structure"):
-		if structure.spec.id=="turret" and structure.global_position.distance_to(point)<8: structure.disabled_left = maxf(structure.disabled_left,5)
+		if FortressData.turret(structure.spec.id) and structure.global_position.distance_to(point)<8: structure.disabled_left = maxf(structure.disabled_left,5)
+
+func collect_ground(actor: Node3D,source: Node3D) -> bool:
+	if is_client or phase=="ended" or actor.health.dead or not is_instance_valid(source) or source.is_queued_for_deletion() or not source.get_meta("auto",false) or actor.global_position.distance_to(source.global_position)>=1.65: return false
+	var contents: Dictionary = source.get_meta("contents",{})
+	var moved := false
+	for id in contents.keys():
+		var taken: int = actor.bag.add(id,int(contents[id]))
+		if taken<=0: continue
+		contents[id] -= taken
+		if contents[id]<=0: contents.erase(id)
+		if id in ItemBag.WEAPON_IDS:
+			var index := ItemBag.WEAPON_IDS.find(id)
+			actor.weapons.ammo[index] = clampi(int(source.get_meta("loaded",0)),0,actor.weapons.capacity(index))
+		moved = true
+	var xp: int = source.get_meta("xp",0)
+	if xp>0: source.set_meta("xp",0); resources.add_loot(xp,0); moved = true
+	var power: String = source.get_meta("power","")
+	if not power.is_empty(): source.set_meta("power",""); actor.grant_power(power); moved = true
+	if contents.is_empty(): source.hide()
+	actor.weapons.sync_hand()
+	return moved
+
+func refresh_core_model() -> void:
+	for child in core.model.get_children(): core.model.remove_child(child); child.queue_free()
+	var visual: Node3D = load("res://assets/fortress/core_"+str(core_tier)+".tscn").instantiate()
+	core.model.add_child(visual)
+
+func defense_shell(from: Vector3,to: Vector3,power: float,radius: float) -> Node3D:
+	if is_client or get_tree().get_nodes_in_group("campaign_projectiles").size()>=48: return null
+	var shell := Node3D.new(); shell.set_script(load("res://scripts/fortress/defense_shell.gd"))
+	shell.world = self; shell.kind = "defense_shell"; shell.start = from; shell.destination = to
+	shell.damage = power; shell.radius = radius; shell.life = .6; shell.set_meta("uid",next_id())
+	add_child(shell)
+	return shell
+
+func defense_blast(point: Vector3,radius: float,power: float) -> void:
+	if is_client: return
+	effects.burst(point,Color("e8b675"),16)
+	if network!=null and network.mode=="host": network.blast_event(point,radius)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		var target: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
+		if target.distance_to(point)>radius: continue
+		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(point+Vector3.UP*.25,target,1|8))
+		if hit.is_empty(): enemy.take_damage(power)
+
+func prepare_sector_descriptor(data: Dictionary) -> Dictionary:
+	return airdrops.decorate(data)
+
+func valid_fortification(entry: Variant) -> bool:
+	if not entry is Dictionary: return false
+	for key in ["piece","tier","hp","pos","angle","open","invested"]:
+		if not entry.has(key): return false
+	if not bounded(entry.piece,0,FortressData.pieces().size()-1) or int(entry.piece)!=entry.piece or not bounded(entry.tier,1,3) or int(entry.tier)!=entry.tier or not point_valid(entry.pos) or not bounded(entry.angle,0,TAU) or not entry.open is bool or not entry.invested is Dictionary: return false
+	var data: Dictionary = FortressData.pieces()[int(entry.piece)]
+	if not bounded(entry.hp,.01,data.health*(1+.65*(entry.tier-1))+.001): return false
+	if entry.open and data.id!="gate": return false
+	for id in ["scrap","wood","parts"]:
+		if not entry.invested.has(id) or not bounded(entry.invested[id],0,100000): return false
+	return true

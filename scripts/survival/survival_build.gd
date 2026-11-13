@@ -13,3 +13,6 @@ func place() -> Node3D:
 	var result := super.place()
 	if result!=null: world.built_this_round += 1
 	return result
+
+func piece_specs() -> Array: return FortressData.pieces()
+func structure_script() -> Script: return load("res://scripts/fortress/fortress_structure.gd")

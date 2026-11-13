@@ -139,7 +139,7 @@ func step_sector(direction: int) -> bool:
 		visit_serial += 1
 		var key := SectorGenerator.key(next)
 		var visits: int = int(discovered.get(key,{"visits":0}).visits)+1
-		descriptor = SectorGenerator.generate(world_rng.randi_range(1,2147483647),next,visits,waves.wave)
+		descriptor = prepare_sector_descriptor(SectorGenerator.generate(world_rng.randi_range(1,2147483647),next,visits,waves.wave))
 		discovered[key] = {"visits":visits,"risk":descriptor.risk}
 		if discovered.size()>8192:
 			for old_key in discovered.keys():
@@ -401,3 +401,5 @@ func load_checkpoint() -> bool:
 	apply_snapshot(data)
 	notify("Refúgio e relógio restaurados. Próxima horda em %d s." % ceili(horde_left))
 	return true
+
+func prepare_sector_descriptor(data: Dictionary) -> Dictionary: return data

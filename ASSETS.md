@@ -1,3 +1,19 @@
+# Assets da fortaleza 0.9
+
+A expansão acrescenta **35 modelos** em `assets/fortress/`: dez defesas × três níveis, quatro modelos do Núcleo e a caixa aérea com paraquedas. São 68 modelos editáveis no total, somando os 33 da versão anterior. Cinco SVGs novos (arame, muralha, canhão, torre elétrica e airdrop) levam o total a 38 ícones.
+
+Materiais trocam cor, acabamento e geometria nas melhorias. O nó Door do portão se move sem deslocar seu quadro; Head das torretas/canhões acompanha o alvo. Não altere esses nomes se quiser preservar o comportamento dos scripts.
+
+A fonte é `scripts/fortress/fortress_models.gd`. Para regenerar os 35 modelos da fortaleza:
+
+```sh
+godot --headless --path . --script res://tests/export_fortress_models.gd
+```
+
+O comando sobrescreve as cenas geradas; transfira alterações manuais de volta à fábrica antes de regenerar. `tests/fortress_preview.gd` monta uma vitrine de níveis sem gravar save; use `-- --airdrop` para revisar a queda e seu mapa. A fixture não representa o inventário/progresso inicial e fica excluída do executável.
+
+---
+
 # Assets visuais 0.8
 
 33 ícones vetoriais e 33 modelos low-poly editáveis, criados para este projeto. Não dependem de download de assets ou plugins de geração durante o jogo.

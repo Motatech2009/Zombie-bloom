@@ -31,6 +31,7 @@ func run() -> void:
 	link.test_input.fire = false
 	var total: int = world.player.bag.count("light")+world.player.weapons.ammo[0]
 	check(total<60,"client weapon consumes authoritative finite ammunition")
+	check(world.player.bag.count("medkit")==2,"walking pickup is simulated by the server and replicated without an interaction command")
 	check(world.team_multiplier()==8,"client HUD state sees four-player scaling")
 	link.command("damage",{"amount":999999})
 	link.command("build",{"piece":0,"angle":0.0,"pos":Vector3.ZERO})
@@ -54,8 +55,11 @@ func run() -> void:
 	link.test_input.fire = false
 	check(world.player.weapons.hand_weapon==8 and world.player.weapons.ammo[8]<2,"new gun selection, visible model and finite ammunition replicate after remote fire")
 	check(world.client_enemies.values().any(func(enemy): return enemy.enemy_kind==13) and not world.client_hazards.is_empty(),"new infected model and its blue warning replicate to clients")
+	check(world.client_structures.values().any(func(piece): return piece.piece_index==6 and piece.tier==2 and piece.model.get_node("Visual").get_meta("tier")==2),"new razor-wire type and reinforced material/model replicate to the guest")
+	check(world.airdrops.serial==1 and world.airdrops.coord()==Vector2i(0,-1),"supply timer and remote coordinates replicate to the guest")
 	deadline = Time.get_ticks_msec()+7000
 	while world.sector_coord==Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	check(world.airdrops.crate!=null and world.descriptor.risk==4,"client sees the real supply crate and high-risk drop sector")
 	check(world.sector_coord==Vector2i(0,-1) and world.field_root!=null,"reliable scene revision loads the same generated northern sector")
 	deadline = Time.get_ticks_msec()+7000
 	while world.sector_coord!=Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

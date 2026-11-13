@@ -57,8 +57,8 @@ func show_routes() -> void:
 	grid.add_theme_constant_override("h_separation",4)
 	grid.add_theme_constant_override("v_separation",4)
 	row.add_child(grid)
-	for y in range(world.sector_coord.y-3,world.sector_coord.y+4):
-		for x in range(world.sector_coord.x-3,world.sector_coord.x+4):
+	for y in range(map_center().y-3,map_center().y+4):
+		for x in range(map_center().x-3,map_center().x+4):
 			var coord := Vector2i(x,y)
 			var key := SectorGenerator.key(coord)
 			var known: bool = world.discovered.has(key)
@@ -68,6 +68,7 @@ func show_routes() -> void:
 			if coord==world.sector_coord: text = "%d,%d\nVOCÊ" % [x,y]
 			var chosen := coord
 			var button := UI.button(grid,text,func(): select_sector(chosen))
+			button.set_meta("coord",coord)
 			button.custom_minimum_size = Vector2(68,48)
 			button.add_theme_font_size_override("font_size",12)
 			button.add_theme_stylebox_override("normal",UI.style(Color("375750") if coord==world.sector_coord else Color("384849") if known else Color("182d33"),UI.LIME if coord==Vector2i.ZERO else Color("354b4e"),6))
@@ -91,3 +92,5 @@ func select_sector(coord: Vector2i) -> void:
 		var info: Dictionary = world.discovered[key]
 		map_detail.text = "(%d,%d) · %d visita(s)\nÚltimo risco: %s\nA próxima entrada gera outro cenário e loot." % [coord.x,coord.y,int(info.visits),SectorGenerator.RISKS[int(info.risk)]]
 	else: map_detail.text = "(%d,%d) · NÃO EXPLORADO\nPode conter poucos infectados, uma multidão ou chefe. Veja o relógio antes de avançar." % [coord.x,coord.y]
+
+func map_center() -> Vector2i: return world.sector_coord

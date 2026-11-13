@@ -1,3 +1,21 @@
+# Validação da Fortaleza 0.9 — 2026-11-13
+
+**688 verificações locais aprovadas:** 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual, 100 de fortaleza e 73 de rede (22 do anfitrião +17 por convidado). Godot 4.6.3 oficial, Linux. Logs atuais em docs/fortress-results.txt e nos arquivos das suítes anteriores/rede.
+
+Fortaleza: 35 cenas editáveis importadas (30 defesas por nível, quatro Núcleos e um airdrop), preservação dos índices das peças antigas, morte real de infectado com coleta por proximidade, drop aéreo projetado no chão, materiais que ficam na bolsa, capacidade parcial e XP único com bolsa cheia, prioridade do convidado mais próximo. Caixa procedural real não coleta ao passar e continua exigindo tempo.
+
+Construções: melhorias pagas trocam cores, materiais e geometria; limite N3; portão levanta só a folha e não fecha sobre personagem; arame atravessável causa dano, lentidão, desgaste e ignora voadores; canhão cria projétil, causa dano em área e poupa aliados/Núcleo; torre elétrica atinge solo/ar, interrompe e respeita EMP; comando autoritativo instala peça de índice novo e consome a cota; Núcleo troca o modelo completo ao melhorar.
+
+Airdrop: prazo exato de 600 s, setor aleatório fora da base, risco máximo, paraquedas, escolta com chefe real reforçado, bloqueio contra coleta precoce/automática, limite de 12 guardas materializados, contagem separada da população comum, retirada e reentrada sem recriar mortos/chefe, desbloqueio após derrotar toda a escolta, cinco segundos por lote, conservação do restante, transporte até o Núcleo, próxima queda após dez minutos e validação de dados inválidos. V6 valida novos tipos, relógio/conteúdo/progresso e migra v5 preservando a origem.
+
+Rede: quatro processos ENet/UDP reais por loopback. Os testes anteriores foram ampliados para coleta por passagem sem E, tipo/nível/material de arame no convidado, relógio/coordenada da queda, caixa e área infestada compartilhadas. Snapshots comprimidos em DEFLATE são decodificados com limite e preservam o estado; o teste confirma tamanho reduzido. Isso não certifica conexão entre casas, perdas ou latência alta.
+
+Revisão gráfica em janela 1280×800: madeira, aço e concreto lado a lado, Núcleo N4, torretas/canhão/torre elétrica/arame/muralha, catálogo rolável com dez opções e ícones, paraquedas em descida, indicação dos guardas, marcador dourado DROP e orientação no mapa. O HUD anterior foi preservado. A fixture tests/fortress_preview.gd não grava save e não representa o inventário inicial. As suítes usam dano de fixture para testar conclusões, sem equivaler a uma campanha humana completa.
+
+Importação/suítes sem erros de script. Ambiente gráfico Mesa llvmpipe por CPU, áudio Dummy. FPS no PC alvo, execução nativa no Windows e balanceamento de sessões prolongadas permanecem para playtest. O CI repete as sete suítes, teste de rede e exporta Windows; o resultado é confirmado no commit entregue.
+
+---
+
 # Validação do Arsenal 0.8 — 2026-11-13
 
 **574 verificações locais aprovadas:** 342 anteriores, 80 de sobrevivência, 93 de arsenal/visual e 59 de rede (20 do anfitrião +13 por convidado). Logs em docs/arsenal-results.txt e nos arquivos de regressão/rede. Godot 4.6.3 oficial, Linux.

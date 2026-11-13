@@ -30,18 +30,18 @@ func _ready() -> void:
 func set_active(value: bool) -> void:
 	active = value and world.phase == "prep" and world.area_index == -1
 	preview.visible = active
-	if active: world.notify("1–6 selecionam peças · Q gira · clique instala · botão direito cancela")
+	if active: world.notify("1–9 / 0 selecionam peças · Q gira · clique instala · botão direito cancela")
 
 func _physics_process(delta: float) -> void:
 	if not active: return
-	for i in range(6):
+	for i in range(piece_specs().size()):
 		if Input.is_action_just_pressed("slot_%d" % (i+1)): selected = i
 	if Input.is_action_just_pressed("rotate_piece"): angle = fmod(angle+PI/2,TAU)
 	var point: Vector3 = world.mouse_ground(0)
 	location = Vector3(snappedf(point.x,1),0,snappedf(point.z,1))
 	preview.global_position = location
 	preview.rotation.y = angle
-	var size: Vector3 = CampaignData.PIECES[selected].size
+	var size: Vector3 = piece_specs()[selected].size
 	ghost.scale = size
 	ghost.position.y = size.y/2
 	preview_left -= delta
@@ -57,12 +57,12 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	elif absf(pos.x)>46 or absf(pos.z)>46: reason = "Fora do terreno da base."
 	elif pos.distance_to(world.player.global_position)>12: reason = "Aproxime-se: alcance de 12 m."
 	elif get_tree().get_nodes_in_group("campaign_structure").size()>=120: reason = "Limite de 120 estruturas."
-	elif not world.can_pay(CampaignData.PIECES[selected].cost): reason = "Materiais insuficientes."
+	elif not world.can_pay(piece_specs()[selected].cost): reason = "Materiais insuficientes."
 	elif pos.distance_to(world.vendor_pos)<3.5: reason = "Mantenha o vendedor livre."
 	for exit in world.exit_positions():
 		if pos.distance_to(exit)<3.5: reason = "Mantenha as saídas livres."
 	if not reason.is_empty(): return false
-	var size: Vector3 = CampaignData.PIECES[selected].size
+	var size: Vector3 = piece_specs()[selected].size
 	var query := PhysicsShapeQueryParameters3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(size.x-.05,maxf(.3,size.y-.25),size.z-.05)
@@ -73,13 +73,13 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 		reason = "Local ocupado."
 		return false
 	for structure in get_tree().get_nodes_in_group("campaign_structure"):
-		if footprint_overlaps(pos,size,angle,structure.position,CampaignData.PIECES[structure.piece_index].size,structure.rotation.y):
+		if footprint_overlaps(pos,size,angle,structure.position,piece_specs()[structure.piece_index].size,structure.rotation.y):
 			reason = "Outra estrutura ocupa esta posição."
 			return false
 	if check_access and not preserves_access(pos,size):
 		reason = "Deixe passagem ao Núcleo ou use um portão."
 		return false
-	reason = "%s · %s" % [CampaignData.PIECES[selected].title,CampaignData.cost_text(CampaignData.PIECES[selected].cost)]
+	reason = "%s · %s" % [piece_specs()[selected].title,CampaignData.cost_text(piece_specs()[selected].cost)]
 	return true
 
 func footprint_overlaps(a: Vector3,sa: Vector3,ra: float,b: Vector3,sb: Vector3,rb: float) -> bool:
@@ -96,13 +96,13 @@ func cells_for(pos: Vector3,size: Vector3,rotation_y: float) -> Array[Vector2i]:
 	return result
 
 func preserves_access(pos: Vector3,size: Vector3) -> bool:
-	if CampaignData.PIECES[selected].id in ["gate","spikes"]: return true
+	if piece_specs()[selected].id in ["gate","spikes","wire"]: return true
 	access_checks += 1
 	if access_revision!=world.layout_revision:
 		access_grid.fill_solid_region(access_grid.region,false)
 		for s in get_tree().get_nodes_in_group("campaign_structure"):
-			if s.spec.id not in ["gate","spikes"]:
-				for cell in cells_for(s.position,CampaignData.PIECES[s.piece_index].size,s.rotation.y): access_grid.set_point_solid(cell)
+			if s.spec.id not in ["gate","spikes","wire"]:
+				for cell in cells_for(s.position,piece_specs()[s.piece_index].size,s.rotation.y): access_grid.set_point_solid(cell)
 		access_revision = world.layout_revision
 		access_rebuilds += 1
 	var changed: Array[Vector2i] = []
@@ -121,10 +121,10 @@ func place() -> Node3D:
 	if not active or not can_place(location):
 		world.notify(reason)
 		return null
-	var cost: Dictionary = CampaignData.PIECES[selected].cost
+	var cost: Dictionary = piece_specs()[selected].cost
 	if not world.pay(cost): return null
 	var s := StaticBody3D.new()
-	s.set_script(STRUCTURE_SCRIPT)
+	s.set_script(structure_script())
 	s.world = world
 	s.piece_index = selected
 	s.position = location
@@ -134,5 +134,8 @@ func place() -> Node3D:
 	world.layout_revision += 1
 	last_place_usec = Time.get_ticks_usec()-begin
 	world.effects.burst(location+Vector3.UP,Color("c8df9a"),8)
-	world.notify("%s instalada. G melhora a estrutura próxima." % CampaignData.PIECES[selected].title)
+	world.notify("%s instalada. G melhora a estrutura próxima." % piece_specs()[selected].title)
 	return s
+
+func piece_specs() -> Array: return CampaignData.PIECES
+func structure_script() -> Script: return STRUCTURE_SCRIPT

@@ -13,6 +13,10 @@ var held_icon: TextureRect
 var wood_count: Label
 var parts_count: Label
 var status_text: Label
+var airdrop_text: Label
+var airdrop_map_info: Label
+var map_focus: Variant = null
+var drop_map_stamp: String = ""
 
 func make_panel(left: float,top: float,right: float,bottom: float,preset: int) -> PanelContainer:
 	var panel := UI.panel(root)
@@ -65,6 +69,11 @@ func create_top() -> void:
 		else: parts_count = count
 	material_text = UI.label(box,"",1)
 	material_text.hide()
+	airdrop_text = UI.label(root,"",13,Color("e8bc77"))
+	airdrop_text.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	airdrop_text.offset_left = -348; airdrop_text.offset_right = -18
+	airdrop_text.offset_top = 106; airdrop_text.offset_bottom = 129
+	airdrop_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func create_bottom() -> void:
 	var held_panel := make_panel(18,-119,299,-16,Control.PRESET_BOTTOM_LEFT)
@@ -154,6 +163,12 @@ func _process(delta: float) -> void:
 		gather_bar.max_value = actor.gather_duration
 		gather_bar.value = actor.gather_progress
 		gather_label.text = "SEGURE E · "+{"loot":"coletando para a bolsa","deposit":"guardando no Núcleo","revive":"reanimando aliado","repair":"reparando defesa"}.get(actor.gather_kind,"coletando")
+	airdrop_text.text = airdrop_summary()
+	if mode=="routes":
+		var stamp := str(world.airdrops.serial)+str(world.airdrops.state.get("collected",true))
+		if stamp!=drop_map_stamp: close_modal(); show_routes()
+		if is_instance_valid(airdrop_map_info): airdrop_map_info.text = airdrop_summary()+"\n"+airdrop_route()
+	if world.builder.active: build_text.text = "1–9 / 0 peça · Q gira · clique instala · B sai\n"+world.builder.reason
 	if mode=="inventory": refresh_inventory()
 	if world.area_index==-1 and actor.position.distance_to(world.core.position)<4: build_text.text = "SEGURE E / GUARDAR MATERIAIS · I / DEPÓSITO"
 	elif world.area_index!=-1 and not world.builder.active: build_text.text = "SEGURE E nas caixas · Carga na bolsa: leve ao Núcleo"
@@ -304,3 +319,68 @@ func show_pause() -> void:
 		save.disabled = world.area_index!=-1 or world.phase!="prep" or world.resources.pending>0
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"ENCERRAR SALA" if not world.is_client else "SAIR DA SALA",menu)
+
+func show_build_catalog() -> void:
+	if not mode.is_empty() or world.phase!="prep" or world.area_index!=-1: return
+	var box := open_modal("catalog",1200)
+	UI.label(box,"FORTIFIQUE O REFÚGIO",30,UI.LIME)
+	UI.label(box,"G reforça: madeira → aço → concreto / blindagem. Cota %d/%d · Núcleo até N4." % [world.built_this_round,world.build_quota()],15,UI.MUTED)
+	var scroll := ScrollContainer.new(); scroll.custom_minimum_size.y = 432
+	box.add_child(scroll)
+	var grid := GridContainer.new(); grid.columns = 3
+	grid.add_theme_constant_override("h_separation",9); grid.add_theme_constant_override("v_separation",9)
+	scroll.add_child(grid)
+	for i in range(FortressData.pieces().size()):
+		var index := i
+		var data: Dictionary = FortressData.pieces()[i]
+		var panel := UI.panel(grid); panel.custom_minimum_size = Vector2(370,200)
+		var card := UI.vbox(panel,6)
+		var heading := UI.hbox(card,6)
+		ItemIcons.image(heading,data.id,Vector2(40,40))
+		UI.label(heading,"%s · %s" % [str(i+1) if i<9 else "0",data.title.to_upper()],16,data.color.lightened(.3))
+		UI.label(card,FortressData.DESCRIPTIONS[i],14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.label(card,CampaignData.cost_text(data.cost),12).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var select := UI.button(card,"CONSTRUIR",func(): close_modal(); world.builder.selected = index; world.builder.set_active(true))
+		select.disabled = not world.can_pay(data.cost) or world.built_this_round>=world.build_quota()
+	UI.button(box,"VOLTAR",close_modal)
+
+func airdrop_summary() -> String:
+	var seconds := ceili(world.airdrops.left)
+	if world.airdrops.state.is_empty() or world.airdrops.state.collected: return "PRÓXIMO AIRDROP %02d:%02d" % [seconds/60,seconds%60]
+	var point: Vector2i = world.airdrops.coord()
+	return "AIRDROP (%d,%d) · %d guardas · M mapa" % [point.x,point.y,world.airdrops.remaining()]
+
+func airdrop_route() -> String:
+	if world.airdrops.state.is_empty() or world.airdrops.state.collected: return "Uma queda a cada dez minutos de partida. O cerco continua."
+	var delta: Vector2i = world.airdrops.coord()-world.sector_coord
+	var parts: Array[String] = []
+	if delta.x!=0: parts.append("%d %s" % [absi(delta.x),"Leste" if delta.x>0 else "Oeste"])
+	if delta.y!=0: parts.append("%d %s" % [absi(delta.y),"Sul" if delta.y>0 else "Norte"])
+	return "VOCÊ ESTÁ NA ÁREA DA QUEDA" if parts.is_empty() else "Rota: "+" · ".join(parts)
+
+func map_center() -> Vector2i:
+	return map_focus if map_focus is Vector2i else world.sector_coord
+
+func show_routes() -> void:
+	drop_map_stamp = str(world.airdrops.serial)+str(world.airdrops.state.get("collected",true))
+	super.show_routes()
+	if mode!="routes": return
+	var side: Node = map_detail.get_parent()
+	airdrop_map_info = UI.label(side,airdrop_summary()+"\n"+airdrop_route(),14,Color("e8bc77"))
+	airdrop_map_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if not world.airdrops.state.is_empty() and not world.airdrops.state.collected:
+		mark_drop_cells(overlay_box,world.airdrops.coord())
+		UI.button(side,"VER AIRDROP",func(): map_focus = world.airdrops.coord(); close_modal(); show_routes()).custom_minimum_size.y = 34
+	if map_focus!=null: UI.button(side,"VER MINHA POSIÇÃO",func(): map_focus = null; close_modal(); show_routes()).custom_minimum_size.y = 34
+
+func mark_drop_cells(node: Node,point: Vector2i) -> void:
+	if node is Button and node.get_meta("coord",Vector2i(9999,9999))==point:
+		node.text = "%d,%d\nDROP" % [point.x,point.y]
+		node.add_theme_stylebox_override("normal",UI.style(Color("72563a"),Color("efc581"),6))
+	for child in node.get_children(): mark_drop_cells(child,point)
+
+func select_sector(coord: Vector2i) -> void:
+	if not world.airdrops.state.is_empty() and coord==world.airdrops.coord() and not world.airdrops.state.collected:
+		world.waypoint = coord
+		map_detail.text = "AIRDROP · (%d,%d)\n%d guardas restantes. Uma escolta forte e um chefe. Elimine a escolta e segure E junto à caixa para recuperar lotes de suprimentos." % [coord.x,coord.y,world.airdrops.remaining()]
+	else: super.select_sector(coord)

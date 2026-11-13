@@ -12,6 +12,8 @@ var shield_left: float = 0
 var rush_left: float = 0
 var rush_direction := Vector3.ZERO
 var rush_hits: Dictionary = {}
+var snare_left: float = 0
+var stun_left: float = 0
 var special_clock: float = 1
 
 func _ready() -> void:
@@ -39,9 +41,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended": return
 	shield_left = maxf(0,shield_left-delta)
+	snare_left = maxf(0,snare_left-delta)
+	stun_left = maxf(0,stun_left-delta)
+	if stun_left>0: velocity = Vector3.ZERO; return
 	if rush_left>0:
 		rush_left -= delta
-		velocity = rush_direction*16
+		velocity = rush_direction*16*(.55 if snare_left>0 else 1.0)
 		velocity.y = -1
 		move_and_slide()
 		rig.rotation.y = atan2(-rush_direction.x,-rush_direction.z)
@@ -85,7 +90,7 @@ func _physics_process(delta: float) -> void:
 	if (is_boss or enemy_kind in [10,12,13,14]) and ability_left<=0:
 		choose_target()
 		if enemy_kind in [12,13] and target.global_position.distance_to(global_position)>13:
-			super._physics_process(delta)
+			normal_step(delta)
 			return
 		cast_point = global_position if enemy_kind==14 else target.global_position
 		windup = 1.1
@@ -98,7 +103,7 @@ func _physics_process(delta: float) -> void:
 			special_clock = 3
 			for ally in get_tree().get_nodes_in_group("enemies"):
 				if ally!=self and ally.global_position.distance_to(global_position)<7: ally.health.heal(12+world.waves.wave)
-	super._physics_process(delta)
+	normal_step(delta)
 	label.hide()
 
 func choose_target() -> void:
@@ -129,3 +134,9 @@ func warning_radius() -> float:
 
 func warning_color() -> Color:
 	return Color("85d9f2") if enemy_kind==13 else Color("9aabf0") if enemy_kind==14 else Color("e67f5f")
+
+func normal_step(delta: float) -> void:
+	var speed: float = spec.values.speed
+	if snare_left>0: spec.values.speed = speed*.55
+	super._physics_process(delta)
+	spec.values.speed = speed

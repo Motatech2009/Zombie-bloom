@@ -7,6 +7,7 @@ var power: String = ""
 var loaded: int = 0
 var model: Node3D
 var shown_item: String = ""
+var pickup_left: float = .12
 var rare: bool = false
 
 func _ready() -> void:
@@ -25,4 +26,12 @@ func refresh_model() -> void:
 func _process(delta: float) -> void:
 	refresh_model()
 	model.rotation.y += delta*.4
+	if not world.is_client and get_meta("auto",true) and world.phase!="ended":
+		pickup_left -= delta
+		if pickup_left<=0:
+			pickup_left = .12
+			var nearby: Array = world.avatars.values().filter(func(actor): return not actor.health.dead and actor.global_position.distance_to(global_position)<1.65)
+			nearby.sort_custom(func(a,b): return a.global_position.distance_squared_to(global_position)<b.global_position.distance_squared_to(global_position))
+			for actor in nearby:
+				if world.collect_ground(actor,self): break
 	if contents.is_empty() and int(get_meta("xp",0))==0 and str(get_meta("power","")).is_empty() and not world.is_client: queue_free()

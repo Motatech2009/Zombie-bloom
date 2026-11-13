@@ -22,6 +22,8 @@ func run() -> void:
 	await create_timer(3.5).timeout
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].position.distance_to(world.player.position)>4,"server simulates remote movement for peer %d" % id)
+	for id in world.avatars:
+		if id!=1: world.spawn_loot(world.avatars[id].position,{"medkit":1})
 	world.horde_left = 0
 	world.waves._physics_process(.01)
 	check(world.waves.to_spawn==CampaignData.wave_count(1)*8,"server scales the pending horde by the exact cooperative multiplier")
@@ -51,16 +53,23 @@ func run() -> void:
 			actor.weapons.ammo[8] = 2
 	var cryo: Node3D = world.make_enemy(13,Vector3(12,0,12),false,1)
 	cryo.set_physics_process(false); cryo.windup = 5; cryo.cast_point = cryo.position
+	var wire := StaticBody3D.new(); wire.set_script(world.structure_script())
+	wire.world = world; wire.piece_index = 6; wire.tier = 2; wire.position = Vector3(20,0,20)
+	world.base_root.add_child(wire)
+	world.airdrops.left = .01; world.airdrops.tick(.02)
+	world.airdrops.state.coord = [0,-1]
 	await create_timer(4).timeout
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].bag.count("wood")==0,"client stores its withdrawn stack back into the authoritative depot")
 	for id in world.avatars:
 		if id!=1: check(world.avatars[id].weapons.ammo[8]<2,"remote Tesla fire consumes authoritative energy ammunition")
 	cryo.queue_free()
+	check(link.max_snapshot_packed>0 and link.max_snapshot_packed<link.max_snapshot_raw,"compressed authoritative snapshots reduce transport size without losing state")
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
 	check(world.step_sector(0),"the complete party crosses the northern exit")
+	check(world.airdrops.at_sector() and world.descriptor.risk==4 and world.airdrops.crate!=null,"server loads the guarded airdrop into the same procedural party sector")
 	check(world.descriptor.count==world.descriptor.base_count*8,"procedural field population also uses the exact x8 multiplier")
 	await create_timer(2).timeout
 	world.travel_cooldown = 0

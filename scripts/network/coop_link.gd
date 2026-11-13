@@ -12,6 +12,8 @@ var scene_sent: Dictionary = {}
 var input_times: Dictionary = {}
 var action_times: Dictionary = {}
 var received_snapshots: int = 0
+var max_snapshot_raw: int = 0
+var max_snapshot_packed: int = 0
 var test_input: Dictionary = {}
 
 func _ready() -> void:
@@ -100,7 +102,10 @@ func _physics_process(delta: float) -> void:
 			if int(scene_sent.get(id,-1))!=world.scene_revision:
 				_receive_scene.rpc_id(id,world.net_scene())
 				scene_sent[id] = world.scene_revision
-			_receive_state.rpc_id(id,world.net_state(id))
+			var raw := var_to_bytes(world.net_state(id))
+			var packed := raw.compress(FileAccess.COMPRESSION_DEFLATE)
+			max_snapshot_raw = maxi(max_snapshot_raw,raw.size()); max_snapshot_packed = maxi(max_snapshot_packed,packed.size())
+			_receive_state.rpc_id(id,packed)
 	else:
 		input_left -= delta
 		if input_left>0: return
@@ -158,8 +163,12 @@ func _receive_scene(data: Dictionary) -> void:
 	if mode=="client" and is_instance_valid(world): world.apply_net_scene(data)
 
 @rpc("authority","call_remote","unreliable_ordered",2)
-func _receive_state(data: Dictionary) -> void:
-	if mode=="client" and is_instance_valid(world):
+func _receive_state(packet: PackedByteArray) -> void:
+	if mode=="client" and is_instance_valid(world) and packet.size()<=262144:
+		var unpacked := packet.decompress_dynamic(2097152,FileAccess.COMPRESSION_DEFLATE)
+		if unpacked.is_empty(): return
+		var data = bytes_to_var(unpacked)
+		if not data is Dictionary: return
 		world.apply_net_state(data,multiplayer.get_unique_id())
 		received_snapshots += 1
 
