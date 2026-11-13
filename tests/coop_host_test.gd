@@ -60,9 +60,14 @@ func run() -> void:
 	world.resources.pending = 0; world.upgrades.offers.clear(); world.hud.close_modal()
 	world.horde_left = 150
 	world.stock.wood = 100
+	var guest_position := 0
 	for actor in world.avatars.values():
-		actor.position = Vector3(1,0,2)
+		# Keep each capsule separate and to the right of the solid core. Stacking
+		# four actors in one spot lets collision resolution put the touch guest
+		# behind cover, where assisted fire correctly refuses the Tesla shot.
+		actor.position = Vector3(0,0,3) if actor.peer_id==1 else Vector3(2.5,0,-2+guest_position*2)
 		if actor.peer_id!=1:
+			guest_position += 1
 			actor.bag.add("tesla",1)
 			actor.weapons.ammo[8] = 2
 			if actor.display_name=="Amigo 3": actor.health.current = 50

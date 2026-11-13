@@ -131,6 +131,10 @@ func run() -> void:
 	check(world.airdrops.crate!=null and world.descriptor.risk==4,"client sees the real supply crate and high-risk drop sector")
 	var house: Node3D = world.raid_house(0)
 	check(house!=null and house.guard_total==int(house.data.guards)*8,"guest builds the same house layout and cooperative guard requirement")
+	if house==null:
+		link.close_session(); world.queue_free()
+		await create_timer(.35).timeout
+		quit(1); return
 	check(house.activated and house.dead==[0] and house.contents.scrap==house.data.reward.scrap-7,"guest receives house lock progress and exact remaining supplies")
 	check(world.sector_coord==Vector2i(0,-1) and world.field_root!=null,"reliable scene revision loads the same generated northern sector")
 	var sector_seed: int = world.descriptor.seed
