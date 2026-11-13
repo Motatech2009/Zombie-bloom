@@ -78,7 +78,7 @@ func flying_model() -> void:
 		wing.position = Vector3(side*.2,.7,0)
 		VisualFactory.box(wing,Vector3(1.4,.09,.65),Vector3(side*.65,0,0),spec.color.darkened(.2))
 		wings.append(wing)
-	VisualFactory.ring(self,.5,Vector3(0,-2.72,0),Color("9d84a8"))
+	VisualFactory.ring(rig,.5,Vector3(0,-2.72,0),Color("9d84a8"))
 
 func _physics_process(delta: float) -> void:
 	if health.dead or world.phase=="ended": return
@@ -90,12 +90,13 @@ func _physics_process(delta: float) -> void:
 	attack_left = maxf(0,attack_left-delta)
 	acid_left -= delta
 	pounce_left -= delta
-	if think_left<=0 or not is_instance_valid(target):
+	if (think_left<=0 or not is_instance_valid(target)) and (not world.has_method("allow_enemy_think") or world.allow_enemy_think(self)):
 		choose_target()
 		think_left = .6+fmod(float(encounter_index)*.13,.35)
 		if spec.id!="flyer":
 			path = world.route_for_enemy(self,target.global_position) if world.has_method("route_for_enemy") else world.arena.route(global_position,target.global_position)
 			path_index = 1 if path.size()>1 else 0
+	if not is_instance_valid(target): choose_target()
 	var goal: Vector3 = target.global_position
 	var flat := goal-global_position
 	flat.y = 0
@@ -129,9 +130,9 @@ func _physics_process(delta: float) -> void:
 			body.take_damage(float(spec.values.damage))
 			attack_left = spec.values.interval
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-direction.x,-direction.z),minf(1,delta*10))
-	if spec.id=="hound":
+	if rig.is_visible_in_tree() and spec.id=="hound":
 		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
-	elif spec.id=="flyer":
+	elif rig.is_visible_in_tree() and spec.id=="flyer":
 		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
 		rig.position.y = sin(clock*4)*.12
 	else: VisualFactory.animate_human(rig,clock,.5 if speed>0 else 0,0,false)

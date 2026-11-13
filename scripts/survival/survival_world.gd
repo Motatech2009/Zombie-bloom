@@ -23,6 +23,10 @@ var pending_sector_memory: Dictionary = {}
 var field_defeated: Array[int] = []
 var remote_sector_times: Dictionary = {}
 var restoring_boss_stage: int = 0
+var remote_interaction_hint: String = ""
+var prediction := ClientPrediction.new()
+var ai_frame: int = -1
+var ai_budget: int = 0
 
 func prune_sector_memory() -> void:
 	for key in sector_memory.keys():
@@ -92,6 +96,7 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("medkit",1)
 
 func _ready() -> void:
+	prediction.world = self
 	MobilePlatform.configure(get_tree().root)
 	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
 	ClayStyle.prewarm()
@@ -104,7 +109,7 @@ func _ready() -> void:
 	super._ready()
 	if MobilePlatform.enabled():
 		MobilePlatform.configure(get_tree().root)
-		camera.size = 30
+		camera.size = 27
 	if MobilePlatform.lightweight(): MobileVisuals.prewarm(self)
 	ClayScenery.decorate(base_arena,8417,0)
 	player.weapons.sync_hand()
@@ -146,15 +151,19 @@ func _process(delta: float) -> void:
 		camera.position = camera.position.lerp(target+camera_offset,1-exp(-delta*5))
 		camera.look_at(target)
 		for actor in avatars.values():
-			actor.position = actor.position.lerp(actor.target_position,minf(1,delta*14))
-			actor.roll_cooldown = maxf(0,actor.roll_cooldown-delta)
-			actor.roll_left = maxf(0,actor.roll_left-delta)
+			if actor!=player or not prediction.enabled():
+				actor.position = SnapshotTrack.position_at(actor,Time.get_ticks_msec()*.001)
+				actor.roll_cooldown = maxf(0,actor.roll_cooldown-delta)
+				actor.roll_left = maxf(0,actor.roll_left-delta)
+			actor.presentation_offset *= exp(-delta*18)
+			actor.rig.rotation.y = lerp_angle(actor.rig.rotation.y,atan2(-actor.aim.x,-actor.aim.z),1-exp(-delta*24))
 			actor.clock += delta
 			actor.recoil = move_toward(actor.recoil,0,delta*2)
 			actor.weapons.reload_left = maxf(0,actor.weapons.reload_left-delta)
 			if not actor.health.dead: actor.animate_pose(actor.replica_motion)
 		for enemy in client_enemies.values():
-			enemy.position = enemy.position.lerp(enemy.get_meta("target",enemy.position),minf(1,delta*14))
+			enemy.position = SnapshotTrack.position_at(enemy,Time.get_ticks_msec()*.001)
+			enemy.rig.rotation.y = lerp_angle(enemy.rig.rotation.y,float(enemy.get_meta("target_rotation",enemy.rig.rotation.y)),1-exp(-delta*18))
 			enemy.animate_replica(delta)
 		notice_left = maxf(0,notice_left-delta)
 		return
@@ -206,7 +215,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	super._unhandled_input(event)
 
 func send_action(action: String,data: Dictionary) -> void:
-	if is_client: network.command(action,data)
+	if is_client:
+		if action=="roll" and prediction.enabled() and prediction.ready:
+			if hud.mode.is_empty() and not builder.active and data.get("direction") is Vector3: prediction.roll(data.direction)
+			return
+		network.command(action,data)
 	else: perform_action(1,action,data)
 
 func perform_action(peer: int,action: String,data: Dictionary) -> bool:
@@ -894,6 +907,7 @@ func net_scene() -> Dictionary:
 
 func apply_net_scene(data: Dictionary) -> void:
 	if not is_client: return
+	prediction.reset()
 	clear_hazards()
 	for node in client_enemies.values(): node.queue_free()
 	for node in client_structures.values(): node.queue_free()
@@ -921,20 +935,20 @@ func apply_net_scene(data: Dictionary) -> void:
 	else: arena = base_arena; add_exits_again_for_base()
 	last_scene_revision = int(data.rev)
 
-func net_state(peer: int) -> Dictionary:
+func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"cast":enemy.windup})
 	var structures: Array = []
-	for s in get_tree().get_nodes_in_group("campaign_structure"):
+	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
 		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left})
 	var loot: Array = []
-	for s in get_tree().get_nodes_in_group("survival_sources"):
+	for s in (get_tree().get_nodes_in_group("survival_sources") if include_bulk else []):
 		if s.is_queued_for_deletion() or s.get_meta("airdrop",false) or s.has_meta("house_id"): continue
 		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible,"boss":bool(s.get_meta("boss_drop",false))})
 	var hazards: Array = []
@@ -944,7 +958,7 @@ func net_state(peer: int) -> Dictionary:
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"sector_times":sector_times(),"airdrops":airdrops.dump(),"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate(),"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()),"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not is_client or int(data.rev)!=last_scene_revision: return
@@ -952,6 +966,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		avatars.erase(1)
 		player.peer_id = own_id
 		avatars[own_id] = player
+	remote_interaction_hint = data.get("interaction","")
 	phase = data.phase
 	game_mode = data.mode
 	waves.wave = int(data.wave)
@@ -974,7 +989,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	field_dead = int(data.dead)
 	discovered = data.discovered.duplicate(true)
 	remote_sector_times = data.get("sector_times",{}).duplicate()
-	if AirdropDirector.valid(data.get("airdrops")):
+	if data.get("_bulk",true) and AirdropDirector.valid(data.get("airdrops")):
 		airdrops.left = float(data.airdrops.left); airdrops.serial = int(data.airdrops.serial); airdrops.state = data.airdrops.state.duplicate(true)
 		airdrops.ensure_crate()
 	if not data.notice.is_empty(): notice = data.notice; notice_left = .25
@@ -983,7 +998,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		if pending_slot>=0:
 			if int(data.profile.bag.selected)==pending_slot: pending_slot = -1
 			else: player.bag.selected = pending_slot
-	for house_state in data.get("houses",[]):
+	for house_state in (data.get("houses",[]) if data.get("_bulk",true) else []):
 		var house := raid_house(int(house_state.id))
 		if house!=null: house.apply_state(house_state)
 	var seen := {}
@@ -1005,8 +1020,8 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var actor: Node3D = avatars[id]
 		if actor.position.distance_to(state.p)>15: actor.position = state.p
 		actor.target_position = state.p
-		actor.aim = state.aim
-		actor.rig.rotation.y = atan2(-actor.aim.x,-actor.aim.z)
+		SnapshotTrack.push(actor,state.p,Time.get_ticks_msec()*.001)
+		if actor!=player or not prediction.enabled(): actor.aim = state.aim
 		actor.health.maximum = state.max
 		actor.health.current = state.hp
 		actor.health.dead = state.down
@@ -1019,6 +1034,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.roll_cooldown = float(state.get("roll_cd",0))
 		actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
 		if state.down: actor.stop_roll()
+		if actor==player: prediction.reconcile(state)
 		actor.replica_motion = float(state.get("motion",0))
 		actor.weapons.reload_left = float(state.get("reload",0))
 		actor.weapons.reload_total = float(state.get("reload_total",1))
@@ -1044,7 +1060,8 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		enemy.net_id = id
 		enemy.field_enemy = state.field
 		enemy.set_meta("target",state.p)
-		enemy.rig.rotation.y = state.r
+		enemy.set_meta("target_rotation",state.r)
+		SnapshotTrack.push(enemy,state.p,Time.get_ticks_msec()*.001)
 		enemy.health.maximum = state.max
 		enemy.replica_motion = float(state.get("motion",0))
 		enemy.windup = float(state.get("cast",0))
@@ -1054,7 +1071,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	for id in client_enemies.keys():
 		if not seen.has(id): client_enemies[id].queue_free(); client_enemies.erase(id)
 	seen.clear()
-	for state in data.structures:
+	for state in (data.structures if data.get("_bulk",true) else []):
 		var id := int(state.id)
 		seen[id] = true
 		if not client_structures.has(id):
@@ -1080,9 +1097,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		if s.has_method("set_open_visual"): s.set_open_visual()
 		else: s.model.position.y = -1.65 if state.open else 0
 	for id in client_structures.keys():
-		if not seen.has(id): client_structures[id].queue_free(); client_structures.erase(id)
+		if data.get("_bulk",true) and not seen.has(id): client_structures[id].queue_free(); client_structures.erase(id)
 	seen.clear()
-	for state in data.loot:
+	for state in (data.loot if data.get("_bulk",true) else []):
 		var id := int(state.id)
 		seen[id] = true
 		var model_id: String = str(state.contents.keys()[0]) if not state.contents.is_empty() else "cells"
@@ -1099,7 +1116,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		client_loot[id].visible = state.visible
 		client_loot[id].position = state.p+Vector3(0,.3,0)
 	for id in client_loot.keys():
-		if not seen.has(id): client_loot[id].queue_free(); client_loot.erase(id)
+		if data.get("_bulk",true) and not seen.has(id): client_loot[id].queue_free(); client_loot.erase(id)
 	seen.clear()
 	for state in data.hazards:
 		var id := int(state.id)
@@ -1194,3 +1211,31 @@ func _notification(what: int) -> void:
 		if phase=="ended": hud.menu()
 		elif not hud.mode.is_empty(): hud.close_modal()
 		else: hud.show_pause()
+
+func apply_mobile_quality() -> void:
+	MobilePlatform.apply_quality(self)
+
+func interaction_hint(actor: Node3D) -> String:
+	for i in range(4):
+		if local_position(actor).distance_to(SectorGenerator.EXITS[i])<3.7: return "VIAJAR"
+	for other in avatars.values():
+		if other!=actor and other.health.dead and actor.position.distance_to(other.position)<2.8 and actor.bag.count("medkit")>0: return "REANIMAR"
+	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): return "GUARDAR"
+	if nearest_source(actor)!=null: return "COLETAR"
+	if area_index==-1 and phase=="prep":
+		for structure in get_tree().get_nodes_in_group("buildings"):
+			if not structure.health.dead and structure.health.current<structure.health.maximum and actor.position.distance_to(structure.global_position)<2.8: return "REPARAR"
+	return ""
+
+func local_position(actor: Node3D) -> Vector3:
+	return actor.position-sector_offset(sector_coord)
+
+func _physics_process(_delta: float) -> void:
+	if is_client: prediction.tick()
+
+func allow_enemy_think(enemy: Node3D) -> bool:
+	var tick := Engine.get_physics_frames()
+	if ai_frame!=tick: ai_frame = tick; ai_budget = 0
+	if int(enemy.get_instance_id()%4)!=int(tick%4) or ai_budget>=4: return false
+	ai_budget += 1
+	return true

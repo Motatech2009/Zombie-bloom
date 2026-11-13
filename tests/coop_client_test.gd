@@ -19,8 +19,9 @@ func apply_controls(link: Node) -> void:
 	var aim: Vector3 = desired_input.get("aim",Vector3.FORWARD)
 	var screen_aim := Vector2(aim.dot(Vector3(1,0,-1).normalized()),-aim.dot(Vector3(-1,0,-1).normalized())).normalized()
 	if move.length_squared()>.01:
-		var finger := InputEventScreenTouch.new(); finger.index = 0; finger.pressed = true; finger.position = controls.stick_center("move")+move*72
+		var finger := InputEventScreenTouch.new(); finger.index = 0; finger.pressed = true; finger.position = controls.stick_center("move")
 		controls._input(finger)
+		var drag := InputEventScreenDrag.new(); drag.index = 0; drag.position = controls.stick_center("move")+move*72; controls._input(drag)
 	world.select_hotbar(int(desired_input.get("slot",0)))
 	if desired_input.get("fire",false):
 		var finger := InputEventScreenTouch.new(); finger.index = 1; finger.pressed = true; finger.position = controls.buttons.fire.get_center()
@@ -35,6 +36,7 @@ func apply_controls(link: Node) -> void:
 		controls._input(finger)
 		if desired_input.get("targeted",false):
 			finger.pressed = false; controls._input(finger)
+			finger.pressed = true; finger.position = controls.buttons.fire.get_center(); controls._input(finger)
 
 func apply_ready_controls(link: Node) -> void:
 	apply_controls(link)
@@ -66,11 +68,11 @@ func run() -> void:
 	desired_input.move = Vector2.ZERO; apply_controls(link)
 	check(world.player.rig.get_node("ArmR").rotation.x>0,"replicated armed pose keeps the right arm facing forward")
 	check(world.player.position.distance_to(start)>3,"replicated client avatar follows movement accepted by the host")
-	link.command("roll",{"direction":Vector3.RIGHT})
+	world.send_action("roll",{"direction":Vector3.RIGHT})
 	await create_timer(.15).timeout
-	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"reliable roll command replicates its active animation and five-second cooldown")
+	check(world.player.roll_left>0 and world.player.roll_cooldown>4,"predicted roll starts locally and keeps its five-second cooldown")
 	var roll_before: float = world.player.roll_cooldown
-	link.command("roll",{"direction":Vector3.LEFT})
+	world.send_action("roll",{"direction":Vector3.LEFT})
 	await create_timer(.15).timeout
 	check(world.player.roll_cooldown<roll_before and world.player.roll_direction==Vector3.RIGHT,"host rejects repeated roll RPCs during recharge")
 	deadline = Time.get_ticks_msec()+12000

@@ -16,6 +16,7 @@ var snare_left: float = 0
 var stun_left: float = 0
 var special_clock: float = 1
 var replica_motion: float = 0
+var visibility_left: float = 0
 
 func _ready() -> void:
 	super._ready()
@@ -24,12 +25,8 @@ func _ready() -> void:
 	if spec.id in ["hound","flyer"]:
 		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
 	ClayStyle.apply_tree(rig)
+	configure_bars()
 	if MobilePlatform.lightweight(): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
-	else:
-		var bar := Node3D.new()
-		bar.set_script(load("res://scripts/survival/enemy_bar.gd"))
-		bar.actor = self
-		add_child(bar)
 	if is_boss:
 		health.setup(health.maximum*1.6*(1+.5*(world.party_count()-1)))
 		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
@@ -146,7 +143,7 @@ func normal_step(delta: float) -> void:
 	spec.values.speed = speed
 
 func animate_replica(delta: float) -> void:
-	if health.dead: return
+	if health.dead or not rig.is_visible_in_tree(): return
 	clock += delta
 	if spec.id=="hound":
 		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7*minf(1,replica_motion)
@@ -165,6 +162,31 @@ func animate_cast() -> void:
 	rig.rotation.x = -.15
 
 func _process(_delta: float) -> void:
-	if proxy or health.dead: return
+	visibility_left -= _delta
+	if visibility_left<=0:
+		visibility_left = .2
+		rig.visible = visible_near_camera()
+	if proxy or health.dead or not rig.visible: return
 	if windup>0: animate_cast()
 	else: rig.rotation.x = 0
+
+func configure_bars() -> void:
+	if MobilePlatform.enabled(): return
+	if get_node_or_null("DetailBar")==null:
+		var bar := Node3D.new(); bar.name = "DetailBar"
+		bar.set_script(load("res://scripts/survival/enemy_bar.gd")); bar.actor = self; add_child(bar)
+
+func refresh_quality() -> void:
+	var previous := rig
+	wings.clear()
+	remove_child(previous); previous.queue_free()
+	create_model(float(spec.values.scale))
+	if spec.id in ["hound","flyer"]:
+		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
+	ClayStyle.apply_tree(rig)
+	if MobilePlatform.lightweight(): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+
+func visible_near_camera() -> bool:
+	if not MobilePlatform.enabled(): return true
+	var point := global_position+Vector3.UP
+	return not world.camera.is_position_behind(point) and Rect2(Vector2.ZERO,world.get_viewport().get_visible_rect().size).grow(120).has_point(world.camera.unproject_position(point))

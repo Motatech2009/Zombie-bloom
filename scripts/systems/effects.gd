@@ -8,7 +8,7 @@ var particles: Array = []
 var mobile_materials: Dictionary = {}
 
 func _ready() -> void:
-	if not MobilePlatform.lightweight(): return
+	if not MobilePlatform.enabled(): return
 	var mesh := BoxMesh.new()
 	for i in range(MOBILE_LIMIT):
 		var node := MeshInstance3D.new(); node.mesh = mesh; node.visible = false

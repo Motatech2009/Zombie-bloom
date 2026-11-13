@@ -13,5 +13,12 @@ static func configure(window: Window) -> void:
 	window.content_scale_size = Vector2i(960,540)
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
-	window.scaling_3d_scale = .75 if lightweight() else 1.0
+	window.scaling_3d_scale = .85 if lightweight() else 1.0
 	if OS.has_feature("mobile"): Engine.max_fps = 30
+
+static func apply_quality(world: Node3D) -> void:
+	configure(world.get_tree().root)
+	ClayStyle.refresh_tree(world)
+	for enemy in world.get_tree().get_nodes_in_group("enemies"):
+		if enemy.has_method("refresh_quality"): enemy.refresh_quality()
+	world.sunlight.shadow_enabled = GameSettings.use_shadows()

@@ -43,7 +43,7 @@ static func material(color: Color,kind: String = "clay",metallic: float = 0) -> 
 	if materials.has(key): return materials[key]
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.albedo_texture = texture(kind)
+	mat.albedo_texture = null if lean else texture(kind)
 	mat.normal_enabled = not lean
 	mat.normal_texture = normals[kind]
 	mat.normal_scale = .10
@@ -77,7 +77,7 @@ static func rounded_box(size: Vector3) -> ArrayMesh:
 					var center: Vector3 = point.clamp(-core,core)
 					var outward: Vector3 = (point-center).normalized()
 					surface.set_normal(outward)
-					surface.set_uv(Vector2(float(corner.x)/3,float(corner.y)/3))
+					surface.set_uv(Vector2((us[corner.x]+hu)/(2*hu),(vs[corner.y]+hv)/(2*hv)))
 					surface.add_vertex(center+outward*radius)
 	var mesh := surface.commit()
 	if meshes.size()>=384: meshes.erase(meshes.keys()[0])
@@ -91,3 +91,10 @@ static func apply_tree(node: Node) -> void:
 		if mat is StandardMaterial3D and not mat.emission_enabled and not mat.has_meta("clay_surface"):
 			node.material_override = material(mat.albedo_color,"clay",mat.metallic)
 	for child in node.get_children(): apply_tree(child)
+
+static func refresh_tree(node: Node) -> void:
+	if node is MeshInstance3D and node.material_override is StandardMaterial3D:
+		var old: StandardMaterial3D = node.material_override
+		if old.has_meta("clay_surface"):
+			node.material_override = material(old.albedo_color,str(old.get_meta("clay_surface")),old.metallic)
+	for child in node.get_children(): refresh_tree(child)

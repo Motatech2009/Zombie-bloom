@@ -12,6 +12,7 @@ func touch(controls: TouchControls,id: int,point: Vector2,pressed: bool = true) 
 	var event := InputEventScreenTouch.new(); event.index = id; event.position = point; event.pressed = pressed
 	controls._input(event)
 func tap_enemy(controls: TouchControls,enemy: Node3D) -> void:
+	if controls.fingers.has(9): touch(controls,9,Vector2.ZERO,false)
 	var screen: Vector2 = controls.world.camera.unproject_position(MobileTargeting.point(enemy))
 	touch(controls,7,screen); touch(controls,7,screen,false)
 func run() -> void:
@@ -28,9 +29,11 @@ func run() -> void:
 	enemy.set_physics_process(false); enemy.health.setup(1000)
 	await frames()
 	tap_enemy(controls,enemy)
-	check(controls.locked_target==enemy and controls.frame().fire,"tapping a visible zombie locks and requests fire without holding the aim pad")
+	check(controls.locked_target==enemy and not controls.frame().fire,"a tap selects a zombie without firing or wasting ammunition")
 	check(controls.fingers.is_empty(),"releasing the targeting tap leaves the lock active without a stuck finger")
-	touch(controls,0,controls.stick_center("move")+Vector2(70,0))
+	touch(controls,9,controls.buttons.fire.get_center())
+	touch(controls,0,controls.stick_center("move"))
+	var motion := InputEventScreenDrag.new(); motion.index = 0; motion.position = controls.stick_center("move")+Vector2(72,0); controls._input(motion)
 	check(controls.frame().move.x>.9 and controls.frame().fire,"a separate movement finger preserves the selected target")
 	touch(controls,0,Vector2.ZERO,false)
 	enemy.position = Vector3(4,0,4); await frames()
@@ -54,15 +57,17 @@ func run() -> void:
 	enemy.position = actor.position+Vector3(0,0,-30); await frames()
 	request.fire = true
 	check(not MobileTargeting.resolve(world,actor,request.duplicate(true)).fire,"host rejects a target beyond the equipped weapon's range")
-	enemy.position = near; await frames(); tap_enemy(controls,enemy)
+	enemy.position = near; await frames(); tap_enemy(controls,enemy); touch(controls,9,controls.buttons.fire.get_center())
 	request = controls.frame(); request.target.rev += 1
 	check(not MobileTargeting.resolve(world,actor,request).fire,"a target from another scene revision cannot trigger a shot")
 	request = controls.frame(); request.fire = false
 	check(not MobileTargeting.resolve(world,actor,request).fire,"host never converts a released fire request into an automatic shot")
+	tap_enemy(controls,enemy); touch(controls,9,controls.buttons.fire.get_center())
 	request = controls.frame(); request.target.id = 999999
 	check(not MobileTargeting.resolve(world,actor,request).fire,"a missing network target fails closed instead of shooting into empty space")
 	request = controls.frame(); enemy.health.current = 0; enemy.health.dead = true
 	check(not MobileTargeting.resolve(world,actor,request).fire and not controls.frame().fire and controls.locked_target==null,"target death stops local fire and stale remote fire before another round is consumed")
+	touch(controls,9,Vector2.ZERO,false)
 	enemy.health.setup(1000); tap_enemy(controls,enemy)
 	touch(controls,8,Vector2(480,230)); touch(controls,8,Vector2.ZERO,false)
 	check(controls.locked_target==null and not controls.frame().fire,"tapping empty ground cancels target lock")
@@ -70,7 +75,8 @@ func run() -> void:
 	touch(controls,8,controls.buttons.fire.get_center())
 	check(controls.locked_target==enemy and controls.fire_held and controls.frame().fire,"the assisted fire button preserves an explicitly tapped target")
 	touch(controls,8,Vector2.ZERO,false)
-	check(not controls.frame().fire,"releasing the fire button clears its target")
+	check(not controls.frame().fire,"releasing the fire button stops shooting while keeping a selected target")
+	actor.position = Vector3(0,0,3); actor.bag.add("wood",1); controls._process(.2)
 	tap_enemy(controls,enemy); touch(controls,8,controls.buttons.interact.get_center())
 	check(controls.locked_target==null and controls.frame().interact and not controls.frame().fire,"starting collection cancels automatic combat input")
 	controls.reset_fingers(); tap_enemy(controls,enemy)
@@ -98,12 +104,14 @@ func run() -> void:
 	var flyer: Node3D = world.make_enemy(7,Vector3(3,0,4),false,2)
 	flyer.set_physics_process(false); flyer.health.setup(1000)
 	await frames(); tap_enemy(controls,flyer)
+	touch(controls,9,controls.buttons.fire.get_center())
 	before = actor.weapons.ammo[0]; actor.weapons.cooldown = 0; actor._physics_process(.016)
 	check(controls.locked_target==flyer and flyer.health.current<1000 and actor.weapons.ammo[0]==before-1,"targeted fire reaches an airborne zombie at its real height")
 	flyer.queue_free(); await frames()
 	var dog: Node3D = world.make_enemy(6,Vector3(3,0,4),false,3)
 	dog.set_physics_process(false); dog.health.setup(1000)
 	await frames(); tap_enemy(controls,dog)
+	touch(controls,9,controls.buttons.fire.get_center())
 	actor.weapons.cooldown = 0; actor._physics_process(.016)
 	check(dog.health.current<1000,"targeted fire reaches a low-profile zombie dog")
 	controls.reset_fingers(); actor.bag.add("launcher",1)
@@ -111,7 +119,7 @@ func run() -> void:
 	for i in range(9):
 		if actor.bag.slots[i].id=="launcher": launcher_slot = i
 	world.select_hotbar(launcher_slot); actor.weapons.ammo[4] = 1
-	tap_enemy(controls,dog); actor.weapons.cooldown = 0; actor._physics_process(.016)
+	tap_enemy(controls,dog); touch(controls,9,controls.buttons.fire.get_center()); actor.weapons.cooldown = 0; actor._physics_process(.016)
 	check(actor.weapons.ammo[4]==0 and not controls.frame().fire and controls.locked_target==null,"a launcher tap fires once and clears its lock before reload or another rocket")
 	world.select_hotbar(0); tap_enemy(controls,dog); actor.health.dead = true
 	check(not controls.frame().fire and controls.locked_target==null,"a downed player cannot keep a live target lock")

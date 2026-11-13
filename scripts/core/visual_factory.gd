@@ -77,6 +77,7 @@ static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
 	return rig
 
 static func animate_human(rig: Node3D, clock: float, moving: float, recoil: float, armed: bool) -> void:
+	if not rig.is_visible_in_tree(): return
 	if rig.has_meta("mobile_batch"):
 		var now := Time.get_ticks_msec()
 		if now-int(rig.get_meta("animation_at",-100))<50: return

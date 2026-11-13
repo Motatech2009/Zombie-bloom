@@ -1,4 +1,6 @@
-# Zombie Bloom 0.12 — PC + Android
+# Zombie Bloom 0.13 — PC + Android
+
+**Atualização 0.13:** [regras atuais de controles, qualidade ao vivo e resposta de rede](MOBILE_013.md).
 
 O Android usa a mesma simulação, itens, casas, fortaleza, horda e protocolo ENet do PC. A sala aceita até quatro jogadores, misturando computador e celular. Recomenda-se hospedar no PC para ele manter a simulação e os saves, enquanto o Android joga como convidado. Celular pode hospedar em rede compatível, mas deve permanecer aberto e em primeiro plano.
 
@@ -24,8 +26,8 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 
 | Controle | Ação |
 | --- | --- |
-| Disco esquerdo | Mover; empurre até a borda para correr |
-| Toque no zumbi | Trava esse alvo e dispara acompanhando seu movimento; toque no chão para cancelar |
+| Disco esquerdo | Flutuante no ponto do toque; mover e empurrar à borda para correr |
+| Toque no zumbi | Seleciona esse alvo; segure ATIRAR para disparar e toque no chão para cancelar |
 | SEGURE ATIRAR | Escolhe um alvo visível no alcance da arma; continua procurando enquanto estiver segurado; solte para parar |
 | LANÇAR GRANADA / USAR KIT | Usa uma unidade do item selecionado por toque; toque no cenário antes para apontar a granada |
 | ROLAR | Esquiva com recarga de cinco segundos, validada pelo anfitrião |
@@ -33,7 +35,7 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 | Segurar COLETAR | Abrir caixas, guardar materiais no Núcleo, reparar ou reanimar aliado conforme o contexto |
 | COLETAR junto à saída | Solicitar travessia do grupo para o setor adjacente |
 | BOLSA | Organizar os 18 espaços; tocar dois espaços para trocar; guardar/descartar seleção ou abrir depósito |
-| Setas da barra | Alternar entre os espaços 1–5 e 6–9 |
+| Setas da barra | Alternar entre os três páginas de até quatro espaços |
 | AÇÕES | Mapa, construção, vendedor, melhorias, portões, desmonte e save do anfitrião |
 | Ⅱ / Voltar do Android | Abrir pausa ou fechar o painel atual; cooperativo continua ativo |
 
@@ -45,11 +47,11 @@ Construção: abra AÇÕES → CONSTRUIR, escolha uma defesa, toque no chão par
 
 ## Visual, desempenho e limites
 
-Interface em paisagem 960×540, com proporção mantida e faixas quando necessário. O modo leve vem ativado no celular: cenário 3D a 75% da resolução, interface na resolução original, zumbis com peças agrupadas por membro, materiais sem relevo/triplanar, animação humanoide limitada a 20 Hz, até 12 barras em uma camada única e 20 efeitos reutilizados. A física, quantidade de infectados, dano e regras do anfitrião permanecem iguais. O contador FPS · LEVE no canto ajuda a medir no aparelho. Em CONFIGURAÇÕES é possível alterar o modo; salve e reabra a partida para aplicar. [Medição e método](docs/mobile-render-benchmark.json). O cenário usa o acabamento de argila anterior, câmera mais próxima, barra rápida paginada, mochila em seis colunas e catálogos/menus roláveis com botão de fechar sempre acessível. Android limita a renderização a 30 FPS e desativa sombras por padrão; as sombras podem ser reativadas nas configurações. O limite de FPS não reduz a taxa de física nem a autoridade do servidor.
+Interface em paisagem 960×540, com proporção mantida e faixas quando necessário. O modo leve vem ativado no celular: cenário 3D a 85% da resolução, interface na resolução original, zumbis com peças agrupadas por membro, materiais sem relevo/triplanar, animação humanoide limitada a 20 Hz, até 12 barras em uma camada única e 20 efeitos reutilizados. A física, quantidade de infectados, dano e regras do anfitrião permanecem iguais. O contador FPS · LEVE no canto ajuda a medir no aparelho. Em CONFIGURAÇÕES é possível alterar o modo; aplicando a qualidade imediatamente. [Medição e método](docs/mobile-render-benchmark.json). O cenário usa o acabamento de argila anterior, câmera mais próxima, barra rápida paginada, mochila em seis colunas e catálogos/menus roláveis com botão de fechar sempre acessível. Android limita a renderização a 30 FPS e desativa sombras por padrão; as sombras podem ser reativadas nas configurações. O limite de FPS não reduz a taxa de física nem a autoridade do servidor.
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 953 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 977 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 

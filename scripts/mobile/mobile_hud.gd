@@ -8,8 +8,7 @@ func _ready() -> void:
 	super._ready()
 	var controls := TouchControls.new(); controls.world = world; root.add_child(controls)
 	world.touch_controls = controls
-	if MobilePlatform.lightweight():
-		var bars := MobileEnemyBars.new(); bars.world = world; root.add_child(bars); root.move_child(bars,0)
+	var bars := MobileEnemyBars.new(); bars.world = world; root.add_child(bars); root.move_child(bars,0)
 	performance_text = UI.label(root,"",11,UI.MUTED)
 	performance_text.position = Vector2(14,108)
 
@@ -32,18 +31,21 @@ func create_top() -> void:
 func create_bottom() -> void:
 	super.create_bottom()
 	var held: Control = held_icon.get_parent().get_parent()
-	place_panel(held,Control.PRESET_CENTER_BOTTOM,Rect2(-172,-144,344,68))
-	var style := compact_style(); style.content_margin_top = 6; style.content_margin_bottom = 6
+	place_panel(held,Control.PRESET_CENTER_BOTTOM,Rect2(-215,-250,190,34))
+	var style := UI.style(Color(.03,.07,.09,.25),Color(1,1,1,.25),8); style.content_margin_top = 2; style.content_margin_bottom = 2; style.content_margin_left = 8; style.content_margin_right = 8
 	held.add_theme_stylebox_override("panel",style)
 	held_icon.custom_minimum_size = Vector2(36,36)
 	weapon_text.hide(); ammo_text.add_theme_font_size_override("font_size",19); power_text.add_theme_font_size_override("font_size",11)
 	belt = hotbar[0].get_parent()
-	place_panel(belt,Control.PRESET_CENTER_BOTTOM,Rect2(-225,-70,450,62))
+	place_panel(belt,Control.PRESET_CENTER_BOTTOM,Rect2(88,-66,346,56))
 	belt.add_theme_constant_override("separation",4)
-	for button in hotbar: button.custom_minimum_size = Vector2(66,62)
-	var previous := UI.button(belt,"‹",func(): page = 0; update_page()); previous.custom_minimum_size = Vector2(48,62)
+	for button in hotbar:
+		button.custom_minimum_size = Vector2(54,54)
+		button.normal_frame.bg_color = Color(.03,.08,.1,.22)
+		button.selected_frame.bg_color = Color(.2,.3,.22,.5)
+	var previous := UI.button(belt,"‹",func(): page = maxi(0,page-1); update_page()); previous.custom_minimum_size = Vector2(36,54)
 	belt.move_child(previous,0)
-	var next := UI.button(belt,"›",func(): page = 1; update_page()); next.custom_minimum_size = Vector2(48,62)
+	var next := UI.button(belt,"›",func(): page = mini(2,page+1); update_page()); next.custom_minimum_size = Vector2(36,54)
 	update_page()
 	location_text.reparent(root)
 	place_panel(location_text,Control.PRESET_CENTER_TOP,Rect2(-205,92,410,20))
@@ -56,7 +58,7 @@ func create_bottom() -> void:
 	gather_label.offset_top = 49; gather_label.offset_bottom = 71; gather_label.add_theme_font_size_override("font_size",13)
 
 func update_page() -> void:
-	for i in range(hotbar.size()): hotbar[i].visible = i>=page*5 and i<page*5+5
+	for i in range(hotbar.size()): hotbar[i].visible = i>=page*4 and i<page*4+4
 
 func _process(delta: float) -> void:
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
@@ -90,30 +92,36 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	for child in modal.get_children():
 		if child is CenterContainer: modal.remove_child(child); child.queue_free()
 	var panel := UI.panel(modal); UI.fill(panel)
-	panel.offset_left = 12; panel.offset_right = -12; panel.offset_top = 8; panel.offset_bottom = -8
+	UI.label(modal,"",1)
+	panel.offset_left = 12; panel.offset_right = -12; panel.offset_top = 66; panel.offset_bottom = -10
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var scroll := ScrollContainer.new(); panel.add_child(scroll); scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var scroll := ScrollContainer.new(); scroll.scroll_deadzone = 12; panel.add_child(scroll); scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.custom_minimum_size.x = 0
 	scroll.add_child(box); box.size_flags_horizontal = Control.SIZE_EXPAND_FILL; box.add_theme_constant_override("separation",8)
-	var close := UI.button(modal,"×",func():
+	var close := UI.button(modal,"FECHAR",func():
 		if world.phase=="ended": menu()
 		else: close_modal()
 	)
-	place_panel(close,Control.PRESET_TOP_RIGHT,Rect2(-86,16,62,48))
+	place_panel(close,Control.PRESET_TOP_RIGHT,Rect2(-140,10,116,48))
 	var close_style := compact_style(); close_style.content_margin_top = 2; close_style.content_margin_bottom = 2
-	close.add_theme_stylebox_override("normal",close_style); close.add_theme_font_size_override("font_size",24)
+	close.add_theme_stylebox_override("normal",close_style); close.add_theme_font_size_override("font_size",17)
+	var heading := UI.label(modal,{"inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"VENDEDOR"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
+	heading.position = Vector2(26,21)
 	call_deferred("adapt_modal",box)
 	return box
 
 func adapt_modal(node: Node) -> void:
 	if not is_instance_valid(node): return
+	if node==overlay_box and node.get_child_count()>0 and node.get_child(0) is Label: node.get_child(0).hide()
 	if node is Label and not node.get_parent() is ItemSlot:
-		node.text = node.text.replace("Clique","Toque").replace("clique","toque").replace("G reforça:","Melhorias:").replace("F abre","AÇÕES abre").replace("pressione E","toque em COLETAR")
+		node.text = node.text.replace("Clique","Toque").replace("clique","toque").replace("G reforça:","Melhorias:").replace("F abre","AÇÕES abre").replace("pressione E","toque em COLETAR").replace("F5 salva; F9 restaura. Ambos apenas no refúgio, na preparação.","Salve e restaure junto ao Núcleo, durante a preparação.")
 		node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if node.get_theme_font_size("font_size")>25: node.add_theme_font_size_override("font_size",24)
 	if node is Button and not node is ItemSlot:
 		node.text = node.text.replace(" / I","").replace(" / ESC","")
-		node.custom_minimum_size.y = maxf(48,node.custom_minimum_size.y)
+		node.custom_minimum_size.y = maxf(52,node.custom_minimum_size.y)
+		node.add_theme_font_size_override("font_size",17)
 	for child in node.get_children(): adapt_modal(child)
 
 func show_inventory() -> void:
@@ -165,7 +173,7 @@ func show_build_catalog() -> void:
 		var order := inner.get_index()
 		inner.remove_child(grid); overlay_box.add_child(grid); overlay_box.move_child(grid,order)
 		inner.get_parent().remove_child(inner); inner.queue_free()
-		for card in grid.get_children(): card.custom_minimum_size = Vector2(360,190)
+		for card in grid.get_children(): card.custom_minimum_size = Vector2(300,175); card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 func show_routes() -> void:
 	super.show_routes()

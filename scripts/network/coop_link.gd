@@ -6,6 +6,8 @@ var peer: ENetMultiplayerPeer
 var identity: String = ""
 var nickname: String = "Sobrevivente"
 var snapshot_left: float = 0
+var bulk_left: float = 0
+var slow_cache: Dictionary = {}
 var input_left: float = 0
 var connect_left: float = 0
 var scene_sent: Dictionary = {}
@@ -37,7 +39,7 @@ func _ready() -> void:
 func host_session(port: int = 24567) -> Error:
 	close_session()
 	peer = ENetMultiplayerPeer.new()
-	var result := peer.create_server(port,3,3)
+	var result := peer.create_server(port,3,5)
 	if result!=OK: peer = null; status_changed.emit("Não foi possível abrir a porta UDP."); return result
 	multiplayer.multiplayer_peer = peer
 	server_port = port
@@ -53,7 +55,7 @@ func join_session(address: String,port: int = 24567,player_name: String = "Sobre
 	nickname = player_name.strip_edges().left(16)
 	if nickname.is_empty(): nickname = "Sobrevivente"
 	peer = ENetMultiplayerPeer.new()
-	var result := peer.create_client(address,port,3)
+	var result := peer.create_client(address,port,5)
 	if result!=OK: peer = null; return result
 	multiplayer.multiplayer_peer = peer
 	mode = "connecting"
@@ -68,7 +70,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,13)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -76,6 +78,7 @@ func close_session() -> void:
 	mode = "offline"
 	world = null
 	scene_sent.clear()
+	slow_cache.clear()
 	input_times.clear()
 	action_times.clear()
 	# Release the high-level transport before shutting down its ENet peer.
@@ -102,24 +105,37 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(world) or mode not in ["host","client"]: return
 	if mode=="host":
 		snapshot_left -= delta
+		bulk_left -= delta
 		if snapshot_left>0: return
-		snapshot_left = .1
+		snapshot_left += .05
+		var include_bulk := bulk_left<=0
+		if include_bulk: bulk_left += .333
 		for id in world.avatars:
 			if id==1 or not multiplayer.get_peers().has(id): continue
-			if peer.get_peer(id).get_state()!=ENetPacketPeer.STATE_CONNECTED or peer.get_peer(id).get_channels()<3: continue
+			if peer.get_peer(id).get_state()!=ENetPacketPeer.STATE_CONNECTED or peer.get_peer(id).get_channels()<5: continue
 			if int(scene_sent.get(id,-1))!=world.scene_revision:
 				_receive_scene.rpc_id(id,world.net_scene())
 				scene_sent[id] = world.scene_revision
-			var raw := var_to_bytes(world.net_state(id))
+				slow_cache.erase(id)
+			var full: Dictionary = world.net_state(id,include_bulk or not slow_cache.has(id))
+			var bulk := {"rev":world.scene_revision}
+			for key in ["structures","loot","houses","airdrops","discovered","sector_times","depot"]:
+				bulk[key] = full[key]; full.erase(key)
+			if include_bulk or not slow_cache.has(id):
+				_receive_bulk.rpc_id(id,var_to_bytes(bulk).compress(FileAccess.COMPRESSION_DEFLATE)); slow_cache[id] = true
+			var raw := var_to_bytes(full)
 			var packed := raw.compress(FileAccess.COMPRESSION_DEFLATE)
 			max_snapshot_raw = maxi(max_snapshot_raw,raw.size()); max_snapshot_packed = maxi(max_snapshot_packed,packed.size())
 			_receive_state.rpc_id(id,packed)
 	else:
 		input_left -= delta
 		if input_left>0: return
-		input_left = 1.0/30
-		var frame: Dictionary = test_input.duplicate() if not test_input.is_empty() else world.local_input(world.player)
-		_input_frame.rpc_id(1,frame)
+		input_left += 1.0/30
+		if world.prediction.enabled() and world.prediction.ready:
+			if not world.prediction.history.is_empty(): _input_batch.rpc_id(1,var_to_bytes(world.prediction.history.slice(0,32)).compress(FileAccess.COMPRESSION_DEFLATE),world.last_scene_revision)
+		else:
+			var frame: Dictionary = test_input.duplicate() if not test_input.is_empty() else world.local_input(world.player)
+			_input_frame.rpc_id(1,frame)
 
 func command(action: String,data: Dictionary) -> void:
 	if mode=="client": _action.rpc_id(1,action,data)
@@ -128,9 +144,11 @@ func blast_event(point: Vector3,radius: float) -> void:
 	if mode=="host": _blast_visual.rpc(point,radius)
 
 @rpc("any_peer","call_remote","reliable",0)
-func _join_ready(token: String,name_text: String) -> void:
+func _join_ready(token: String,name_text: String,protocol: int = 12) -> void:
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
+	if protocol!=13:
+		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 0.13."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return
@@ -181,6 +199,10 @@ func _receive_state(packet: PackedByteArray) -> void:
 		if unpacked.is_empty(): return
 		var data = bytes_to_var(unpacked)
 		if not data is Dictionary: return
+		if not slow_cache.has("state") or int(slow_cache.state.rev)!=int(data.rev): return
+		data["_bulk"] = slow_cache.get("fresh",false)
+		slow_cache.fresh = false
+		data.merge(slow_cache.state,false)
 		world.apply_net_state(data,multiplayer.get_unique_id())
 		received_snapshots += 1
 
@@ -189,8 +211,44 @@ func _blast_visual(point: Vector3,_radius: float) -> void:
 	if mode=="client" and is_instance_valid(world): world.effects.burst(point,Color("e9a361"),12)
 
 func shot_event(from: Vector3,to: Vector3,color: Color) -> void:
-	if mode=="host": _shot_visual.rpc(from,to,color)
+	if mode=="host": _shot_visual.rpc(from,to,color,world.shot_owner)
 
-@rpc("authority","call_remote","unreliable_ordered",2)
-func _shot_visual(from: Vector3,to: Vector3,color: Color) -> void:
+@rpc("authority","call_remote","unreliable_ordered",4)
+func _shot_visual(from: Vector3,to: Vector3,color: Color,owner: int = 0) -> void:
+	if mode=="client" and is_instance_valid(world) and owner==multiplayer.get_unique_id() and world.prediction.enabled(): return
 	if mode=="client" and is_instance_valid(world): world.shot_visual(from,to,color)
+
+@rpc("authority","call_remote","unreliable_ordered",3)
+func _receive_bulk(packet: PackedByteArray) -> void:
+	if packet.size()>262144: return
+	var raw := packet.decompress_dynamic(2097152,FileAccess.COMPRESSION_DEFLATE)
+	if raw.is_empty(): return
+	var data = bytes_to_var(raw)
+	if not data is Dictionary: return
+	if mode=="client" and is_instance_valid(world) and data.get("rev") is int and int(data.rev)>=world.last_scene_revision:
+		slow_cache.state = data
+		slow_cache.fresh = true
+
+@rpc("any_peer","call_remote","unreliable_ordered",1)
+func _input_batch(packet: PackedByteArray,revision: int) -> void:
+	if packet.size()>16384: return
+	var raw := packet.decompress_dynamic(65536,FileAccess.COMPRESSION_DEFLATE)
+	if raw.is_empty(): return
+	var frames = bytes_to_var(raw)
+	if not frames is Array: return
+	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision or frames.size()>32: return
+	var id := multiplayer.get_remote_sender_id()
+	if not world.avatars.has(id): return
+	var actor: Node3D = world.avatars[id]
+	for frame in frames:
+		if not frame is Dictionary or frame.size()>10 or not frame.get("seq") is int or not frame.get("move") is Vector2 or not frame.get("aim") is Vector3 or not frame.get("slot") is int: return
+		if not frame.move.is_finite() or not frame.aim.is_finite() or frame.slot<0 or frame.slot>8 or frame.seq<1: return
+		if frame.has("roll") and (not frame.roll is Vector3 or not frame.roll.is_finite() or frame.roll.length_squared()>1.01): return
+		if frame.has("target"):
+			if not frame.target is Dictionary or frame.target.size()!=2 or not frame.target.get("id") is int or not frame.target.get("rev") is int: return
+		if frame.seq<=actor.input_received: continue
+		if actor.input_queue.size()>=64: break
+		var clean := {"seq":frame.seq,"move":frame.move.limit_length(1),"aim":frame.aim.normalized(),"slot":frame.slot,"fire":frame.get("fire")==true,"sprint":frame.get("sprint")==true,"reload":frame.get("reload")==true,"interact":frame.get("interact")==true}
+		if frame.has("target"): clean.target = frame.target.duplicate()
+		if frame.has("roll"): clean.roll = frame.roll
+		actor.input_stream = true; actor.input_queue.append(clean); actor.input_received = frame.seq

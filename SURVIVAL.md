@@ -51,7 +51,7 @@ Espaço inicia um rolamento de 0,42 s na direção de WASD; parado, segue a mira
 
 Interrompe coleta e recarga da arma. Durante a animação não dispara, usa kits, lança granadas nem coleta caixas. Não pode começar caído, com partida encerrada, com menu aberto ou em prévia de construção. Segurar Espaço não repete a ação. Ao viajar, cair ou restaurar um checkpoint, a pose transitória é encerrada. A recarga fica no perfil salvo; saves v6 anteriores continuam válidos.
 
-No cooperativo, comandos de rolamento são confiáveis e o anfitrião controla movimento, colisão, proteção e recarga. Animação, direção e contador são replicados para os convidados. Não há predição local: o início visual no convidado depende da latência até o anfitrião.
+No cooperativo, comandos de rolamento são confiáveis e o anfitrião controla movimento, colisão, proteção e recarga. Animação, direção e contador são replicados para os convidados. Na 0.13 o cliente prevê o início visual e o movimento do rolamento. A proteção contra dano e a recarga continuam decididas pelo anfitrião.
 
 ## Casas e aparência 0.10
 

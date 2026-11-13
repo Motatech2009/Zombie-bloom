@@ -58,13 +58,13 @@ func shoot(direction: Vector3) -> bool:
 	var result := false
 	if slot in [6,8]: result = special_shot(direction)
 	else: result = super.shoot(direction)
-	world.shot_owner = 1
 	if result and slot not in [6,8]:
 		var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
 		var aim: Vector3 = world.air_aim(origin,direction,float(spec().values.range))
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
+	world.shot_owner = 1
 	return result
 
 func special_shot(direction: Vector3) -> bool:

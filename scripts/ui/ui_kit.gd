@@ -123,4 +123,4 @@ static func settings(parent: Node, on_change: Callable) -> void:
 		lean.button_pressed = GameSettings.mobile_performance
 		parent.add_child(lean)
 		lean.toggled.connect(func(value: bool): GameSettings.mobile_performance = value; GameSettings.save_settings(); on_change.call())
-		label(parent,"Modo leve reduz detalhes, efeitos e resolução 3D. Sombras ficam desligadas.\nSalve e reabra a partida para aplicar todos os detalhes.",14,MUTED)
+		label(parent,"Modo leve reduz detalhes, efeitos e resolução 3D. Sombras ficam desligadas.\nA qualidade muda agora, sem reiniciar. Detalhado restaura texturas e resolução.",14,MUTED)

@@ -50,7 +50,10 @@ func _ready() -> void:
 	var left := PanelContainer.new()
 	root.add_child(left)
 	left.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	left.offset_right = 530 if MobilePlatform.enabled() else 610
+	left.offset_right = 610
+	if MobilePlatform.enabled():
+		left.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		left.offset_left = 8; left.offset_right = -8; left.offset_top = 8; left.offset_bottom = -8
 	left.add_theme_stylebox_override("panel", UI.style(Color(.025, .07, .09, .94), Color("263c41"), 0))
 	var margin := MarginContainer.new()
 	left.add_child(margin)
@@ -60,6 +63,7 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_bottom", 24)
 	var menu_scroll := ScrollContainer.new()
 	margin.add_child(menu_scroll)
+	menu_scroll.scroll_deadzone = 12
 	menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content = UI.vbox(menu_scroll,7)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -71,6 +75,7 @@ func _ready() -> void:
 		get_tree().create_timer(1).timeout.connect(func(): get_tree().quit())
 
 func clear_content() -> void:
+	if content.get_parent() is ScrollContainer: content.get_parent().scroll_vertical = 0
 	for child in content.get_children():
 		content.remove_child(child)
 		child.queue_free()
@@ -79,9 +84,10 @@ func show_main() -> void:
 	clear_content()
 	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
 	UI.spacer(content, 12)
-	UI.label(content, "ZOMBIE", 50)
+	UI.label(content, "ZOMBIE BLOOM" if MobilePlatform.enabled() else "ZOMBIE",36 if MobilePlatform.enabled() else 50)
 	var bloom := UI.label(content, "BLOOM.", 62, UI.LIME)
 	bloom.add_theme_constant_override("outline_size", 0)
+	if MobilePlatform.enabled(): bloom.hide()
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
 	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nSetores imprevisíveis. Cercos automáticos.", 17, UI.MUTED)
@@ -133,7 +139,7 @@ func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
 	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nESPAÇO rolamento · recarga de 5 segundos\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
-	if MobilePlatform.enabled(): help.text = "Controle esquerdo: mover. Empurre até a borda para correr.\nToque no zumbi: trava mira e atira. Toque no chão para cancelar.\nA trava pausa atrás de paredes ou fora de alcance e termina quando o alvo morre.\nSEGURE ATIRAR: escolhe um alvo visível e alcançável. Solte para parar.\nGranada e kit: um uso por toque no botão. Toque no cenário para apontar a granada.\nModo leve: menos detalhes e efeitos, com contador de FPS.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Áreas e loot ficam preservados por três minutos; sair e voltar antes não renova.\nSolo: coleta e depósito levam 40% menos tempo. Chefes têm mais vida e suprimentos extras.\nTransporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
+	if MobilePlatform.enabled(): help.text = "Toque na metade esquerda: analógico flutuante para mover. Empurre até a borda para correr.\nToque no zumbi: escolhe o alvo. Segure ATIRAR para disparar. Toque no chão para cancelar.\nA trava pausa atrás de paredes ou fora de alcance e termina quando o alvo morre.\nSEGURE ATIRAR: escolhe um alvo visível e alcançável. Solte para parar.\nGranada e kit: um uso por toque no botão. Toque no cenário para apontar a granada.\nModo leve: menos detalhes e efeitos, com contador de FPS.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Áreas e loot ficam preservados por três minutos; sair e voltar antes não renova.\nSolo: coleta e depósito levam 40% menos tempo. Chefes têm mais vida e suprimentos extras.\nTransporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 
@@ -141,7 +147,7 @@ func show_settings() -> void:
 	clear_content()
 	UI.label(content, "CONFIGURAÇÕES", 35)
 	UI.spacer(content, 28)
-	UI.settings(content, func(): sun.shadow_enabled = GameSettings.use_shadows())
+	UI.settings(content, func(): MobilePlatform.configure(get_tree().root); ClayStyle.refresh_tree(self); sun.shadow_enabled = GameSettings.use_shadows())
 	UI.spacer(content, 12)
 	UI.button(content, "VOLTAR", show_main)
 

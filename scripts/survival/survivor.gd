@@ -24,6 +24,11 @@ var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
 var replica_motion: float = 0
+var input_queue: Array[Dictionary] = []
+var input_ack: int = 0
+var input_received: int = 0
+var input_stream: bool = false
+var presentation_offset := Vector3.ZERO
 
 static func movement_direction(input: Vector2) -> Vector3:
 	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
@@ -48,7 +53,7 @@ func stop_roll() -> void:
 	rig.position = Vector3.ZERO
 
 func animate_pose(moving: float) -> void:
-	rig.position = Vector3.ZERO
+	rig.position = presentation_offset
 	VisualFactory.animate_human(rig,clock*(1.35 if moving>1.1 else 1.0),moving,recoil,true)
 	var gun: Node3D = rig.get_node("Gun")
 	gun.position = Vector3(.34,1.1,-.64+recoil*.12)
@@ -82,6 +87,23 @@ func _ready() -> void:
 
 func read_input() -> Dictionary:
 	if peer_id!=1:
+		if input_stream:
+			if input_queue.is_empty():
+				return net_input if Time.get_ticks_msec()-int(net_input.get("time",0))<400 else {"aim":aim,"slot":bag.selected}
+			# Consume the freshest intent without accumulating latency. Movement still runs once per host tick.
+			for queued in input_queue:
+				if queued.get("roll") is Vector3: start_roll(queued.roll)
+			var latest: Dictionary = input_queue.back()
+			var frame: Dictionary = latest.duplicate(true)
+			# Keep a short trigger/reload tap that began and ended between two network sends.
+			if not frame.get("fire",false):
+				for i in range(input_queue.size()-1,-1,-1):
+					if input_queue[i].get("fire",false): frame = input_queue[i].duplicate(true); break
+			frame.reload = input_queue.any(func(queued): return queued.get("reload",false))
+			input_queue.clear()
+			input_ack = int(latest.seq)
+			net_input = latest.duplicate(true); net_input.erase("roll"); net_input.time = Time.get_ticks_msec()
+			return frame
 		if Time.get_ticks_msec()-int(net_input.get("time",0))>400: return {}
 		return net_input
 	return world.local_input(self)
@@ -99,18 +121,8 @@ func _physics_process(delta: float) -> void:
 		powers[id] = maxf(0,float(powers[id])-delta)
 		if powers[id]<=0: powers.erase(id)
 	shield_ring.visible = shield>0 and power_left("shield")>0
-	var input: Vector2 = frame.get("move",Vector2.ZERO)
-	var direction := movement_direction(input)
-	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
-	if gather_target!=null: speed *= .25
 	var rolling := roll_left>0
-	if rolling:
-		velocity = roll_direction*ROLL_SPEED*(.55 if slow_left>0 else 1.0)
-	else:
-		velocity.x = move_toward(velocity.x,direction.x*speed,delta*35)
-		velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
-	velocity.y = -1
-	move_and_slide()
+	simulate_motion(frame,delta)
 	bag.selected = clampi(int(frame.get("slot",bag.selected)),0,8)
 	weapons.sync_hand()
 	frame = MobileTargeting.resolve(world,self,frame)
@@ -119,8 +131,6 @@ func _physics_process(delta: float) -> void:
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-aim.x,-aim.z),minf(1,delta*24))
 	animate_pose(Vector2(velocity.x,velocity.z).length()/6.3)
 	if rolling:
-		roll_left = maxf(0,roll_left-delta)
-		if roll_left==0: stop_roll(); velocity = Vector3.ZERO
 		previous_reload = frame.get("reload",false)
 		return
 	if frame.get("fire",false) and not (world.builder.active and peer_id==1):
@@ -155,3 +165,20 @@ func revive(hp: float = 40) -> void:
 	downed = false
 	rig.rotation.z = 0
 	invulnerable = 2
+
+func simulate_motion(frame: Dictionary,delta: float) -> void:
+	var input: Vector2 = frame.get("move",Vector2.ZERO)
+	var direction := movement_direction(input)
+	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
+	if gather_target!=null: speed *= .25
+	var rolling := roll_left>0
+	if rolling:
+		velocity = roll_direction*ROLL_SPEED*(.55 if slow_left>0 else 1.0)
+	else:
+		velocity.x = move_toward(velocity.x,direction.x*speed,delta*35)
+		velocity.z = move_toward(velocity.z,direction.z*speed,delta*35)
+	velocity.y = -1
+	move_and_slide()
+	if rolling:
+		roll_left = maxf(0,roll_left-delta)
+		if roll_left==0: stop_roll(); velocity = Vector3.ZERO

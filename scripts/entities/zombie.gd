@@ -47,11 +47,12 @@ func _physics_process(delta: float) -> void:
 	attack_left = maxf(0, attack_left - delta)
 	recoil = move_toward(recoil, 0, delta * 3)
 	think_left -= delta
-	if think_left <= 0 or not is_instance_valid(target):
+	if (think_left <= 0 or not is_instance_valid(target)) and (not world.has_method("allow_enemy_think") or world.allow_enemy_think(self)):
 		think_left = randf_range(.5, .85)
 		choose_target()
 		path = world.route_for_enemy(self,target.global_position) if world.has_method("route_for_enemy") else world.arena.route(global_position, target.global_position)
 		path_index = 1 if path.size() > 1 else 0
+	if not is_instance_valid(target): choose_target()
 	var goal: Vector3 = target.global_position
 	if path_index < path.size():
 		goal = Vector3(path[path_index].x, 0, path[path_index].y)

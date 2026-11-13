@@ -227,7 +227,10 @@ func show_pause() -> void:
 func show_settings() -> void:
 	var box := open_modal("settings", 560)
 	UI.label(box, "CONFIGURAÇÕES", 32)
-	UI.settings(box, func(): world.sunlight.shadow_enabled = GameSettings.use_shadows())
+	UI.settings(box, func():
+		if world.has_method("apply_mobile_quality"): world.apply_mobile_quality()
+		else: world.sunlight.shadow_enabled = GameSettings.use_shadows()
+	)
 	UI.button(box, "CONTINUAR", close_modal, true)
 
 func show_equipment() -> void:

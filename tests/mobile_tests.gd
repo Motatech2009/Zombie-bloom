@@ -23,16 +23,17 @@ func run() -> void:
 	await frames()
 	var controls: TouchControls = world.touch_controls
 	check(controls!=null and root.content_scale_size==Vector2i(960,540),"mobile world creates a fixed landscape touch interface")
-	check(world.hud.hotbar.filter(func(button): return button.visible).size()==5,"first mobile hotbar page shows five large slots")
-	world.hud.page = 1; world.hud.update_page()
-	check(world.hud.hotbar[8].visible and not world.hud.hotbar[0].visible,"second hotbar page keeps all nine slots reachable")
+	check(world.hud.hotbar.filter(func(button): return button.visible).size()==4,"first mobile hotbar page shows four compact slots")
+	world.hud.page = 2; world.hud.update_page()
+	check(world.hud.hotbar[8].visible and not world.hud.hotbar[0].visible,"third hotbar page keeps the ninth slot reachable")
 	world.hud.page = 0; world.hud.update_page()
 	var actor: CharacterBody3D = world.player
 	actor.position = Vector3(0,0,10)
 	var enemy: Node3D = world.make_enemy(0,Vector3(4,0,4),false,1)
 	enemy.set_physics_process(false); enemy.health.setup(1000)
 	await frames()
-	touch(controls,0,controls.stick_center("move")+Vector2(65,0))
+	touch(controls,0,controls.stick_center("move"))
+	drag(controls,0,controls.stick_center("move")+Vector2(72,0))
 	touch(controls,1,controls.buttons.fire.get_center())
 	var frame: Dictionary = world.local_input(actor)
 	check(frame.move.x>.8 and frame.fire and frame.aim.is_finite(),"two independent fingers move and hold assisted fire simultaneously")
@@ -78,6 +79,7 @@ func run() -> void:
 	actor.position = Vector3(0,0,3); actor.bag.add("wood",5)
 	var bank_before: int = world.stock.wood
 	actor.set_physics_process(true)
+	controls._process(.2)
 	touch(controls,5,controls.buttons.interact.get_center())
 	check(world.local_input(actor).interact,"collect button holds interaction through its own finger")
 	await create_timer(2.0).timeout

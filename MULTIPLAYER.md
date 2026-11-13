@@ -1,3 +1,7 @@
+# Atualização de resposta de rede 0.13
+
+Veja [MOBILE_013.md](MOBILE_013.md) para previsão de movimento/rolamento, interpolação, feedback visual de tiro e canais de tráfego. Atualize todos os dispositivos para 0.13.
+
 # Jogar com amigos — cooperativo 0.11
 
 Até quatro jogadores, com conexão direta por ENet/UDP. Todos precisam usar a mesma versão; convidados das versões anteriores devem atualizar junto com o anfitrião. Um PC joga e hospeda a partida; ele controla movimento, tiros, dano, bolsa, compras, construção, relógio e geração dos setores. Espaço solicita rolamento; o anfitrião valida a recarga de 5 s e replica a animação e o contador para todos. Atualizem todos os PCs para a 0.10.
@@ -24,7 +28,7 @@ Se a conexão expirar, confira versão, IP, porta, sala aberta, firewall e camin
 | 3 | x4 |
 | 4 | x8 |
 
-A escala vale para as hordas e para a população procedural dos setores. Entradas/saídas recalculam os inimigos ainda não gerados; inimigos já vivos não desaparecem quando alguém sai. Limites de materialização permanecem para controlar física e navegação. Vida do chefe também aumenta 30% por companheiro, além da evolução por horda.
+A escala vale para as hordas e para a população procedural dos setores. Entradas/saídas recalculam os inimigos ainda não gerados; inimigos já vivos não desaparecem quando alguém sai. Limites de materialização permanecem para controlar física e navegação. Vida do chefe também aumenta 50% por companheiro, além da evolução por horda.
 
 O grupo viaja junto: todos os sobreviventes vivos precisam estar junto à mesma saída. Não há setores independentes por jogador. A base permanece física e ativa enquanto o grupo explora. Mochilas são individuais; depósito, cotas de construção, XP e melhorias são compartilhados. A primeira seleção válida de evolução beneficia o grupo. Novos participantes recebem as melhorias coletivas já adquiridas, mas começam com sua própria bolsa inicial se não houver perfil anterior.
 

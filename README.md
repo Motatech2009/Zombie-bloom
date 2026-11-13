@@ -1,10 +1,12 @@
-# Zombie Bloom — PC + Android 0.12
+# Zombie Bloom — PC + Android 0.13
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
 Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa infinita e cooperativo direto para até quatro jogadores. O Núcleo em (0,0) é fixo; cada nova entrada nos outros setores gera cenário, população e saque diferentes. As hordas começam pelo relógio e atacam a base mesmo quando o grupo está longe.
 
 ## Jogar
+
+**Novo na 0.13:** qualidade gráfica aplicada sem reiniciar, materiais leves corrigidos, analógico flutuante, rotação pelo movimento, disparo ao segurar, botões transparentes, coleta contextual, barra compacta e menus maiores. Movimento/rolamento previstos no cliente, feedback imediato de tiro e tráfego de rede separado. [Mudanças, regras e limites](MOBILE_013.md).
 
 **Novo na 0.12:** áreas preservadas por 3 minutos, chefes mais resistentes e com suprimentos extras, munição/consumíveis no loot regional e coleta 40% mais rápida sozinho. [Regras de exploração e saque](PROGRESSION.md).
 
@@ -81,7 +83,7 @@ godot --headless --path . --script res://tests/mobile_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**953 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque, 26 de desempenho/controle assistido, 43 de progressão e 109 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
+**977 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 28 móveis, 33 de mira por toque, 26 de desempenho/controle assistido, 43 de progressão, 24 de experiência móvel e 109 de rede com quatro processos reais. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 

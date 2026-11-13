@@ -1,3 +1,13 @@
+# Validação 0.13 — controles, materiais e resposta de rede
+
+977 verificações locais aprovadas: 15 suítes com 868 verificações e quatro processos ENet com 109. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).
+
+A nova suíte de 24 verificações cobre analógico flutuante, rotação ao andar e disparar, coleta contextual, qualidade aplicada em tempo real sem resetar inimigos, geometria do menu/barra, movimento durante lacuna de 200 ms sem snapshots, reconciliação, rolamento previsto, feedback de tiro sem mutar munição/vida e interpolação de 100 ms. As suítes móveis anteriores acompanham a nova regra: tocar escolhe o alvo e segurar dispara.
+
+A sessão ENet usa quatro processos reais em loopback, com um convidado usando eventos de toque. O servidor limita o movimento à física, aceita apenas comandos validados e conserva a autoridade de dano e inventário. Os conjuntos lentos e rápidos usam canais separados e compressão. A suíte não certifica rede de operadora, perda real em 4G, nem desempenho no Moto G45/A13.
+
+Inspeção visual em janela 1280×800 com interface móvel 960×540: HUD de combate, pausa, configurações, qualidade detalhada restaurada durante a partida e mochila com controles de fechamento visíveis. Não houve instalação física do novo APK neste ambiente.
+
 # Validação de exploração e suprimentos 0.12 — 2026-11-13
 
 **953 verificações aprovadas:** 801 das treze suítes anteriores, 43 de progressão e 109 de rede (31 anfitrião +25 por desktop +28 no cliente de toque). Logs em docs/progression-results.txt e docs/coop-results.txt; registros de arsenal, casas e fortaleza atualizados para os tempos solo.
