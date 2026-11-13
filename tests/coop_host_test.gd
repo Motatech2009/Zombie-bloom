@@ -7,6 +7,11 @@ func check(ok: bool,message: String) -> void:
 	if ok: print("PASS: "+message)
 	else: failures += 1; push_error("FAIL: "+message)
 
+func wait_ready(link: Node,world: Node3D) -> void:
+	var deadline := Time.get_ticks_msec()+8000
+	while world.avatars.keys().any(func(id): return id!=1 and int(link.scene_confirmed.get(id,-1))!=world.scene_revision) and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
+	check(world.avatars.keys().all(func(id): return id==1 or int(link.scene_confirmed.get(id,-1))==world.scene_revision),"every connected guest acknowledges complete scene data before the next test transition")
+
 func run() -> void:
 	var link := root.get_node("Coop")
 	check(link.host_session(24577)==OK,"ENet server opens a real UDP session")
@@ -94,19 +99,23 @@ func run() -> void:
 	check(world.descriptor.count==world.descriptor.base_count*8,"procedural field population also uses the exact x8 multiplier")
 	var sector_seed: int = world.descriptor.seed
 	world.caches[0].set_meta("contents",{"rifle_ammo":7,"parts":2})
+	await wait_ready(link,world)
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
 	check(world.step_sector(2) and world.sector_coord==Vector2i.ZERO,"the party returns to the persistent core sector")
+	await wait_ready(link,world)
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
 	check(world.step_sector(0) and world.descriptor.seed==sector_seed,"a four-player revisit keeps the same procedural generation during its cooldown")
 	check(world.caches[0].get_meta("contents")=={"rifle_ammo":7,"parts":2} and world.raid_house(0).dead==[0],"host preserves partial supplies and house progress during the shared revisit")
+	await wait_ready(link,world)
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
 	check(world.step_sector(2),"the party returns safely after its preserved-sector visit")
+	await wait_ready(link,world)
 	await create_timer(2).timeout
 	deadline = Time.get_ticks_msec()+10000
 	while world.party_count()>1 and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

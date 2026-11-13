@@ -23,6 +23,7 @@ var pending_sector_memory: Dictionary = {}
 var field_defeated: Array[int] = []
 var remote_sector_times: Dictionary = {}
 var restoring_boss_stage: int = 0
+var client_scene_ready: bool = false
 var remote_interaction_hint: String = ""
 var prediction := ClientPrediction.new()
 var ai_frame: int = -1
@@ -134,7 +135,7 @@ func select_hotbar(index: int) -> void:
 	else: player.weapons.sync_hand()
 
 func local_input(actor: Node3D) -> Dictionary:
-	var blocked: bool = hud!=null and not hud.mode.is_empty()
+	var blocked: bool = (hud!=null and not hud.mode.is_empty()) or (is_client and not client_scene_ready)
 	if MobilePlatform.enabled() and is_instance_valid(touch_controls):
 		var frame := touch_controls.frame()
 		if blocked:
@@ -304,6 +305,7 @@ func step_sector(direction: int) -> bool:
 	if area_index!=-1: scale_field_population()
 	airdrops.ensure_crate()
 	scene_revision += 1
+	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
 	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
 	elif area_index!=-1:
 		var seconds := ceili(sector_remaining(sector_coord))
@@ -834,6 +836,7 @@ func apply_snapshot(data: Dictionary) -> void:
 		var loot := spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto))
 		if loot!=null and item.get("boss",false): mark_boss_drop(loot)
 	scene_revision += 1
+	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
 
 func load_checkpoint() -> bool:
 	if is_client or area_index!=-1 or phase!="prep": return false
@@ -908,6 +911,7 @@ func net_scene() -> Dictionary:
 func apply_net_scene(data: Dictionary) -> void:
 	if not is_client: return
 	prediction.reset()
+	client_scene_ready = false
 	clear_hazards()
 	for node in client_enemies.values(): node.queue_free()
 	for node in client_structures.values(): node.queue_free()
@@ -1035,7 +1039,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		actor.roll_cooldown = float(state.get("roll_cd",0))
 		actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
 		if state.down: actor.stop_roll()
-		if actor==player: prediction.reconcile(state)
+		if actor==player: prediction.queue_reconcile(state)
 		actor.replica_motion = float(state.get("motion",0))
 		actor.weapons.reload_left = float(state.get("reload",0))
 		actor.weapons.reload_total = float(state.get("reload_total",1))
@@ -1128,6 +1132,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		client_hazards[id].position = state.p
 	for id in client_hazards.keys():
 		if not seen.has(id): client_hazards[id].queue_free(); client_hazards.erase(id)
+	if data.get("_bulk",true): client_scene_ready = true
 	if phase=="ended" and hud.mode!="result": won = data.won; ending_reason = data.reason; hud.show_result()
 
 func shot_visual(from: Vector3,to: Vector3,color: Color,local: bool = true) -> void:

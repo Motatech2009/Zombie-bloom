@@ -58,6 +58,8 @@ func run() -> void:
 	var state := {"p":a.position,"velocity":Vector3.ZERO,"ack":0,"roll":0.0,"roll_cd":0.0,"roll_dir":Vector3.FORWARD,"down":false}
 	w.prediction.reconcile(state)
 	touch(c,0,Vector2(260,350)); drag(c,0,Vector2(332,350))
+	check(w.local_input(a).move==Vector2.ZERO,"a guest cannot send gameplay input before its new scene data is ready")
+	w.client_scene_ready = true
 	var start: Vector3 = a.position; var middle := Vector3.ZERO; var middle_velocity := Vector3.ZERO
 	for i in range(12):
 		w.prediction.tick(); await physics_frame
@@ -65,7 +67,9 @@ func run() -> void:
 	check(a.position.distance_to(start)>.7 and w.prediction.history.size()==12,"client moves immediately through a 200 ms gap in host snapshots")
 	var before: Vector3 = a.position
 	state.p = middle; state.velocity = middle_velocity; state.ack = 6
-	w.prediction.reconcile(state)
+	w.prediction.queue_reconcile(state)
+	check(a.position==before,"a received snapshot defers collision replay until the next physics tick")
+	w.prediction.reconcile(w.prediction.pending_state); w.prediction.pending_state.clear()
 	check(a.position.distance_to(before)<.15 and w.prediction.history.size()==6,"acknowledgement replays only pending inputs without repeating accepted movement")
 	c.reset_fingers(); w.prediction.history.clear(); a.velocity = Vector3.ZERO; a.roll_cooldown = 0
 	check(w.prediction.roll(Vector3.RIGHT),"client accepts an eligible roll before a host reply")

@@ -26,6 +26,8 @@ var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
 var replica_motion: float = 0
+var roll_intent_seen: int = 0
+var roll_intents: Dictionary = {}
 var input_queue: Array[Dictionary] = []
 var input_ack: int = 0
 var input_received: int = 0
@@ -97,6 +99,8 @@ func read_input() -> Dictionary:
 			for queued in input_queue:
 				if queued.get("roll") is Vector3: start_roll(queued.roll)
 			var latest: Dictionary = input_queue.back()
+			for sequence in roll_intents.keys():
+				if int(sequence)<=int(latest.seq): start_roll(roll_intents[sequence]); roll_intents.erase(sequence)
 			var frame: Dictionary = latest.duplicate(true)
 			# Keep a short trigger/reload tap that began and ended between two network sends.
 			if not frame.get("fire",false):

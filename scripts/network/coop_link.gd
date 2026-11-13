@@ -10,6 +10,8 @@ var bulk_left: float = 0
 var slow_cache: Dictionary = {}
 var input_left: float = 0
 var connect_left: float = 0
+var scene_confirmed: Dictionary = {}
+var last_scene_ack: int = -1
 var scene_sent: Dictionary = {}
 var input_times: Dictionary = {}
 var action_times: Dictionary = {}
@@ -78,6 +80,7 @@ func close_session() -> void:
 	mode = "offline"
 	world = null
 	scene_sent.clear()
+	scene_confirmed.clear(); last_scene_ack = -1
 	slow_cache.clear()
 	input_times.clear()
 	action_times.clear()
@@ -96,6 +99,7 @@ func _server_left() -> void:
 func _peer_left(id: int) -> void:
 	if mode=="host" and is_instance_valid(world): world.detach_peer(id)
 	scene_sent.erase(id)
+	scene_confirmed.erase(id)
 
 func _physics_process(delta: float) -> void:
 	if mode=="connecting":
@@ -132,7 +136,7 @@ func _physics_process(delta: float) -> void:
 		if input_left>0: return
 		input_left += 1.0/30
 		if world.prediction.enabled() and world.prediction.ready:
-			if not world.prediction.history.is_empty(): _input_batch.rpc_id(1,var_to_bytes(world.prediction.history.slice(0,32)).compress(FileAccess.COMPRESSION_DEFLATE),world.last_scene_revision)
+			if not world.prediction.history.is_empty(): _input_batch.rpc_id(1,var_to_bytes(world.prediction.history.slice(maxi(0,world.prediction.history.size()-32))).compress(FileAccess.COMPRESSION_DEFLATE),world.last_scene_revision)
 		else:
 			var frame: Dictionary = test_input.duplicate() if not test_input.is_empty() else world.local_input(world.player)
 			_input_frame.rpc_id(1,frame)
@@ -199,11 +203,15 @@ func _receive_state(packet: PackedByteArray) -> void:
 		if unpacked.is_empty(): return
 		var data = bytes_to_var(unpacked)
 		if not data is Dictionary: return
+		if int(data.get("rev",-1))!=world.last_scene_revision: return
 		if not slow_cache.has("state") or int(slow_cache.state.rev)!=int(data.rev): return
 		data["_bulk"] = slow_cache.get("fresh",false)
 		slow_cache.fresh = false
 		data.merge(slow_cache.state,false)
 		world.apply_net_state(data,multiplayer.get_unique_id())
+		if world.client_scene_ready and last_scene_ack!=world.last_scene_revision:
+			last_scene_ack = world.last_scene_revision
+			_scene_ready.rpc_id(1,last_scene_ack)
 		received_snapshots += 1
 
 @rpc("authority","call_remote","unreliable_ordered",2)
@@ -252,3 +260,23 @@ func _input_batch(packet: PackedByteArray,revision: int) -> void:
 		if frame.has("target"): clean.target = frame.target.duplicate()
 		if frame.has("roll"): clean.roll = frame.roll
 		actor.input_stream = true; actor.input_queue.append(clean); actor.input_received = frame.seq
+
+func roll_intent(sequence: int,direction: Vector3,revision: int) -> void:
+	if mode=="client": _roll_intent.rpc_id(1,sequence,direction,revision)
+
+@rpc("any_peer","call_remote","reliable",0)
+func _roll_intent(sequence: int,direction: Vector3,revision: int) -> void:
+	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision or sequence<1 or not direction.is_finite() or direction.length_squared()>1.01: return
+	var id := multiplayer.get_remote_sender_id()
+	if not world.avatars.has(id): return
+	var actor: Node3D = world.avatars[id]
+	if sequence<=actor.roll_intent_seen: return
+	actor.roll_intent_seen = sequence
+	if actor.input_ack>=sequence: actor.start_roll(direction)
+	elif actor.roll_intents.size()<4 and sequence<=actor.input_received+120: actor.roll_intents[sequence] = direction
+
+@rpc("any_peer","call_remote","reliable",0)
+func _scene_ready(revision: int) -> void:
+	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision: return
+	var id := multiplayer.get_remote_sender_id()
+	if world.avatars.has(id): scene_confirmed[id] = revision

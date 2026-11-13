@@ -6,6 +6,7 @@ var world: Node3D
 var ready: bool = false
 var sequence: int = 0
 var history: Array[Dictionary] = []
+var pending_state: Dictionary = {}
 var pending_roll: Variant
 var visual_shots: Array[Dictionary] = []
 var fire_left: float = 0
@@ -15,7 +16,7 @@ func enabled() -> bool:
 	return world.is_client and world.network!=null
 
 func reset() -> void:
-	ready = false; history.clear(); visual_shots.clear(); pending_roll = null
+	ready = false; history.clear(); visual_shots.clear(); pending_state.clear(); pending_roll = null
 	fire_left = 0
 	world.player.presentation_offset = Vector3.ZERO
 
@@ -37,13 +38,21 @@ func simulate(frame: Dictionary) -> void:
 	if point.length_squared()>.01: actor.aim = point.normalized()
 	actor.rig.rotation.y = lerp_angle(actor.rig.rotation.y,atan2(-actor.aim.x,-actor.aim.z),.4)
 
+func queue_reconcile(state: Dictionary) -> void:
+	pending_state = state.duplicate(true)
+
 func tick() -> void:
+	if not pending_state.is_empty():
+		var state := pending_state; pending_state = {}
+		reconcile(state)
 	if not enabled() or not ready or world.phase=="ended" or world.player.health.dead: return
-	# Bounded backlog: never let a stalled connection invent more than two seconds of motion.
-	if history.size()>=MAX_HISTORY: return
+	# Bound replay storage while continuing to send the newest intent during packet gaps.
+	if history.size()>=MAX_HISTORY: history.pop_front()
 	var frame: Dictionary = world.network.test_input.duplicate(true) if not world.network.test_input.is_empty() else world.local_input(world.player).duplicate(true)
 	sequence += 1; frame.seq = sequence
-	if pending_roll!=null: frame.roll = pending_roll; pending_roll = null
+	if pending_roll!=null:
+		frame.roll = pending_roll; pending_roll = null
+		world.network.roll_intent(sequence,frame.roll,world.last_scene_revision)
 	history.append(frame)
 	simulate(frame)
 	world.player.replica_motion = Vector2(world.player.velocity.x,world.player.velocity.z).length()/6.3

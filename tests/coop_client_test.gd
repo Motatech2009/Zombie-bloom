@@ -124,7 +124,7 @@ func run() -> void:
 	check(world.client_structures.values().any(func(piece): return piece.piece_index==6 and piece.tier==2 and piece.model.get_node("Visual").get_meta("tier")==2),"new razor-wire type and reinforced material/model replicate to the guest")
 	check(world.airdrops.serial==1 and world.airdrops.coord()==Vector2i(0,-1),"supply timer and remote coordinates replicate to the guest")
 	deadline = Time.get_ticks_msec()+7000
-	while world.sector_coord==Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.airdrops.crate!=null and world.descriptor.risk==4,"client sees the real supply crate and high-risk drop sector")
 	var house: Node3D = world.raid_house(0)
 	check(house!=null and house.guard_total==int(house.data.guards)*8,"guest builds the same house layout and cooperative guard requirement")
@@ -132,14 +132,14 @@ func run() -> void:
 	check(world.sector_coord==Vector2i(0,-1) and world.field_root!=null,"reliable scene revision loads the same generated northern sector")
 	var sector_seed: int = world.descriptor.seed
 	deadline = Time.get_ticks_msec()+7000
-	while world.sector_coord!=Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	while (world.sector_coord!=Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.sector_coord==Vector2i.ZERO and world.core.health.current==600,"return scene revision preserves the shared core state")
 	deadline = Time.get_ticks_msec()+7000
-	while world.sector_coord==Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.sector_coord==Vector2i(0,-1) and world.descriptor.seed==sector_seed and world.sector_remaining(Vector2i(0,-1))>150,"guests receive the same generation and its shared three-minute countdown")
 	check(world.client_loot.values().any(func(pile): return pile.get_meta("contents",{})=={"rifle_ammo":7,"parts":2}) and world.raid_house(0).dead==[0],"partial cache contents and house deaths survive a real network scene reload")
 	deadline = Time.get_ticks_msec()+7000
-	while world.sector_coord!=Vector2i.ZERO and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
+	while (world.sector_coord!=Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.sector_coord==Vector2i.ZERO,"guest returns from the preserved expedition with the same party")
 	print("COOP CLIENT RESULT: %d checks, %d failures" % [checks,failures])
 	link.close_session()

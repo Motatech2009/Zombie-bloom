@@ -1,12 +1,12 @@
 # Validação 0.13 — controles, materiais e resposta de rede
 
-977 verificações locais aprovadas: 15 suítes com 868 verificações e quatro processos ENet com 109. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).
+983 verificações locais aprovadas: 15 suítes com 870 verificações e quatro processos ENet com 113. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).
 
-A nova suíte de 24 verificações cobre analógico flutuante, rotação ao andar e disparar, coleta contextual, qualidade aplicada em tempo real sem resetar inimigos, geometria do menu/barra, movimento durante lacuna de 200 ms sem snapshots, reconciliação, rolamento previsto, feedback de tiro sem mutar munição/vida e interpolação de 100 ms. As suítes móveis anteriores acompanham a nova regra: tocar escolhe o alvo e segurar dispara.
+A nova suíte de 26 verificações cobre analógico flutuante, rotação ao andar e disparar, coleta contextual, qualidade aplicada em tempo real sem resetar inimigos, geometria do menu/barra, movimento durante lacuna de 200 ms sem snapshots, reconciliação, rolamento previsto, feedback de tiro sem mutar munição/vida e interpolação de 100 ms. As suítes móveis anteriores acompanham a nova regra: tocar escolhe o alvo e segurar dispara.
 
 A sessão ENet usa quatro processos reais em loopback, com um convidado usando eventos de toque. O servidor limita o movimento à física, aceita apenas comandos validados e conserva a autoridade de dano e inventário. Os conjuntos lentos e rápidos usam canais separados e compressão. A suíte não certifica rede de operadora, perda real em 4G, nem desempenho no Moto G45/A13.
 
-Na primeira execução remota, o cenário de troca para Tesla excedeu a janela fixa em um convidado, enquanto a execução independente do mesmo commit passou. A barreira de teste agora espera a confirmação de modelo e consumo por todos os participantes antes de o anfitrião avançar. Os mesmos critérios de dano, seleção e munição continuam obrigatórios. O teste de recarga do rolamento usa o contador de ativações confirmado pelo anfitrião, evitando confundir uma correção do temporizador previsto com uma segunda esquiva aceita.
+A recepção de um snapshot apenas agenda a reconciliação. Colisões e replay ocorrem no passo de física. Entradas continuam enviando a intenção mais recente quando há atraso de confirmação. Rolamento usa intenção confiável vinculada à sequência de entrada e contador de ativações confirmado pelo anfitrião. Novas cenas só recebem comandos depois de mapa e estado completo chegarem ao convidado. Os testes de transição aguardam a confirmação de todos os dispositivos antes de avançar a próxima cena, mantendo obrigatórios os critérios de vida, munição e saque.
 
 Inspeção visual em janela 1280×800 com interface móvel 960×540: HUD de combate, pausa, configurações, qualidade detalhada restaurada durante a partida e mochila com controles de fechamento visíveis. Não houve instalação física do novo APK neste ambiente.
 

@@ -6,7 +6,7 @@ CLAY RESULT: 35 checks, 0 failures
 DEFENSE RESULT: 55 checks, 0 failures
 FORTRESS RESULT: 100 checks, 0 failures
 INTERNET RESULT: 31 checks, 0 failures
-MOBILE EXPERIENCE RESULT: 24 checks, 0 failures
+MOBILE EXPERIENCE RESULT: 26 checks, 0 failures
 MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
 TARGETING RESULT: 33 checks, 0 failures
 MOBILE RESULT: 28 checks, 0 failures
@@ -17,7 +17,7 @@ SECTORS RESULT: 75 checks, 0 failures
 SURVIVAL RESULT: 80 checks, 0 failures
 
 host exit 0
-COOP HOST RESULT: 31 checks, 0 failures
+COOP HOST RESULT: 35 checks, 0 failures
 client1 exit 0
 COOP CLIENT RESULT: 25 checks, 0 failures
 client2 exit 0
@@ -25,5 +25,6 @@ COOP CLIENT RESULT: 25 checks, 0 failures
 client3 exit 0
 COOP CLIENT RESULT: 28 checks, 0 failures
 
-Total: 977 checks, 0 failures.
+Total: 983 checks, 0 failures.
 The 200 ms gap is a deterministic prediction test, not a real mobile/internet benchmark.
+Scene readiness uses acknowledgements from all three guests.

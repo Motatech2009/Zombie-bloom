@@ -18,12 +18,23 @@ try:
         processes.append(subprocess.Popen(["godot", "--headless", "--path", str(root), "--script", "res://tests/" + script, *args], stdout=handle, stderr=subprocess.STDOUT))
         if role == "host":
             time.sleep(0.7)
-    deadline = time.monotonic() + 45
+    deadline = time.monotonic() + 75
+    timed_out = False
     for process in processes:
-        process.wait(timeout=max(1, deadline-time.monotonic()))
+        try:
+            process.wait(timeout=max(1, deadline-time.monotonic()))
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            for pending in processes:
+                if pending.poll() is None:
+                    pending.terminate()
+                    pending.wait(timeout=5)
+            break
     for handle in handles:
         handle.close()
-    bad = False
+    bad = timed_out
+    if timed_out:
+        print("FAIL: cooperative test exceeded its bounded scene-acknowledgement deadline")
     for name, process in zip(["host", "client1", "client2", "client3"], processes):
         content = (out / (name + ".log")).read_text()
         print(name, "exit", process.returncode)
