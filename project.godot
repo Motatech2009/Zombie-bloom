@@ -11,9 +11,14 @@ config_version=5
 [application]
 
 config/name="Zombie Bloom"
-config/description="Setores procedurais, cercos automáticos e defesa persistente do Núcleo."
+config/description="Sobrevivência solo e cooperativa: mochila, coleta, construção e cercos progressivos."
+config/version="0.7.0"
 run/main_scene="res://scenes/main/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
+
+[autoload]
+
+Coop="*res://scripts/network/coop_link.gd"
 
 [display]
 

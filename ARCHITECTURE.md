@@ -88,3 +88,12 @@ Relógio de sobrevivência conta preparação e combate ativos; pausas e escolha
 ## Desempenho
 
 Navegação recalculada a cada 0,5–0,85 s, distribuída entre inimigos. Materiais reutilizados. Limites de 55 inimigos vivos, 24 defesas, 80 efeitos e oito vozes de áudio. As cinco ondas somam 127 inimigos. Objetos transitórios são liberados; sem pooling prematuro. FPS e requisitos mínimos não foram medidos em hardware de destino.
+
+
+## Sobrevivência 0.7
+
+`SurvivalWorld` estende o mundo procedural e injeta fábricas de jogador, arma, construção, ondas e HUD. `ItemBag` mantém 18 espaços com validação e operações conservativas. Coleta por canalização e transações de depósito são autoritativas; construção consulta apenas estoque do Núcleo e cota compartilhada. Saves v4 estendem a validação/migração v3.
+
+`Coop` é singleton ENet (até três convidados), com RPC de comandos confiáveis, input em canal separado e snapshots de estado a 10 Hz. Servidor valida remetente, tipos, finitude, frequência, proximidade, fase, saldo e capacidade; cliente renderiza proxies e transmite intenção. Descritor de cenário via RPC confiável por revisão; snapshots incompatíveis são descartados até a cena correta chegar. O grupo ocupa uma única região procedural e mantém a base física. Perfis individuais são persistidos pelo anfitrião com identidade local de reconexão; não há autenticação central ou migração de host.
+
+`SurvivalEnemy` acrescenta três variantes e poderes com aviso, proteção temporária e fúria. Avisos são incluídos na replicação de hazards. `enemy_bar.gd` projeta a posição 3D em controles do HUD para manter tamanho legível em pixels; libera os controles ao sair da árvore e mantém os modais acima das barras.

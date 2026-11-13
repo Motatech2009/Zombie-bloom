@@ -1,0 +1,83 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: bag starts with eighteen empty physical slots
+PASS: materials split across capped stacks
+PASS: failed removal does not partially spend inventory
+PASS: removal clears spent stacks
+PASS: a bag carries at most one gun of each type
+PASS: belt and backpack slots can be exchanged with bounds checks
+PASS: bag survives a JSON round trip
+PASS: invalid restore is atomic
+PASS: full bag accepts only eighteen capped stacks
+PASS: a full bag rejects another item without deleting it
+PASS: only nine hotbar slots are selectable
+PASS: fractional item quantities are invalid
+PASS: unknown item IDs are invalid
+PASS: initial depot is scarcer than the previous arena
+PASS: starter weapon and finite reserve occupy real slots
+PASS: survival weapon initializes its full inherited arsenal
+PASS: holding gather briefly does not grant resources instantly
+PASS: one full gather transfers only four units
+PASS: field loot remains in the bag instead of paying construction immediately
+PASS: moving cancels gathering without taking the next batch
+PASS: damage interrupts gathering
+PASS: nearby hostiles block safe gathering
+PASS: a full bag leaves uncollected resource quantities on the ground
+PASS: repeated manual collection conserves the remaining pile
+PASS: deposit is rejected when far from the core
+PASS: core unloading also requires uninterrupted time
+PASS: finished unloading credits the shared core depot exactly once
+PASS: near-core withdrawal moves available materials back into the bag
+PASS: selected inventory stack can be stored at the core
+PASS: remote depot withdrawal is rejected
+PASS: empty pistol begins reload from carried reserve
+PASS: reload consumes exactly the actual rounds transferred
+PASS: switching to an item cancels reload without spending reserve
+PASS: selected grenade is not treated as a gun
+PASS: empty reserve cannot generate ammunition
+PASS: storing a loaded gun unloads its rounds into the depot
+PASS: withdrawing a stored gun does not regenerate its magazine
+PASS: dropping a gun transfers ownership of loaded rounds to the pile
+PASS: picking up a dropped gun preserves its five loaded rounds
+PASS: trader purchase places the weapon into the physical bag
+PASS: duplicate weapon purchase cannot spend twice
+PASS: full-bag shop purchase is atomic
+PASS: first preparation permits six placed defenses for the whole team
+PASS: valid placement consumes quota 1
+PASS: valid placement consumes quota 2
+PASS: valid placement consumes quota 3
+PASS: valid placement consumes quota 4
+PASS: valid placement consumes quota 5
+PASS: valid placement consumes quota 6
+PASS: seventh placement is blocked without spending resources
+PASS: dismantling does not refund the wave placement budget
+PASS: surviving a wave renews the team construction budget
+PASS: construction allowance grows but caps at twelve per preparation
+PASS: host creates a second authoritative survivor
+PASS: two players double total population
+PASS: three players quadruple population
+PASS: four players multiply population by eight
+PASS: fifth player is rejected
+PASS: one downed teammate does not end an active cooperative game
+PASS: profile keeps zero health instead of healing on reconnect
+PASS: restoring a downed profile preserves the revival requirement
+PASS: holding E spends a medkit and revives the nearby teammate
+PASS: leaving reduces future population back to solo
+PASS: later hordes introduce exploding, summoning and healing enemies
+PASS: boss receives the extra survival durability multiplier
+PASS: boss attack telegraphs its damage area before detonation
+PASS: remote snapshots include the boss warning zone
+PASS: boss power damages nearby survivor and starts temporary armor
+PASS: boss power summons a real hound
+PASS: temporary boss armor reduces incoming damage
+PASS: boss enters rage at low health
+PASS: screamer summons two separate hounds
+PASS: regenerator heals a wounded nearby infected
+PASS: exploding infected damages nearby survivors on death
+PASS: survival v4 checkpoint validates after JSON serialization
+PASS: snapshot restores physical inventory and spent construction budget
+PASS: v3 saves migrate to bags without mutating the source
+PASS: corrupt construction budget is rejected
+PASS: corrupt bag rejects the whole checkpoint
+PASS: inventory has eighteen slots, nine belt buttons, and keeps time running
+SURVIVAL RESULT: 80 checks, 0 failures

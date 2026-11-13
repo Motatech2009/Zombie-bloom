@@ -54,16 +54,16 @@ func _ready() -> void:
 	core = CORE_SCENE.instantiate()
 	core.world = self
 	base_root.add_child(core)
-	player = PLAYER_SCENE.instantiate()
+	player = make_player()
 	player.weapons.free()
-	player.weapons = load("res://scripts/campaign/campaign_weapons.gd").new()
+	player.weapons = weapon_script().new()
 	player.world = self
 	player.position = Vector3(3.8,0,4)
 	add_child(player)
 	player.weapons.owned.assign([true,false,false,false,false])
 	player.weapons.cooldown = .4
 	builder.free()
-	builder = load("res://scripts/campaign/campaign_build.gd").new()
+	builder = builder_script().new()
 	builder.world = self
 	add_child(builder)
 	add_child(camera)
@@ -81,7 +81,7 @@ func _ready() -> void:
 	for data in CampaignData.AREAS: areas.append({"dead":[],"cleared":false,"caches":[]})
 	create_vendor()
 	create_travel_markers()
-	for pos in [Vector3(7,0,-4),Vector3(-7,0,4),Vector3(-5,0,-7),Vector3(7,0,7)]: spawn_pickup(pos,0,15)
+	create_starting_loot()
 	if resume_requested:
 		resume_requested = false
 		load_checkpoint()
@@ -633,3 +633,15 @@ func create_travel_markers() -> void:
 	sign.font_size = 25
 	sign.position = exit_pos+Vector3(0,2,0)
 	sign.text = "ROTAS DE COLETA\nM / ÁREAS"
+
+func make_player() -> CharacterBody3D:
+	return PLAYER_SCENE.instantiate()
+
+func weapon_script() -> Script:
+	return load("res://scripts/campaign/campaign_weapons.gd")
+
+func builder_script() -> Script:
+	return load("res://scripts/campaign/campaign_build.gd")
+
+func create_starting_loot() -> void:
+	for pos in [Vector3(7,0,-4),Vector3(-7,0,4),Vector3(-5,0,-7),Vector3(7,0,7)]: spawn_pickup(pos,0,15)

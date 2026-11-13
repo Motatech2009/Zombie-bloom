@@ -55,9 +55,13 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_right", 58)
 	margin.add_theme_constant_override("margin_top", 38)
 	margin.add_theme_constant_override("margin_bottom", 24)
-	content = UI.vbox(margin, 7)
+	var menu_scroll := ScrollContainer.new()
+	margin.add_child(menu_scroll)
+	menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content = UI.vbox(menu_scroll,7)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	show_main()
-	var footer := UI.label(root, "GODOT 4.6   /   SINGLE-PLAYER   /   OFFLINE", 13, Color("c1d2c5"))
+	var footer := UI.label(root, "GODOT 4.6   /   SOLO + COOPERATIVO", 13, Color("c1d2c5"))
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	footer.position += Vector2(-440, -35)
 	if "--smoke-menu" in OS.get_cmdline_user_args():
@@ -72,8 +76,8 @@ func show_main() -> void:
 	clear_content()
 	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
 	UI.spacer(content, 12)
-	UI.label(content, "ZOMBIE", 62)
-	var bloom := UI.label(content, "BLOOM.", 78, UI.LIME)
+	UI.label(content, "ZOMBIE", 50)
+	var bloom := UI.label(content, "BLOOM.", 62, UI.LIME)
 	bloom.add_theme_constant_override("outline_size", 0)
 	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
 	UI.spacer(content, 4)
@@ -82,15 +86,16 @@ func show_main() -> void:
 	UI.spacer(content, 6)
 	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
 	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
-	if FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+	if FileAccess.file_exists("user://zombie_bloom_campaign_v4.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
 		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
-	if FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
+	if FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
 		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
+	UI.button(content,"JOGAR COM AMIGOS",show_multiplayer)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "SETORES 0.6   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "SOBREVIVÊNCIA 0.7   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -102,7 +107,7 @@ func choose_mode(mode: String) -> void:
 
 func start_game() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
-	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v3.json"):
+	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v4.json"):
 		clear_content()
 		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
 		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
@@ -115,16 +120,16 @@ Quer começar outro refúgio?",20,UI.MUTED)
 
 func begin_campaign() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
-	get_tree().change_scene_to_file("res://scenes/sectors/RoamingWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
 
 func continue_campaign() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = true
-	get_tree().change_scene_to_file("res://scenes/sectors/RoamingWorld.tscn")
+	get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
 
 func show_help() -> void:
 	clear_content()
 	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
-	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique disparar · R recarregar · 1–5 armas\nB construir · Q girar · 1–6 peças na prévia\nE reparar / recolher / atravessar a saída\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa de setores · TAB arsenal\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nArmas escondidas são raras; busque as caixas.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nVolte antes do alarme ou enfrente a distância.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–6 peças na prévia\nSegure E coletar / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nColetar leva tempo. Leve materiais ao Núcleo.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(content,"VOLTAR",show_main)
 
@@ -140,3 +145,44 @@ func _process(delta: float) -> void:
 	clock += delta
 	for i in range(actors.size()):
 		VisualFactory.animate_human(actors[i], clock + i, .25, 0, false)
+
+func show_multiplayer() -> void:
+	clear_content()
+	UI.label(content,"COOPERATIVO / ATÉ 4",28,UI.LIME)
+	UI.label(content,"Conexão direta. O grupo viaja junto.
+2 jogadores = x2; 3 = x4; 4 = x8 infectados.",17,UI.MUTED)
+	var name_field := LineEdit.new()
+	name_field.placeholder_text = "Seu nome"
+	name_field.text = "Sobrevivente"
+	name_field.max_length = 16
+	content.add_child(name_field)
+	var address := LineEdit.new()
+	address.placeholder_text = "IP do anfitrião"
+	address.text = "127.0.0.1"
+	content.add_child(address)
+	var port := SpinBox.new()
+	port.min_value = 1024
+	port.max_value = 65535
+	port.value = 24567
+	content.add_child(port)
+	var mode_picker := OptionButton.new()
+	mode_picker.add_item("Defesa infinita")
+	mode_picker.add_item("Campanha de 20 cercos")
+	content.add_child(mode_picker)
+	var resume_check := CheckButton.new()
+	resume_check.text = "Continuar o refúgio salvo deste modo"
+	content.add_child(resume_check)
+	var status := UI.label(content,"LAN: use o IP local. Internet: o anfitrião precisa receber UDP na porta escolhida.",15,UI.MUTED)
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var coop := get_node("/root/Coop")
+	var on_status := func(message: String):
+		if is_instance_valid(status): status.text = message
+	if not coop.status_changed.is_connected(on_status): coop.status_changed.connect(on_status)
+	UI.button(content,"CRIAR SALA",func():
+		load("res://scripts/campaign/campaign_world.gd").next_mode = "endless" if mode_picker.selected==0 else "campaign"
+		load("res://scripts/campaign/campaign_world.gd").resume_requested = resume_check.button_pressed
+		coop.nickname = name_field.text.strip_edges().left(16)
+		if coop.host_session(int(port.value))==OK: get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+	,true)
+	UI.button(content,"ENTRAR NO IP",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text))
+	UI.button(content,"CANCELAR / VOLTAR",func(): coop.close_session(); show_main())

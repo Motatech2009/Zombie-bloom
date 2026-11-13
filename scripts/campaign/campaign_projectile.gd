@@ -10,6 +10,7 @@ var elapsed: float = 0
 var model: Node3D
 var area_id: int = -1
 var region_key: String = ""
+var owner_peer: int = 1
 
 func _ready() -> void:
 	add_to_group("campaign_projectiles")
@@ -40,5 +41,6 @@ func _physics_process(delta: float) -> void:
 	if t>=1 or not hit.is_empty():
 		if not hit.is_empty(): position = hit.position
 		if kind=="acid": world.spawn_acid(position,radius,damage)
+		elif world.has_method("explode_from"): world.explode_from(position,radius,damage,owner_peer)
 		else: world.explode(position,radius,damage)
 		queue_free()

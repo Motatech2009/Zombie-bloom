@@ -1,3 +1,17 @@
+# Validação da Sobrevivência 0.7 — 2026-11-13
+
+**469 verificações aprovadas localmente:** 342 anteriores, 80 da nova suíte de sobrevivência e 47 de cooperativo (17 do servidor e dez por convidado). Godot 4.6.3 oficial, Linux. Logs em `docs/survival-results.txt`, `docs/coop-results.txt` e nos quatro arquivos de regressão.
+
+A nova suíte cobre conservação de pilhas e limites, rejeição atômica de bolsa inválida, coleta em lotes, tempo, cancelamento por movimento/dano/ameaça, excedente em bolsa cheia, depósito por proximidade e duração, retirada/armazenamento, munição finita e cancelamento de recarga, transferência do pente ao guardar/descartar, compra sem débito em bolsa cheia, seis colocações reais e bloqueio da sétima sem cobrança, cota não devolvida pelo desmonte e renovada após cerco, escala x1/x2/x4/x8, limite de participantes, queda/reanimação com kit, preservação de estado caído em perfil, poderes de chefe, telegráfico replicado, armadura/fúria/invocações, Berrador/Regenerador/Estourador, v4/migração v3 e UI de 18 espaços.
+
+`tests/run_coop_test.py` inicia **quatro processos Godot reais** conectados por ENet/UDP em loopback. Confere entrada dos três convidados, movimento simulado no anfitrião, tiros reais matando inimigos, munição consumida no servidor e replicada, multiplicador exato, comandos indevidos sem mutação, transações simultâneas de depósito com conservação do saldo, carregamento de setor procedural por revisão de cena e retorno ao mesmo Núcleo. Desconexões reduzem a escala e removem avatares. Testes usam identidades locais distintas, porta de fixture 24577 e não gravam saves de jogo.
+
+Revisão gráfica em janela 1280×800, Mesa llvmpipe: tela de sala, criação de anfitrião, HUD com cota e nove botões, mochila com depósito e quantidades, troca efetiva de pistola para o quinto espaço e seleção pela tecla 5. A coleta segurando E por 3,1 segundos colocou quatro madeiras na bolsa, mantendo o estoque do Núcleo em seis. Fixture visual conferiu barras constantes em pixels, fração de vida e chefe nomeado. As barras pequenas em texto 3D foram substituídas após essa inspeção. `tests/survival_preview.gd` é somente uma fixture de revisão, excluída do export e sem gravação de checkpoint.
+
+As cinco suítes locais passaram sem erro de script, assim como os quatro processos de rede. As regressões de campanha usam cenas anteriores; não representam uma campanha humana completa nesta versão. O ambiente não tem saída ALSA, então a revisão gráfica usa driver de áudio dummy. O executável Windows é exportado pelo CI; seu resultado deve ser confirmado no commit entregue. Internet entre casas, reconexões sob perda de pacotes, desempenho no PC alvo e balanceamento de sessões longas permanecem sem certificação.
+
+---
+
 # Validação dos Setores 0.6 — 2026-11-12
 
 **342 verificações aprovadas:** 85 do MVP, 127 da campanha anterior, 55 de combate/construção e 75 novas de setores/cercos. Godot 4.6.3 oficial, Linux. Logs atuais em docs/integration-results.txt, campaign-results.txt, defense-results.txt e sectors-results.txt.
