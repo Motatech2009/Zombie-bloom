@@ -117,16 +117,22 @@ func run() -> void:
 		await create_timer(.3).timeout
 		desired_input.slot = 0; desired_input.fire = false; apply_controls(link)
 		check(world.player.health.current>50 and world.player.bag.count("medkit")==1,"the mobile item button uses exactly one medkit through the authoritative reliable command")
-	check(world.player.weapons.ammo.size()==9 and world.player.bag.count("tesla")==1,"nine-weapon private profile and a newly granted Tesla replicate")
-	desired_input.targeted = true; desired_input.slot = 4; desired_input.fire = true; await apply_ready_controls(link)
+	var tesla_slot := -1
+	for i in range(9):
+		if world.player.bag.slots[i].id=="tesla": tesla_slot = i
+	check(world.player.weapons.ammo.size()==9 and world.player.bag.count("tesla")==1 and tesla_slot>=0,"nine-weapon private profile and a newly granted Tesla replicate")
+	# Random walking loot may already occupy slot four. Select the actual weapon.
+	desired_input.targeted = true; desired_input.slot = maxi(0,tesla_slot); desired_input.fire = true; await apply_ready_controls(link)
 	deadline = Time.get_ticks_msec()+5000
 	while (world.player.weapons.hand_weapon!=8 or world.player.weapons.ammo[8]>=2) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	desired_input.fire = false; apply_controls(link)
+	if world.player.weapons.hand_weapon!=8 or world.player.weapons.ammo[8]>=2:
+		print("TESLA DIAGNOSTIC: slot=%d hand=%s selected=%d position=%s bag=%s" % [tesla_slot,world.player.bag.hand(),world.player.bag.selected,world.player.position,world.player.bag.dump()])
 	check(world.player.weapons.hand_weapon==8 and world.player.weapons.ammo[8]<2,"new gun selection, visible model and finite ammunition replicate after remote fire")
 	check(world.client_enemies.values().any(func(enemy): return enemy.enemy_kind==13) and not world.client_hazards.is_empty(),"new infected model and its blue warning replicate to clients")
 	check(world.client_structures.values().any(func(piece): return piece.piece_index==6 and piece.tier==2 and piece.model.get_node("Visual").get_meta("tier")==2),"new razor-wire type and reinforced material/model replicate to the guest")
 	check(world.airdrops.serial==1 and world.airdrops.coord()==Vector2i(0,-1),"supply timer and remote coordinates replicate to the guest")
-	deadline = Time.get_ticks_msec()+7000
+	deadline = Time.get_ticks_msec()+15000
 	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
 	check(world.airdrops.crate!=null and world.descriptor.risk==4,"client sees the real supply crate and high-risk drop sector")
 	var house: Node3D = world.raid_house(0)

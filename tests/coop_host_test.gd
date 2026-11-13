@@ -68,6 +68,8 @@ func run() -> void:
 		actor.position = Vector3(0,0,3) if actor.peer_id==1 else Vector3(2.5,0,-2+guest_position*2)
 		if actor.peer_id!=1:
 			guest_position += 1
+			# Ensure incidental loot occupies a slot before the new gun is granted.
+			actor.bag.add("parts",1)
 			actor.bag.add("tesla",1)
 			actor.weapons.ammo[8] = 2
 			if actor.display_name=="Amigo 3": actor.health.current = 50
