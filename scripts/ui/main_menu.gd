@@ -6,6 +6,9 @@ var sun: DirectionalLight3D
 var camera: Camera3D
 var actors: Array[Node3D] = []
 var clock: float = 0
+var menu_panel: PanelContainer
+var menu_margin: MarginContainer
+var home := true
 
 func _ready() -> void:
 	var music := MusicDirector.new(); add_child(music)
@@ -48,20 +51,13 @@ func _ready() -> void:
 	UI.fill(dim)
 	dim.color = Color(.018, .045, .06, .35)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var left := PanelContainer.new()
-	root.add_child(left)
-	left.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	left.offset_right = 610
-	if MobilePlatform.enabled():
-		left.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		left.offset_left = 8; left.offset_right = -8; left.offset_top = 8; left.offset_bottom = -8
-	left.add_theme_stylebox_override("panel", UI.style(Color(.025, .07, .09, .94), Color("263c41"), 0))
-	var margin := MarginContainer.new()
-	left.add_child(margin)
-	margin.add_theme_constant_override("margin_left", 28 if MobilePlatform.enabled() else 58)
-	margin.add_theme_constant_override("margin_right", 28 if MobilePlatform.enabled() else 58)
-	margin.add_theme_constant_override("margin_top", 14 if MobilePlatform.enabled() else 38)
-	margin.add_theme_constant_override("margin_bottom", 24)
+	menu_panel = PanelContainer.new()
+	root.add_child(menu_panel)
+	menu_panel.add_theme_stylebox_override("panel",UI.style(Color(.025,.07,.09,.82),Color(.18,.28,.27,.35),18))
+	menu_margin = MarginContainer.new()
+	menu_panel.add_child(menu_margin)
+	var margin := menu_margin
+	root.resized.connect(layout_menu)
 	var menu_scroll := ScrollContainer.new()
 	margin.add_child(menu_scroll)
 	menu_scroll.scroll_deadzone = 12
@@ -69,44 +65,78 @@ func _ready() -> void:
 	content = UI.vbox(menu_scroll,7)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	show_main()
-	var footer := UI.label(root, "GODOT 4.6   /   SOLO + COOPERATIVO", 13, Color("c1d2c5"))
+	var footer := UI.label(root,"v"+str(ProjectSettings.get_setting("application/config/version","1.0.0-dev")),13,Color("c1d2c5"))
+	footer.name = "VersionLabel"
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	footer.position += Vector2(-440, -35)
+	footer.offset_left = -200; footer.offset_right = -18; footer.offset_top = -32; footer.offset_bottom = -10
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	layout_menu()
 	if "--smoke-menu" in OS.get_cmdline_user_args():
 		get_tree().create_timer(1).timeout.connect(func(): get_tree().quit())
 
 func clear_content() -> void:
+	home = false
+	layout_menu()
 	if content.get_parent() is ScrollContainer: content.get_parent().scroll_vertical = 0
 	for child in content.get_children():
 		content.remove_child(child)
 		child.queue_free()
 
+func layout_menu() -> void:
+	if not is_instance_valid(menu_panel): return
+	var size := root.size
+	var mobile := MobilePlatform.enabled()
+	var width := minf(350 if mobile else 430,size.x*.44) if home else minf(570,size.x-40)
+	menu_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	menu_panel.offset_left = 20 if mobile else 42
+	menu_panel.offset_right = menu_panel.offset_left+width
+	menu_panel.offset_top = 18 if mobile else 42
+	menu_panel.offset_bottom = -44 if mobile else -52
+	for edge in ["left","right"]: menu_margin.add_theme_constant_override("margin_"+edge,18 if mobile else 28)
+	for edge in ["top","bottom"]: menu_margin.add_theme_constant_override("margin_"+edge,14 if mobile else 22)
+
+func menu_button(parent: Node,title: String,callback: Callable,primary: bool = false) -> Button:
+	var button := UI.button(parent,title,callback,primary)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size.y = 46 if MobilePlatform.enabled() else 50
+	button.add_theme_font_size_override("font_size",15 if MobilePlatform.enabled() else 17)
+	for state in ["normal","hover","pressed"]:
+		var color := UI.LIME if primary or state!="normal" else Color(.06,.13,.15,.68)
+		var style := UI.style(color,UI.LIME if primary else Color(.3,.43,.4,.45),8)
+		style.content_margin_top = 9; style.content_margin_bottom = 9; style.content_margin_left = 16
+		button.add_theme_stylebox_override(state,style)
+	return button
+
 func show_main() -> void:
+	clear_content(); home = true; layout_menu()
+	UI.label(content,"MOTA TECH  /  SOBREVIVÊNCIA COOPERATIVA",10,UI.MUTED)
+	UI.label(content,"ZOMBIE",31 if MobilePlatform.enabled() else 45)
+	UI.label(content,"BLOOM.",38 if MobilePlatform.enabled() else 56,UI.LIME)
+	if not MobilePlatform.enabled():
+		UI.label(content,"O mundo acabou. Seu refúgio ainda resiste.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.spacer(content,4)
+	menu_button(content,"JOGAR",show_play,true)
+	menu_button(content,"JOGAR COM AMIGOS",show_multiplayer)
+	menu_button(content,"MINHA CONTA E RANKINGS",show_account)
+	menu_button(content,"CONFIGURAÇÕES",show_settings)
+	var secondary := UI.hbox(content,8)
+	menu_button(secondary,"COMO JOGAR",show_help).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_button(secondary,"SAIR",func(): get_tree().quit())
+
+func show_play() -> void:
 	clear_content()
-	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
-	UI.spacer(content, 12)
-	UI.label(content, "ZOMBIE BLOOM" if MobilePlatform.enabled() else "ZOMBIE",36 if MobilePlatform.enabled() else 50)
-	var bloom := UI.label(content, "BLOOM.", 62, UI.LIME)
-	bloom.add_theme_constant_override("outline_size", 0)
-	if MobilePlatform.enabled(): bloom.hide()
-	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
-	UI.spacer(content, 4)
-	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nSetores imprevisíveis. Cercos automáticos.", 17, UI.MUTED)
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.spacer(content, 6)
-	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
-	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
-	if FileAccess.file_exists("user://zombie_bloom_campaign_v6.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v5.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v4.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
-		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
-	if FileAccess.file_exists("user://zombie_bloom_endless_v6.json") or FileAccess.file_exists("user://zombie_bloom_endless_v5.json") or FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
-		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
-	UI.button(content,"JOGAR COM AMIGOS",show_multiplayer)
-	UI.button(content,"PERFIL / LOGIN / RANKINGS",show_account)
-	UI.button(content, "COMO JOGAR", show_help)
-	UI.button(content, "CONFIGURAÇÕES", show_settings)
-	UI.button(content, "SAIR", func(): get_tree().quit())
-	UI.spacer(content, 4)
-	UI.label(content, "PC + ANDROID 0.15   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content,"SEU PRÓXIMO REFÚGIO",26,UI.LIME)
+	UI.label(content,"Escolha a campanha ou resista por quanto tempo conseguir.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"NOVA CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
+	menu_button(content,"NOVA DEFESA INFINITA",func(): choose_mode("endless"))
+	for mode in ["campaign","endless"]:
+		var selected: String = mode
+		var exists := false
+		for version in ["v6","v5","v4","v3","v2"]:
+			if FileAccess.file_exists("user://zombie_bloom_"+mode+"_"+version+".json"): exists = true
+		if mode=="campaign" and FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"): exists = true
+		if exists: menu_button(content,"CONTINUAR "+("CAMPANHA" if mode=="campaign" else "INFINITO"),func(): resume_mode(selected))
+	menu_button(content,"VOLTAR",show_main)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -210,33 +240,51 @@ func _notification(what: int) -> void:
 
 func show_account() -> void:
 	clear_content()
-	UI.label(content,"PERFIL E RANKINGS",28,UI.LIME)
-	var name_field := LineEdit.new(); name_field.text = Account.nickname; name_field.max_length = 16; content.add_child(name_field)
-	UI.button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
-	var email := LineEdit.new(); email.placeholder_text = "E-mail privado"; content.add_child(email)
+	menu_button(content,"‹ VOLTAR AO MENU",show_main)
+	UI.label(content,"MINHA CONTA",27,UI.LIME)
+	UI.label(content,"Seu progresso, seu nome no ranking.",15,UI.MUTED)
+	var name_field := LineEdit.new(); name_field.text = Account.nickname; name_field.max_length = 16; name_field.placeholder_text = "Apelido público"; content.add_child(name_field)
+	menu_button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
+	var email := LineEdit.new(); email.placeholder_text = "E-mail"; content.add_child(email)
 	var password := LineEdit.new(); password.placeholder_text = "Senha (mínimo 8 caracteres)"; password.secret = true; content.add_child(password)
-	UI.button(content,"ENTRAR",func():
-		var value := password.text; password.clear(); Account.authenticate(email.text,value))
-	UI.button(content,"CRIAR CONTA",func():
-		var value := password.text; password.clear(); Account.authenticate(email.text,value,true))
-	UI.button(content,"SAIR DA CONTA",func(): Account.logout())
-	UI.button(content,"ENVIAR CÓDIGO DE RECUPERAÇÃO",func(): Account.recover(email.text))
-	var code := LineEdit.new(); code.placeholder_text = "Código de recuperação do e-mail"; content.add_child(code)
-	UI.button(content,"TROCAR SENHA COM CÓDIGO",func():
-		var value := password.text; password.clear(); Account.reset_password(email.text,code.text,value))
-	var status_label := UI.label(content,Account.status,16,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var mode := OptionButton.new(); mode.add_item("Campanha"); mode.add_item("Infinito"); content.add_child(mode)
-	var metric := OptionButton.new(); metric.add_item("Abates"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); content.add_child(metric)
-	var page := SpinBox.new(); page.min_value = 1; page.max_value = 1000; content.add_child(page)
-	UI.button(content,"CONSULTAR RANKING",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected],["campaign","endless"][mode.selected],(int(page.value)-1)*25))
-	var results := UI.label(content,"Ranking competitivo pendente de serviço de partidas verificadas. Login não valida pontuações.",16,UI.MUTED); results.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	for field in [name_field,email,password]: field.custom_minimum_size.y = 44
+	var buttons: Array[Button] = []
+	buttons.append(menu_button(content,"ENTRAR",func():
+		var value := password.text; password.clear(); Account.authenticate(email.text,value),true))
+	buttons.append(menu_button(content,"CRIAR CONTA",func():
+		Account.save_nickname(name_field.text)
+		var value := password.text; password.clear(); Account.authenticate(email.text,value,true)))
+	buttons.append(menu_button(content,"ESQUECI MINHA SENHA",func(): Account.recover(email.text)))
+	var logout := menu_button(content,"SAIR DA CONTA",func(): Account.logout())
+	var status_label := UI.label(content,Account.status,15,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var summary := UI.label(content,"",15,UI.LIME); summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"VER RANKINGS",show_rankings)
+	menu_button(content,"VOLTAR",show_main)
 	var refresh := func():
 		if not is_instance_valid(status_label): return
 		status_label.text = Account.status
+		for button in buttons: button.disabled = Account.busy or Account.signed_in() if button!=buttons[2] else Account.busy
+		logout.visible = Account.signed_in(); logout.disabled = Account.busy
+		email.visible = not Account.signed_in(); password.visible = not Account.signed_in()
+		summary.text = "%s · %d abates · %d hordas · %d sucata" % [Account.nickname,Account.local_summary.get("kills",0),Account.local_summary.get("hordes",0),Account.local_summary.get("scrap",0)] if Account.signed_in() else "Jogue como convidado ou entre para registrar seus resultados."
+	refresh.call(); Account.changed.connect(refresh)
+	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
+
+func show_rankings() -> void:
+	clear_content()
+	menu_button(content,"‹ MINHA CONTA",show_account)
+	UI.label(content,"RANKINGS / TOP 25",27,UI.LIME)
+	UI.label(content,"Abates, vitórias e recursos de todas as suas partidas.",15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.custom_minimum_size.y = 44; content.add_child(metric)
+	var consult := menu_button(content,"CONSULTAR RANKING",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected]),true)
+	var status_label := UI.label(content,Account.status,14,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var results := UI.label(content,"Escolha uma categoria e consulte a classificação.",16); results.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"VOLTAR",show_account)
+	var refresh := func():
+		if not is_instance_valid(status_label): return
+		consult.disabled = Account.busy; status_label.text = Account.status
 		results.text = ""
-		for row in Account.rows: results.text += "%s · %s · %s\n" % [row.get("position",""),row.get("nickname",""),row.get("score",0)]
-		if results.text.is_empty(): results.text = "Sem resultados verificados disponíveis. Offline e saves continuam disponíveis."
+		for row in Account.rows: results.text += "%02d   %s   ·   %d\n" % [row.position,row.nickname,row.score]
+		if results.text.is_empty(): results.text = "Nenhum resultado disponível nesta consulta."
 	Account.changed.connect(refresh)
 	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
-	UI.label(content,"Senha e sessão ficam apenas na memória. Entre novamente ao abrir o jogo. O apelido local não vincula saves à conta.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.button(content,"VOLTAR / JOGAR OFFLINE",show_main)

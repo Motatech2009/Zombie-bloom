@@ -1,3 +1,5 @@
+> **Branch de desenvolvimento 1.0:** Firebase, rankings por conta e revisão de menu/loja. Configuração do Firebase real ainda pendente. Veja [RELEASE_1_0.md](RELEASE_1_0.md). A documentação 0.15 abaixo descreve a base histórica; seu adaptador Supabase foi substituído nesta branch.
+
 # Atualização 0.15.0
 
 Preparação progressiva, trilha sombria e integração de contas ainda não ativada. Consulte [ACCOUNTS_015.md](ACCOUNTS_015.md) antes de usar login/rankings. Todos devem atualizar e abrir sala nova (protocolo 15).
