@@ -1,3 +1,5 @@
+> Documento histórico da 0.15. O provedor e o escopo foram substituídos por Firebase e ranking simples na candidata 1.0. Siga [RELEASE_1_0.md](RELEASE_1_0.md) para a configuração atual.
+
 # Zombie Bloom 0.15.0 — preparação progressiva e contas em integração
 
 ## Funcional nesta versão

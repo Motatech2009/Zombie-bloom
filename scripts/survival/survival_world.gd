@@ -14,6 +14,10 @@ var last_scene_revision: int = -1
 var scene_revision: int = 0
 var shot_owner: int = 0
 var records := RunRecords.new()
+var account_run_id := ""
+var account_clock := 0.0
+var account_baseline := false
+var account_identity := ""
 var airdrops := AirdropDirector.new()
 var touch_controls: TouchControls
 var pending_slot: int = -1
@@ -106,6 +110,8 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("bat",1)
 
 func _ready() -> void:
+	account_run_id = Crypto.new().generate_random_bytes(16).hex_encode()
+	account_identity = Account.user_id
 	regions.world = self
 	prediction.world = self
 	MobilePlatform.configure(get_tree().root)
@@ -114,7 +120,9 @@ func _ready() -> void:
 	airdrops.world = self
 	network = get_node_or_null("/root/Coop")
 	is_client = network!=null and network.mode=="client"
-	if is_client: checkpoint_enabled = false
+	if is_client:
+		checkpoint_enabled = false
+		account_baseline = true
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
@@ -158,6 +166,10 @@ func local_input(actor: Node3D) -> Dictionary:
 	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":pending_slot if is_client and pending_slot>=0 else actor.bag.selected}
 
 func _process(delta: float) -> void:
+	account_clock -= delta
+	if account_clock<=0:
+		account_clock = 1
+		sync_account_progress()
 	if is_client:
 		for actor in avatars.values():
 			if actor!=player or not prediction.enabled():
@@ -267,6 +279,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 			if data.get("direction") is int: result = step_sector(data.direction)
 		"buy":
 			if data.get("weapon") is int: result = buy_weapon(data.weapon)
+		"tune": result = tune_weapon()
 		"service":
 			if data.get("id") is String: result = shop_service(data.id)
 		"swap":
@@ -407,7 +420,10 @@ func enemy_defeated(enemy: Node3D) -> void:
 		regions.run_in(coord_at(enemy.global_position),func(): enemy_defeated(enemy)); return
 	if enemy.get_meta("recorded_death",false): return
 	enemy.set_meta("recorded_death",true)
-	records.credit(record_identity(int(enemy.get_meta("killer_peer",0))),"kills",1)
+	var killer := int(enemy.get_meta("killer_peer",0))
+	if killer==0:
+		for peer in avatars: records.credit(record_identity(peer),"kills",1)
+	else: records.credit(record_identity(killer),"kills",1)
 	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
 		enemy.set_meta("boss_rewarded",true)
 		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
@@ -734,9 +750,11 @@ func choose_team_upgrade(index: int) -> bool:
 	return result
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
+	return {"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
 
 func valid_profile(data: Variant) -> bool:
+	if data is Dictionary and data.has("tuning"):
+		if not data.tuning is Array or data.tuning.size()!=9 or not data.tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
 	for value in data.ammo:
 		if not bounded(value,0,100000): return false
@@ -745,6 +763,7 @@ func valid_profile(data: Variant) -> bool:
 	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
 
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
+	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
 	actor.bag.restore(data.bag)
 	actor.weapons.ammo.assign(data.ammo)
 	actor.weapons.damage_multiplier = data.gun[0]
@@ -778,8 +797,10 @@ func snapshot() -> Dictionary:
 	data.horde_interval = HORDE_INTERVAL
 	data.preparation_policy = 2
 	data.records = records.dump()
+	data.account_run_id = account_run_id
 	data.airdrops = airdrops.dump()
 	data.sector_memory = sector_memory.duplicate(true)
+	data.weapon_tuning = player.weapons.tuning.duplicate()
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
 	data.built = built_this_round
@@ -792,6 +813,8 @@ func snapshot() -> Dictionary:
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("weapon_tuning"):
+		if not data.weapon_tuning is Array or data.weapon_tuning.size()!=9 or not data.weapon_tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if data is Dictionary and data.has("records") and not RunRecords.valid(data.records): return false
 	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
 	if not AirdropDirector.valid(data.get("airdrops")): return false
@@ -857,6 +880,9 @@ func apply_snapshot(data: Dictionary) -> void:
 		data.horde_left = minf(float(data.horde_left),preparation_seconds(int(data.get("wave",0))+1))
 	super.apply_snapshot(data)
 	records.restore(data.get("records",{}))
+	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
+	account_baseline = true
+	player.weapons.tuning.assign(data.get("weapon_tuning",[0,0,0,0,0,0,0,0,0]))
 	player.bag.restore(data.bag)
 	player.weapons.sync_hand()
 	depot_items = data.depot_items.duplicate()
@@ -1000,7 +1026,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
-		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"cast":enemy.windup})
+		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup})
 	var structures: Array = []
 	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
@@ -1019,10 +1045,12 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
-	if not data.get("run_totals",{}).is_empty(): records.totals = data.run_totals.duplicate(true)
+	if not data.get("run_totals",{}).is_empty():
+		records.totals = data.run_totals.duplicate(true)
+		account_run_id = str(data.get("account_run_id",account_run_id))
 	if not is_client or int(data.rev)!=last_scene_revision: return
 	if player.peer_id!=own_id:
 		avatars.erase(1)
@@ -1135,6 +1163,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		enemy.health.maximum = state.max
 		enemy.replica_motion = float(state.get("motion",0))
 		enemy.windup = float(state.get("cast",0))
+		enemy.melee_left = float(state.get("melee",0)); enemy.recoil = float(state.get("recoil",0)); enemy.rush_left = float(state.get("rush",0))
 		enemy.health.current = state.hp
 		enemy.spec.title = state.title
 		enemy.label.hide()
@@ -1400,3 +1429,31 @@ func record_victory(wave: int) -> void:
 	for peer in avatars:
 		if not avatars[peer].health.dead: participants.append(record_identity(peer))
 	records.victory(wave,participants)
+	sync_account_progress()
+	Account.flush_progress()
+
+func sync_account_progress() -> void:
+	if not is_instance_valid(player) or not Account.signed_in() or (is_client and not client_scene_ready): return
+	if account_identity!=Account.user_id:
+		account_identity = Account.user_id; account_baseline = true
+	var identity := record_identity(player.peer_id)
+	# Late login and loaded legacy saves start at the current totals.
+	var key := account_run_id+":"+identity
+	Account.record_progress(key,records.totals.get(identity,{}),account_baseline)
+	account_baseline = false
+
+func _exit_tree() -> void:
+	sync_account_progress()
+	Account.persist()
+	Account.flush_progress()
+	super._exit_tree()
+
+func tune_weapon() -> bool:
+	if is_client or not local_mobile_context().get("shop",false): return false
+	var index: int = player.weapons.hand_weapon
+	if index<0 or player.weapons.tuning[index]>=3: return false
+	var tier: int = player.weapons.tuning[index]
+	if not pay({"scrap":[80,180,360][tier],"parts":[2,5,10][tier]}): return false
+	player.weapons.tuning[index] += 1
+	notify("OFICINA · "+Arsenal.WEAPONS[index].title+" melhorada. Dano, cadência, capacidade e recarga aprimorados.")
+	return true

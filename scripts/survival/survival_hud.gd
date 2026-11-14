@@ -18,6 +18,7 @@ var airdrop_map_info: Label
 var party_map_info: Label
 var map_focus: Variant = null
 var drop_map_stamp: String = ""
+var desktop_shop: ShopBrowser
 var roll_text: Label
 var roll_bar: ProgressBar
 
@@ -151,6 +152,7 @@ func create_bottom() -> void:
 		text.add_theme_constant_override("outline_size",3)
 
 func _process(delta: float) -> void:
+	if mode=="shop" and desktop_shop!=null: desktop_shop.refresh()
 	choice_cooldown = maxf(0,choice_cooldown-delta)
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
 	super._process(delta)
@@ -265,29 +267,8 @@ func show_equipment() -> void:
 	show_inventory()
 
 func show_shop() -> void:
-	var box := open_modal("shop",860)
-	UI.label(box,"BENTO / EQUIPAMENTOS E MUNIÇÃO",27,UI.LIME)
-	UI.label(box,"Estoque do Núcleo: %d sucata · compras entram na bolsa se couberem." % world.resources.scrap,16,UI.MUTED)
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 380
-	box.add_child(scroll)
-	var list := UI.vbox(scroll,7)
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for i in range(1,Arsenal.WEAPONS.size()):
-		var index := i
-		var button := UI.button(list,"%s / %d sucata" % [Arsenal.WEAPONS[i].title,Arsenal.PRICES[i]],func(): world.send_action("buy",{"weapon":index}))
-		button.icon = ItemIcons.get_icon(ItemBag.WEAPON_IDS[i])
-		button.expand_icon = true; button.add_theme_constant_override("icon_max_width",48)
-		button.tooltip_text = Arsenal.DESCRIPTIONS[i]
-		UI.label(list,Arsenal.DESCRIPTIONS[i],12,UI.MUTED)
-		button.disabled = world.player.bag.count(ItemBag.WEAPON_IDS[i])>0
-	for item in Arsenal.PACKS:
-		var id: String = item
-		var entry: Array = Arsenal.PACKS[id]
-		var button := UI.button(list,"%d %s / %d sucata" % [entry[0],ItemBag.TITLES[id],entry[1]],func(): world.send_action("service",{"id":id}))
-		button.icon = ItemIcons.get_icon(id); button.expand_icon = true; button.add_theme_constant_override("icon_max_width",38)
-
-	UI.button(box,"VOLTAR",close_modal,true)
+	desktop_shop = ShopBrowser.new()
+	desktop_shop.show_in(self)
 
 func request_upgrade() -> void:
 	if choice_cooldown>0: return
@@ -444,8 +425,27 @@ func party_locations() -> String:
 func show_run_records() -> void:
 	if not mode.is_empty(): return
 	var box := open_modal("records",700)
-	UI.label(box,"ESTATÍSTICAS DESTE SAVE · NÃO VERIFICADAS",20,UI.LIME)
+	UI.label(box,"ESTATÍSTICAS DESTE REFÚGIO",20,UI.LIME)
 	for identity in world.records.totals:
 		var row: Dictionary = world.records.totals[identity]
 		UI.label(box,"%s: %d abates · %d hordas · %d sucata" % [identity,row.kills,row.hordes,row.scrap],16)
+	UI.button(box,"FECHAR",close_modal)
+
+func show_weapon_workshop() -> void:
+	close_modal()
+	var box := open_modal("workshop",650)
+	UI.label(box,"OFICINA DO BENTO",26,UI.LIME)
+	var index: int = world.player.weapons.hand_weapon
+	if index<0:
+		UI.label(box,"Equipe uma arma de fogo para aprimorá-la.",17)
+	else:
+		var tier: int = world.player.weapons.tuning[index]
+		UI.label(box,Arsenal.WEAPONS[index].title+" · "+["Original","Reforçada","Especialista","Obra-prima"][tier],21)
+		UI.label(box,"Cada nível: +15% dano, +8% cadência, +10% capacidade e recarga 8% mais rápida.
+A melhoria pertence a esta arma e fica salva neste refúgio.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if tier<3:
+			var cost := {"scrap":[80,180,360][tier],"parts":[2,5,10][tier]}
+			var buy := UI.button(box,"MELHORAR · "+CampaignData.cost_text(cost),func(): world.send_action("tune",{}); close_modal())
+			buy.disabled = not world.can_pay(cost) or not world.local_mobile_context().get("shop",false)
+		else: UI.label(box,"MELHORIA MÁXIMA",18,UI.LIME)
 	UI.button(box,"FECHAR",close_modal)
