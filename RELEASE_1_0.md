@@ -52,6 +52,8 @@ O provisionamento real e sua verificação permanecem pendentes. Os emuladores u
 
 ## Verificação
 
+A candidata passou no [CI de 14/11/2026](https://github.com/Motatech2009/Zombie-bloom/actions/runs/43604055944): 1.206 verificações locais/integradas e 14 nos emuladores Firebase, totalizando 1.220. Exportações Windows e Android, assinatura do APK e quatro renders de interface concluídos. O projeto Firebase real permanece pendente.
+
 - `tests/account_tests.gd`: respostas simuladas, falha de rede, resposta perdida, progresso durante envio, renovação de token, cache e formulários.
 - `tests/account_world_tests.gd`: ligação das estatísticas ao jogo, troca de conta, save restaurado, autoria de convidado e compra real na loja do PC.
 - `tests/firebase_emulator_test.gd`: HTTP real contra Authentication/Firestore emulados com as regras do repositório, contas distintas, contadores, consultas limitadas e negação de acesso cruzado. Executado pelo CI; não confundir com teste no projeto de produção.

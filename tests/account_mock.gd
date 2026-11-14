@@ -12,7 +12,7 @@ func _ready() -> void: set_process(false)
 func request_json(path: String,_method: int,payload: Dictionary = {},_form: bool = false) -> Dictionary:
 	paths.append(path); payloads.append(payload.duplicate(true))
 	await get_tree().process_frame
-	if not writes_during_request.is_empty():
+	if path.ends_with(":commit") and not writes_during_request.is_empty():
 		record_progress("active",writes_during_request); writes_during_request.clear()
 	if not replies.is_empty(): return replies.pop_front()
 	if transport_failure: return {"ok":false,"code":0,"data":{}}
