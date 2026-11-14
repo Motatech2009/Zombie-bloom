@@ -32,7 +32,7 @@ A configuração pública fornecida pelo usuário foi incluída. O provisionamen
 ## Operações do banco
 
 - Sem listeners, Analytics, gravação por abate, polling do ranking ou consultas sem limite.
-- Contadores acumulam em memória e em arquivo local por conta/aparelho. Nenhuma senha, ID token ou refresh token é persistido. É preciso entrar novamente ao reabrir o jogo.
+- Contadores acumulam em memória e em arquivo local por conta/aparelho. Senha e ID token ficam apenas na memória. A partir da 1.0.0-dev.3, a sessão é lembrada neste aparelho por refresh token em arquivo criptografado com chave aleatória local. Ao reabrir, o jogo renova o acesso automaticamente; falhas de rede preservam a sessão e o progresso pendente. “Sair da conta” apaga a sessão lembrada. A chave fica na mesma pasta privada do aplicativo: não é um cofre do sistema e não protege contra acesso completo ao aparelho.
 - Flush a cada 120 s de sessão, ao concluir horda e ao sair da partida. Sem diferenças: **zero leituras e zero escritas**.
 - Cada lote com diferenças faz **1 leitura** do checkpoint privado do aparelho e um commit atômico com **2 escritas**: checkpoint e incremento dos três totais públicos.
 - O checkpoint usa precondição `updateTime`/`exists`; se o servidor aceitar e a resposta se perder, a nova tentativa lê o checkpoint e não incrementa novamente.
@@ -55,6 +55,7 @@ A configuração pública fornecida pelo usuário foi incluída. O provisionamen
 
 A candidata passou no [CI de 14/11/2026](https://github.com/Motatech2009/Zombie-bloom/actions/runs/43604055944): 1.206 verificações locais/integradas e 14 nos emuladores Firebase, totalizando 1.220. Exportações Windows e Android, assinatura do APK e quatro renders de interface concluídos. O projeto Firebase real permanece pendente.
 
+- `tests/session_tests.gd`: 16 verificações de persistência, restauração offline, renovação, rotação, revogação e logout.
 - `tests/account_tests.gd`: respostas simuladas, falha de rede, resposta perdida, progresso durante envio, renovação de token, cache e formulários.
 - `tests/account_world_tests.gd`: ligação das estatísticas ao jogo, troca de conta, save restaurado, autoria de convidado e compra real na loja do PC.
 - `tests/firebase_emulator_test.gd`: HTTP real contra Authentication/Firestore emulados com as regras do repositório, contas distintas, contadores, consultas limitadas e negação de acesso cruzado. Executado pelo CI; não confundir com teste no projeto de produção.

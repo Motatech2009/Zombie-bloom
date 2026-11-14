@@ -1,4 +1,5 @@
 extends "res://scripts/online/account_service.gd"
+var persist_to_disk := false
 var replies: Array = []
 var paths: Array = []
 var payloads: Array = []
@@ -26,5 +27,12 @@ func request_json(path: String,_method: int,payload: Dictionary = {},_form: bool
 			lose_commit_response = false; return {"ok":false,"code":0,"data":{}}
 		return {"ok":true,"code":200,"data":{}}
 	return {"ok":false,"code":503,"data":{}}
-func persist() -> void: dirty = false
+func session_path() -> String: return "user://test_account_session.cfg"
+func session_key_path() -> String: return "user://test_account_session.key"
+func ledger_path() -> String: return "user://test_session_progress_"+user_id.sha256_text().left(24)+".json"
+func save_session() -> bool:
+	return super.save_session() if persist_to_disk else true
+func persist() -> void:
+	if persist_to_disk: super.persist()
+	else: dirty = false
 func save_nickname(value: String) -> void: nickname = value.left(16)

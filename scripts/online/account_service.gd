@@ -1,5 +1,5 @@
 extends Node
-## Firebase REST; passwords and session tokens are kept in memory only.
+## Firebase REST; passwords and ID tokens stay in memory. Refresh sessions are local.
 signal changed
 const FLUSH_SECONDS := 120.0
 const RANK_CACHE_SECONDS := 60
@@ -22,6 +22,71 @@ var rank_cache: Dictionary = {}
 var rank_request_at := -60000
 var dirty := false
 var disk_clock := 5.0
+var session_retry_clock := 15.0
+
+func session_path() -> String: return "user://account_session.cfg"
+func session_key_path() -> String: return "user://account_session.key"
+
+func save_session() -> bool:
+	if user_id.is_empty() or refresh_token.is_empty(): return false
+	var key := FileAccess.get_file_as_bytes(session_key_path()) if FileAccess.file_exists(session_key_path()) else PackedByteArray()
+	if key.size()!=32:
+		key = Crypto.new().generate_random_bytes(32)
+		var key_file := FileAccess.open(session_key_path(),FileAccess.WRITE)
+		if key_file==null: return false
+		key_file.store_buffer(key); key_file.close()
+	var cfg := ConfigFile.new()
+	cfg.set_value("session","project",project_id)
+	cfg.set_value("session","uid",user_id)
+	cfg.set_value("session","refresh",refresh_token)
+	cfg.set_value("session","summary",local_summary)
+	if cfg.save_encrypted(session_path()+".tmp",key)!=OK: return false
+	return DirAccess.rename_absolute(session_path()+".tmp",session_path())==OK
+
+func clear_session() -> void:
+	for path in [session_path(),session_path()+".tmp",session_key_path()]:
+		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
+
+func load_ledger() -> void:
+	ledger = ProgressLedger.new()
+	if FileAccess.file_exists(ledger_path()):
+		var saved = JSON.parse_string(FileAccess.get_file_as_string(ledger_path()))
+		if saved is Dictionary: ledger.restore(saved)
+	if ledger.device.is_empty(): ledger.device = Crypto.new().generate_random_bytes(16).hex_encode(); persist()
+
+func restore_session() -> void:
+	if not configured() or busy or signed_in() or not FileAccess.file_exists(session_path()): return
+	var key := FileAccess.get_file_as_bytes(session_key_path())
+	var cfg := ConfigFile.new()
+	if key.size()!=32 or cfg.load_encrypted(session_path(),key)!=OK:
+		clear_session(); return
+	if str(cfg.get_value("session","project",""))!=project_id:
+		clear_session(); return
+	user_id = str(cfg.get_value("session","uid",""))
+	refresh_token = str(cfg.get_value("session","refresh",""))
+	if user_id.is_empty() or refresh_token.is_empty():
+		user_id = ""; refresh_token = ""; clear_session(); return
+	var summary = cfg.get_value("session","summary",{})
+	local_summary = summary if summary is Dictionary else {}
+	load_ledger()
+	await reconnect_session()
+
+func reconnect_session() -> void:
+	busy = true; status = "Restaurando sua sessão…"; changed.emit()
+	if await ensure_token(): await load_online_profile()
+	busy = false; session_retry_clock = 15; changed.emit()
+
+func load_online_profile() -> void:
+	var profile := await request_json(documents_url()+"/players/"+user_id,HTTPClient.METHOD_GET)
+	if profile.ok and profile.data is Dictionary:
+		local_summary = decode_fields(profile.data.get("fields",{}))
+		save_nickname(str(local_summary.get("nickname",nickname)))
+	elif int(profile.get("code",0))==404:
+		if not await write_profile(): profile.code = 503
+	status = "Conectado como "+nickname+". Resultados sincronizados em lote."
+	if not profile.ok and int(profile.get("code",0))!=404: status = "Login concluído. O ranking está indisponível; confira a configuração do Firestore."
+	if not save_session(): status += " Não foi possível lembrar a conta neste aparelho."
+	flush_clock = 1
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -32,11 +97,12 @@ func _ready() -> void:
 	var local := ConfigFile.new()
 	if local.load("user://profile.cfg")==OK: nickname = str(local.get_value("profile","nickname",nickname)).left(16)
 	if configured(): status = "Entre ou crie sua conta. Jogar como convidado continua disponível."
+	restore_session.call_deferred()
 
 func configured() -> bool:
 	return not project_id.is_empty() and not api_key.is_empty() and not project_id.contains("/")
 
-func signed_in() -> bool: return not user_id.is_empty() and not token.is_empty()
+func signed_in() -> bool: return not user_id.is_empty() and (not token.is_empty() or not refresh_token.is_empty())
 func documents_url() -> String:
 	return "https://firestore.googleapis.com/v1/projects/"+project_id+"/databases/(default)/documents"
 func player_name() -> String:
@@ -88,13 +154,20 @@ func refresh_url() -> String:
 
 func ensure_token() -> bool:
 	if not signed_in(): return false
-	if Time.get_ticks_msec()<token_deadline: return true
+	if not token.is_empty() and Time.get_ticks_msec()<token_deadline: return true
 	var reply := await request_json(refresh_url(),HTTPClient.METHOD_POST,{"grant_type":"refresh_token","refresh_token":refresh_token},true)
 	if reply.ok and reply.data is Dictionary:
+		if str(reply.data.get("user_id",user_id))!=user_id: return false
 		token = str(reply.data.get("id_token","")); refresh_token = str(reply.data.get("refresh_token",refresh_token))
 		token_deadline = Time.get_ticks_msec()+maxi(30,int(reply.data.get("expires_in",3600))-60)*1000
+		if not token.is_empty(): save_session()
 		return not token.is_empty()
-	status = "Sessão sem conexão. Seus resultados continuam guardados neste aparelho."
+	var message := str(reply.data.get("error",{}).get("message","")) if reply.data is Dictionary else ""
+	if message in ["TOKEN_EXPIRED","USER_DISABLED","USER_NOT_FOUND","INVALID_REFRESH_TOKEN"]:
+		persist(); clear_session(); token = ""; refresh_token = ""; user_id = ""
+		ledger = ProgressLedger.new(); local_summary.clear(); rows.clear(); rank_cache.clear()
+		status = "Sua sessão expirou ou foi revogada. Entre novamente na conta."
+	else: status = "Sessão sem conexão. Seus resultados continuam guardados neste aparelho."
 	return false
 
 func authenticate(email: String,password: String,signup: bool = false) -> void:
@@ -107,20 +180,9 @@ func authenticate(email: String,password: String,signup: bool = false) -> void:
 	if reply.ok and reply.data is Dictionary and reply.data.has("idToken") and reply.data.has("localId"):
 		token = str(reply.data.idToken); user_id = str(reply.data.localId); refresh_token = str(reply.data.get("refreshToken",""))
 		token_deadline = Time.get_ticks_msec()+maxi(30,int(reply.data.get("expiresIn",3600))-60)*1000
-		ledger = ProgressLedger.new()
-		if FileAccess.file_exists(ledger_path()):
-			var saved = JSON.parse_string(FileAccess.get_file_as_string(ledger_path()))
-			if saved is Dictionary: ledger.restore(saved)
-		if ledger.device.is_empty(): ledger.device = Crypto.new().generate_random_bytes(16).hex_encode(); persist()
-		var profile := await request_json(documents_url()+"/players/"+user_id,HTTPClient.METHOD_GET)
-		if profile.ok and profile.data is Dictionary:
-			var values := decode_fields(profile.data.get("fields",{})); local_summary = values
-			save_nickname(str(values.get("nickname",nickname)))
-		elif int(profile.get("code",0))==404:
-			if not await write_profile(): profile.code = 503
-		status = "Conectado como "+nickname+". Resultados sincronizados em lote."
-		if not profile.ok and int(profile.get("code",0))!=404: status = "Login concluído. O ranking está indisponível; confira a configuração do Firestore."
-		flush_clock = 1
+		load_ledger()
+		save_session()
+		await load_online_profile()
 	else: status = auth_error(reply.data)
 	busy = false; changed.emit()
 
@@ -151,6 +213,9 @@ func record_progress(run: String,values: Dictionary,baseline: bool = false) -> v
 
 func _process(delta: float) -> void:
 	if not signed_in(): return
+	if token.is_empty():
+		session_retry_clock -= delta
+		if session_retry_clock<=0 and not busy: reconnect_session()
 	disk_clock -= delta
 	if dirty and disk_clock<=0: persist(); disk_clock = 5
 	flush_clock -= delta
@@ -217,7 +282,7 @@ func fetch_ranking(metric: String,_mode: String = "all",_offset: int = 0) -> voi
 func logout() -> void:
 	if busy: return
 	await flush_progress()
-	persist(); token = ""; refresh_token = ""; user_id = ""; rows.clear(); local_summary.clear(); rank_cache.clear()
+	persist(); clear_session(); token = ""; refresh_token = ""; user_id = ""; rows.clear(); local_summary.clear(); rank_cache.clear()
 	ledger = ProgressLedger.new(); status = "Sessão encerrada. Você pode jogar como convidado."; changed.emit()
 
 func recover(email: String) -> void:

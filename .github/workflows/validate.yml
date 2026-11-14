@@ -2,7 +2,7 @@ name: Validate and build Zombie Bloom
 
 on:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, 'feat/**', 'release/**']
   pull_request:
   workflow_dispatch:
 
@@ -87,6 +87,9 @@ jobs:
           godot --headless --path . --script res://tests/account_tests.gd 2>&1 | tee account-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-tests.log; then exit 1; fi
           grep -E 'ACCOUNT RESULT: [0-9]+ checks, 0 failures' account-tests.log
+          godot --headless --path . --script res://tests/session_tests.gd 2>&1 | tee session-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' session-tests.log; then exit 1; fi
+          grep -E 'SESSION RESULT: [0-9]+ checks, 0 failures' session-tests.log
           godot --headless --path . --script res://tests/account_world_tests.gd 2>&1 | tee account-world-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-world-tests.log; then exit 1; fi
           grep -E 'ACCOUNT WORLD RESULT: [0-9]+ checks, 0 failures' account-world-tests.log
