@@ -176,18 +176,20 @@ func run() -> void:
 	actor.health.setup(100); actor.invulnerable = 0
 	world.waves.wave = 9
 	check(world.waves.enemy_type(11)==9 and world.waves.enemy_type(13)==10 and world.waves.enemy_type(17)==11,"later hordes introduce exploding, summoning and healing enemies")
-	var boss := hostile(8,Vector3(20,0,15))
+	world.restoring_boss_stage = 1
+	var boss := hostile(8,Vector3(20,0,17))
+	world.restoring_boss_stage = 0
 	check(boss.health.maximum>=float(boss.spec.values.health)*CampaignData.health_scale(9)*1.59,"boss receives the extra survival durability multiplier")
 	boss.ability_left = 0; boss._physics_process(.01)
 	check(boss.windup>0 and is_instance_valid(boss.warning),"boss attack telegraphs its damage area before detonation")
 	var state: Dictionary = world.net_state(1)
 	check(state.hazards.any(func(h): return h.get("warning",false)),"remote snapshots include the boss warning zone")
 	boss._physics_process(1.2)
-	check(actor.health.current<100 and boss.shield_left>0,"boss power damages nearby survivor and starts temporary armor")
-	check(get_nodes_in_group("enemies").size()==2,"boss power summons a real hound")
+	check(actor.health.current<100 and boss.shield_left==0,"melee boss slam damages only nearby survivors")
+	check(get_nodes_in_group("enemies").size()==1,"melee boss no longer shares the summoner ability")
 	var hp: float = boss.health.current
 	boss.take_damage(100)
-	check(is_equal_approx(hp-boss.health.current,35),"temporary boss armor reduces incoming damage")
+	check(is_equal_approx(hp-boss.health.current,100),"melee boss does not receive the summoner armor")
 	boss.health.current = boss.health.maximum*.3; boss.shield_left = 0
 	var speed: float = boss.spec.values.speed
 	boss._physics_process(.01)

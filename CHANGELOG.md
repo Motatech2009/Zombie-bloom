@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-dev.3 — 2026-11-14
+
+- Login lembrado ao fechar e reabrir o jogo, sem armazenar senha ou ID token.
+- Renovação automática com refresh token local, recuperação offline e limpeza ao sair ou receber revogação.
+- Testes de sessão adicionados ao CI; dados pendentes continuam separados por conta.
+
 ## 0.6.0 — 2026-11-12
 
 - Núcleo fixo e setores procedurais cardinalmente conectados; geração nova por visita.

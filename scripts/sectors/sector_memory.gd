@@ -110,8 +110,8 @@ static func valid_layout(d,key: String) -> bool:
 		if not vec(pos): return false
 	for house in d.houses:
 		if not house is Dictionary or not number(house.get("id"),0,3,true) or not vec(house.get("pos")) or not number(house.get("yaw"),-TAU,TAU) or not number(house.get("style"),0,2,true) or not number(house.get("guards"),1,12,true) or not contents(house.get("reward")): return false
-	if not d.roster is Array or d.roster.size()!=int(d.count) or not d.roster.all(func(k): return number(k,0,14,true)): return false
-	if not number(d.get("base_count"),0,140,true) or not d.get("base_roster") is Array or d.base_roster.size()!=int(d.base_count) or not d.base_roster.all(func(k): return number(k,0,14,true)): return false
+	if not d.roster is Array or d.roster.size()!=int(d.count) or not d.roster.all(func(k): return number(k,0,16,true)): return false
+	if not number(d.get("base_count"),0,140,true) or not d.get("base_roster") is Array or d.base_roster.size()!=int(d.base_count) or not d.base_roster.all(func(k): return number(k,0,16,true)): return false
 	return true
 
 static func valid(memory,elapsed: float) -> bool:
@@ -125,7 +125,7 @@ static func valid(memory,elapsed: float) -> bool:
 		for house in s.houses:
 			if not house is Dictionary or not number(house.get("id"),0,3,true) or not indices(house.get("dead"),96) or not house.get("activated") is bool or not number(house.get("total"),1,96,true) or not contents(house.get("contents")): return false
 		for enemy in s.enemies:
-			if not enemy is Dictionary or not number(enemy.get("kind"),0,14,true) or not number(enemy.get("index"),-3,1119,true) or not vec(enemy.get("pos"),120) or not number(enemy.get("max"),1,100000000) or not number(enemy.get("hp"),.001,enemy.max) or not number(enemy.get("damage"),0,100000000) or not number(enemy.get("speed"),0,1000) or not enemy.get("enraged") is bool or not number(enemy.get("shield"),0,10) or not number(enemy.get("ability"),-100,100) or not number(enemy.get("summons"),0,3,true): return false
+			if not enemy is Dictionary or not number(enemy.get("kind"),0,16,true) or not number(enemy.get("index"),-3,1119,true) or not vec(enemy.get("pos"),120) or not number(enemy.get("max"),1,100000000) or not number(enemy.get("hp"),.001,enemy.max) or not number(enemy.get("damage"),0,100000000) or not number(enemy.get("speed"),0,1000) or not enemy.get("enraged") is bool or not number(enemy.get("shield"),0,10) or not number(enemy.get("ability"),-100,100) or not number(enemy.get("summons"),0,3,true): return false
 			for field in ["house","guard","event","supply_index"]:
 				if not number(enemy.get(field),-1,100000000,true): return false
 			if not number(enemy.get("stage"),0,100000,true): return false

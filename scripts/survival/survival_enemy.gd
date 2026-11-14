@@ -17,6 +17,11 @@ var stun_left: float = 0
 var special_clock: float = 1
 var replica_motion: float = 0
 var visibility_left: float = 0
+var melee_left := 0.0
+var melee_target: Node3D
+var ranged_left := 2.0
+var stuck_left := 0.0
+var last_ground := Vector3.ZERO
 
 func _ready() -> void:
 	super._ready()
@@ -35,13 +40,20 @@ func _ready() -> void:
 
 func create_model(factor: float) -> void:
 	if spec.id in ["hound","flyer"]: super.create_model(factor); return
-	rig = load("res://assets/models/infected_"+str(enemy_kind if not is_boss else 3 if spec.id=="armored" else 5 if spec.id=="spitter" else 8)+".tscn").instantiate()
+	rig = load("res://assets/models/infected_"+str((enemy_kind if enemy_kind<=14 else 5 if enemy_kind==15 else 4) if not is_boss else 3 if spec.id=="broodmother" else 5 if spec.id=="mortar" else 8)+".tscn").instantiate()
 	rig.scale = Vector3.ONE*factor
 	add_child(rig)
+	if spec.id in ["mauler","cleaver"]:
+		for side in [-1,1]: ModelFactory.part(rig,Vector3(.45,.65,.5),Vector3(side*.6,1.0,0),Color("a07b68"))
+	if spec.id in ["mortar","lobber","broodmother"]:
+		for side in [-1,1]:
+			var sac := VisualFactory.cylinder(rig,.3,.55,Vector3(side*.4,1.2,.3),Color("b3bd67"))
+			sac.rotation.z = side*.3
 
 func _physics_process(delta: float) -> void:
 	if world.has_method("combat_paused") and world.combat_paused(): velocity = Vector3.ZERO; return
 	if proxy or health.dead or world.phase=="ended": return
+	recover_ground(delta)
 	shield_left = maxf(0,shield_left-delta)
 	snare_left = maxf(0,snare_left-delta)
 	stun_left = maxf(0,stun_left-delta)
@@ -81,20 +93,26 @@ func _physics_process(delta: float) -> void:
 			elif enemy_kind==10:
 				for i in range(2): world.spawn_minion(self,6,i)
 			elif is_boss:
-				world.hostile_blast(cast_point,6,28+world.waves.wave*2)
-				shield_left = 2
-				if summon_casts<3:
-					summon_casts += 1
-					world.spawn_minion(self,6,0)
+				if spec.id=="broodmother":
+					if summon_casts<3:
+						summon_casts += 1
+						for i in range(2): world.spawn_minion(self,6,i)
+					shield_left = 2
+				elif spec.id=="mortar":
+					world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,22+world.waves.wave,3.2,1.25)
+				elif global_position.distance_to(cast_point)<=5.5:
+					world.hostile_blast(global_position,4.2,24+world.waves.wave*1.5)
 			return
 		return
 	ability_left -= delta
 	if (is_boss or enemy_kind in [10,12,13,14]) and ability_left<=0:
 		choose_target()
-		if enemy_kind in [12,13] and target.global_position.distance_to(global_position)>13:
+		if not is_instance_valid(target) or target==self: return
+		var cast_distance := global_position.distance_to(target.global_position)
+		if (enemy_kind in [12,13] and cast_distance>13) or (is_boss and spec.id not in ["mortar","broodmother"] and cast_distance>5) or (is_boss and spec.id=="mortar" and (cast_distance>23 or cast_distance<7 or not line_of_sight())):
 			normal_step(delta)
 			return
-		cast_point = global_position if enemy_kind==14 else target.global_position
+		cast_point = global_position if enemy_kind==14 or (is_boss and spec.id not in ["mortar"]) else target.global_position
 		windup = 1.1
 		ability_left = 8 if is_boss else 9 if enemy_kind in [12,13,14] else 12
 		warning = VisualFactory.ring(world.effects,warning_radius(),cast_point+Vector3(0,.12,0),warning_color())
@@ -142,16 +160,98 @@ func _exit_tree() -> void:
 	if is_instance_valid(warning): warning.queue_free()
 
 func warning_radius() -> float:
-	return 6.0 if is_boss else 8.0 if enemy_kind==14 else 4.5 if enemy_kind==13 else 1.7 if enemy_kind==12 else 2.5
+	return (3.2 if spec.id=="mortar" else 4.2) if is_boss else 8.0 if enemy_kind==14 else 4.5 if enemy_kind==13 else 1.7 if enemy_kind==12 else 2.5
 
 func warning_color() -> Color:
 	return Color("85d9f2") if enemy_kind==13 else Color("9aabf0") if enemy_kind==14 else Color("e67f5f")
 
+func ranged_only() -> bool:
+	return spec.id in ["spitter","mortar","lobber"]
+
 func normal_step(delta: float) -> void:
-	var speed: float = spec.values.speed
-	if snare_left>0: spec.values.speed = speed*.55
-	super._physics_process(delta)
-	spec.values.speed = speed
+	clock += delta
+	attack_left = maxf(0,attack_left-delta)
+	think_left -= delta
+	if (think_left<=0 or not is_instance_valid(target)) and world.allow_enemy_think(self):
+		choose_target(); think_left = .6
+		if is_instance_valid(target) and target!=self:
+			path = world.route_for_enemy(self,target.global_position); path_index = 1 if path.size()>1 else 0
+	if not is_instance_valid(target) or target==self: velocity = Vector3.ZERO; return
+	var flat := (target.global_position-global_position)*Vector3(1,0,1)
+	var distance := flat.length()
+	var direction := flat.normalized()
+	var speed := float(spec.values.speed)*(.55 if snare_left>0 else 1.0)
+	if spec.id!="flyer" and path_index<path.size():
+		var point := Vector3(path[path_index].x,global_position.y,path[path_index].y)
+		if global_position.distance_to(point)<.8: path_index += 1
+		direction = (point-global_position).normalized()
+	if ranged_only():
+		ranged_left -= delta
+		if distance<7: direction = -flat.normalized()
+		elif distance<=21 and line_of_sight():
+			speed = 0
+			if ranged_left<=0 and spec.id!="mortar":
+				world.projectile("acid",global_position+Vector3(0,1.4,0),target.global_position, float(spec.values.damage),2.0,1.2)
+				ranged_left = 3.5; recoil = .7
+		# No contact damage for ranged-only infected.
+	if melee_left>0:
+		melee_left = maxf(0,melee_left-delta); speed = 0
+		if melee_left==0 and is_instance_valid(melee_target) and not melee_target.health.dead and melee_reaches(melee_target):
+			melee_target.take_damage(float(spec.values.damage)); recoil = .8
+	velocity = direction*speed; velocity.y = 0 if spec.id=="flyer" else -1
+	move_and_slide()
+	if not ranged_only() and attack_left<=0 and melee_left<=0:
+		var victim: Node3D
+		for i in range(get_slide_collision_count()):
+			var body = get_slide_collision(i).get_collider()
+			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies"): victim = body; break
+		if spec.id=="flyer" and distance<1.5 and line_of_sight(): victim = target
+		if victim!=null:
+			melee_target = victim; melee_left = .45 if is_boss or spec.id=="cleaver" else .28
+			attack_left = float(spec.values.interval)+melee_left
+	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-flat.x,-flat.z),minf(1,delta*10))
+	if spec.id=="flyer":
+		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
+	elif spec.id=="hound":
+		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
+	else: VisualFactory.animate_human(rig,clock*speed/2,1.0 if speed>0 else .1,recoil,false)
+	animate_melee()
+	recoil = maxf(0,recoil-delta*3)
+
+func melee_reaches(victim: Node3D) -> bool:
+	var reach := .36*float(spec.values.scale)+.75
+	if victim.is_in_group("buildings"):
+		var data: Dictionary = FortressData.pieces()[victim.piece_index] if victim!=world.core else {"size":Vector3(3,3,3)}
+		var local := victim.to_local(global_position)
+		var half: Vector3 = data.size*.5
+		var offset := Vector2(maxf(0,absf(local.x)-half.x),maxf(0,absf(local.z)-half.z))
+		return offset.length()<=reach
+	var old_target := target; target = victim
+	var clear := line_of_sight(); target = old_target
+	return Vector2(global_position.x-victim.global_position.x,global_position.z-victim.global_position.z).length()<=reach and clear
+
+func animate_melee() -> void:
+	if melee_left<=0 and recoil<=0: return
+	if rig.has_node("ArmL"):
+		rig.get_node("ArmL").rotation.x = -1.2 if melee_left>0 else .7
+		rig.get_node("ArmR").rotation.x = -1.2 if melee_left>0 else .7
+
+func recover_ground(delta: float) -> void:
+	if spec.id=="flyer": return
+	if position.y<-.25 or position.y>.4: position.y = 0
+	stuck_left += delta
+	if stuck_left<2: return
+	var stalled := global_position.distance_to(last_ground)<.3
+	last_ground = global_position; stuck_left = 0
+	if not stalled: return
+	think_left = 0; path.clear(); rush_left = 0
+	for stall in get_tree().get_nodes_in_group("vendor_obstacles"):
+		if global_position.distance_to(stall.global_position)>4: continue
+		for offset in [Vector3(-4,0,0),Vector3(4,0,0),Vector3(0,0,4),Vector3(0,0,-4)]:
+			var candidate: Vector3 = stall.global_position+offset
+			var query := PhysicsShapeQueryParameters3D.new(); var sphere := SphereShape3D.new(); sphere.radius = .8*float(spec.values.scale)
+			query.shape = sphere; query.transform.origin = candidate+Vector3.UP; query.collision_mask = 1|2|8; query.exclude = [get_rid()]
+			if get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(): global_position = candidate; velocity = Vector3.ZERO; return
 
 func animate_replica(delta: float) -> void:
 	if health.dead or not rig.is_visible_in_tree(): return
@@ -165,6 +265,7 @@ func animate_replica(delta: float) -> void:
 		rig.rotation.x = 0
 		VisualFactory.animate_human(rig,clock*float(spec.values.speed)/2,replica_motion,0,false)
 		animate_cast()
+		animate_melee()
 
 func animate_cast() -> void:
 	if windup<=0 or not rig.has_node("ArmL"): return

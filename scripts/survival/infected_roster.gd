@@ -6,7 +6,9 @@ const EXTRA = [
  ["mender","Regenerador","5eb38e",120.0,1.8,14.0,1.1],
  ["charger","Investidor","b67962",185.0,2.1,21.0,1.2],
  ["cryo","Criogênico","72b6c9",145.0,1.7,12.0,1.2],
- ["saboteur","Sabotador","68829b",165.0,2.0,16.0,1.1]
+ ["saboteur","Sabotador","68829b",165.0,2.0,16.0,1.1],
+ ["lobber","Lançador de Esporos","b7a253",110.0,1.6,12.0,2.8],
+ ["cleaver","Cutelo","a66c72",230.0,2.2,28.0,1.7]
 ]
 static func extra_spec(kind: int) -> Resource:
 	var entry: Array = EXTRA[clampi(kind-9,0,EXTRA.size()-1)]

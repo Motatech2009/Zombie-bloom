@@ -1,0 +1,7 @@
+Elos/combat candidate: Godot 4.6.3.
+Unit/integration scripts: 1098 checks.
+Four-process cooperative session: 113 checks, 0 failures.
+Independent-sector session: 20 checks, 0 failures.
+30 FPS guest movement: 9 checks, 0 failures; max backward movement 0.0000m.
+Total local: 1240. Firebase emulator CI pending for this source revision.
+Production Firebase rules/account verification and physical-phone performance remain pending.

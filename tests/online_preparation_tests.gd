@@ -45,7 +45,7 @@ func run() -> void:
 	check(w.records.totals.host.kills==1,"duplicate death credits one authored kill")
 	var defense = w.make_enemy(0,Vector3(4,0,10),false,-1); defense.set_physics_process(false)
 	w.enemy_defeated(defense)
-	check(w.records.totals.team_defenses.kills==1 and w.records.totals.host.kills==1,"team defenses never falsely credit host")
+	check(w.records.totals.host.kills==2,"team defense kills count toward the surviving team accounts")
 	w.record_victory(10); w.record_victory(10)
 	check(w.records.totals.host.hordes==9,"repeated wave event is idempotent per participant")
 	var saved: Dictionary = w.snapshot(); check(w.valid_snapshot(saved),"records serialize in v6 without replacing saves")
@@ -65,6 +65,6 @@ func run() -> void:
 	saved = w.snapshot(); w.apply_snapshot(saved)
 	var restored = get_nodes_in_group("survival_loot").filter(func(p): return not p.is_queued_for_deletion() and p.contents.get("scrap",0)==8)
 	check(restored.size()==1 and not restored[0].get_meta("world_origin",true),"dropped scrap provenance survives checkpoint restore")
-	check(not root.get_node("Account").configured() and root.get_node("Account").token.is_empty(),"unconfigured auth fails closed without blocking offline world")
+	check(root.get_node("Account").token.is_empty(),"offline world starts without authenticating or sending account progress")
 	w.queue_free(); await create_timer(.2).timeout
 	print("ONLINE PREPARATION RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

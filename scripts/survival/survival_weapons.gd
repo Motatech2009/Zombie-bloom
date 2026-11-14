@@ -4,6 +4,7 @@ var visual_item: String = ""
 var last_item: String = ""
 var last_model: int = -2
 var swing_left: float = 0
+var tuning: Array[int] = [0,0,0,0,0,0,0,0,0]
 
 func _init() -> void:
 	super()
@@ -43,7 +44,7 @@ func _process(delta: float) -> void:
 
 func reload() -> bool:
 	if actor.roll_left>0 or hand_weapon<0 or reload_left>0 or ammo[slot]>=capacity() or actor.bag.count(ItemBag.AMMO_IDS[slot])<=0: return false
-	reload_total = maxf(.3,float(spec().values.reload)*reload_multiplier)
+	reload_total = maxf(.3,float(spec().values.reload)*reload_multiplier*pow(.92,tuning[slot]))
 	reload_left = reload_total
 	return true
 
@@ -52,13 +53,17 @@ func spec() -> Resource:
 
 func capacity(index: int = -1) -> int:
 	var chosen := slot if index<0 else index
-	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier))
+	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier*(1+.1*tuning[chosen])))
 
 func shoot(direction: Vector3) -> bool:
 	if world.combat_paused(): return false
 	if actor.bag.hand()=="bat": return swing(direction)
 	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
+	var original_damage := damage_multiplier
+	var original_rate := rate_multiplier
+	damage_multiplier *= 1+.15*tuning[slot]
+	rate_multiplier *= 1+.08*tuning[slot]
 	var result := false
 	if slot in [6,8]: result = special_shot(direction)
 	else: result = super.shoot(direction)
@@ -68,6 +73,7 @@ func shoot(direction: Vector3) -> bool:
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
+	damage_multiplier = original_damage; rate_multiplier = original_rate
 	world.shot_owner = 0
 	return result
 
