@@ -1,6 +1,6 @@
 # Escopo aprovado — Zombie Bloom 1.0
 
-A 1.0 usa Firebase Authentication + Cloud Firestore, com ranking comunitário simples. O projeto real ainda precisa ser conectado; veja [RELEASE_1_0.md](RELEASE_1_0.md).
+A 1.0 usa Firebase Authentication + Cloud Firestore, com ranking comunitário simples. A configuração pública do projeto `zombiebloom` foi incluída; serviços e regras reais ainda precisam ser validados; veja [RELEASE_1_0.md](RELEASE_1_0.md).
 
 1. Contas por e-mail, recuperação por link e apelido público.
 2. Três rankings gerais por conta: zumbis mortos, hordas vencidas e sucata coletada.

@@ -65,6 +65,6 @@ func run() -> void:
 	saved = w.snapshot(); w.apply_snapshot(saved)
 	var restored = get_nodes_in_group("survival_loot").filter(func(p): return not p.is_queued_for_deletion() and p.contents.get("scrap",0)==8)
 	check(restored.size()==1 and not restored[0].get_meta("world_origin",true),"dropped scrap provenance survives checkpoint restore")
-	check(not root.get_node("Account").configured() and root.get_node("Account").token.is_empty(),"unconfigured auth fails closed without blocking offline world")
+	check(root.get_node("Account").token.is_empty(),"offline world starts without authenticating or sending account progress")
 	w.queue_free(); await create_timer(.2).timeout
 	print("ONLINE PREPARATION RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

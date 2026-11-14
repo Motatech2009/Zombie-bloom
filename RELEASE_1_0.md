@@ -1,6 +1,6 @@
 # Zombie Bloom 1.0 — candidata em desenvolvimento
 
-Esta branch mantém a jogabilidade da 0.15 e implementa as decisões da 1.0 com Firebase. **Não é uma versão final: o projeto Firebase real ainda não foi conectado.**
+Esta branch mantém a jogabilidade da 0.15 e implementa as decisões da 1.0 com Firebase. **Não é uma versão final: a configuração pública do projeto `zombiebloom` está incluída; ativação de Authentication, banco e regras reais ainda precisam de validação.**
 
 ## Entregas
 
@@ -26,7 +26,7 @@ Não reutilizar os projetos de saúde ou educação.
 7. Conferir o modelo de e-mail de recuperação no Authentication e testar no PC e no Android.
 8. Exportar novamente os dois aplicativos com a configuração preenchida. A versão sem configuração continua jogável como convidado e informa que as contas ainda não estão disponíveis.
 
-O provisionamento real e sua verificação permanecem pendentes. Os emuladores usam exclusivamente `demo-zombie-bloom`, sem dados ou cobrança de um projeto real.
+A configuração pública fornecida pelo usuário foi incluída. O provisionamento real (Authentication, banco e regras) e sua verificação permanecem pendentes. Os emuladores usam exclusivamente `demo-zombie-bloom`, sem dados ou cobrança de um projeto real.
 
 ## Operações do banco
 
