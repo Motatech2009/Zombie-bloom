@@ -40,6 +40,7 @@ func create_model(factor: float) -> void:
 	add_child(rig)
 
 func _physics_process(delta: float) -> void:
+	if world.has_method("combat_paused") and world.combat_paused(): velocity = Vector3.ZERO; return
 	if proxy or health.dead or world.phase=="ended": return
 	shield_left = maxf(0,shield_left-delta)
 	snare_left = maxf(0,snare_left-delta)
@@ -108,6 +109,15 @@ func _physics_process(delta: float) -> void:
 	label.hide()
 
 func choose_target() -> void:
+	if world.regions.enabled():
+		var coord: Vector2i = world.coord_at(global_position)
+		target = world.core if not field_enemy else self
+		var nearest := 1000.0 if field_enemy else 18.0 if spec.id in ["hound","runner"] else 11.0
+		for survivor in world.avatars.values():
+			if survivor.health.dead or survivor.region_coord!=coord: continue
+			var d := global_position.distance_to(survivor.global_position)
+			if d<nearest: target = survivor; nearest = d
+		return
 	super.choose_target()
 	if not field_enemy and world.area_index!=-1: return
 	var closest := 18.0 if spec.id in ["hound","runner"] else 11.0

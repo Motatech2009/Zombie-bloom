@@ -99,7 +99,7 @@ func world_touch_allowed(point: Vector2) -> bool:
 func select_target(point: Vector2) -> void:
 	fire_held = false
 	clear_target()
-	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0:
+	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0 and world.player.bag.hand()!="bat":
 		var hit = Plane(Vector3.UP,0).intersects_ray(world.camera.project_ray_origin(point),world.camera.project_ray_normal(point))
 		if hit!=null: free_aim = ((hit-world.player.position)*Vector3(1,0,1)).normalized()
 		return
@@ -252,6 +252,7 @@ func _draw() -> void:
 		if role=="fire":
 			if world.player.bag.hand()=="grenade": text = "LANÇAR\nGRANADA"
 			elif world.player.bag.hand()=="medkit": text = "USAR\nKIT"
+			elif world.player.bag.hand()=="bat": text = "GOLPEAR"
 			elif fire_held: text = "ATIRANDO" if target_shootable else "SEM ALVO"
 		if role=="roll" and world.player.roll_cooldown>0: text = "ROLAR\n%.1f s" % world.player.roll_cooldown
 		var icons := {"build":"⚒","map":"⌖","inventory":"▣","upgrade":"↑","shop":"$","gate":"↔","travel":"➜","repair":"+","revive":"+","roll":"↻","interact":"↓","reload":"↺"}
@@ -272,10 +273,10 @@ func refresh_target() -> void:
 	target_shootable = MobileTargeting.alive(locked_target) and MobileTargeting.can_fire(world.player,locked_target)
 
 func assist_target() -> void:
-	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0: return
+	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0 and world.player.bag.hand()!="bat": return
 	var candidates: Array = []
 	var weapon: int = ItemBag.WEAPON_IDS.find(world.player.bag.hand())
-	var range_squared: float = pow(float(Arsenal.WEAPONS[weapon].values.range),2)
+	var range_squared: float = pow(2.6 if world.player.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range),2)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not MobileTargeting.alive(enemy): continue
 		var distance: float = enemy.global_position.distance_squared_to(world.player.global_position)
@@ -289,6 +290,11 @@ func assist_target() -> void:
 	clear_target()
 
 func start_fire() -> void:
+	var equipped := ItemBag.WEAPON_IDS.find(world.player.bag.hand())
+	if equipped>=0 and world.player.weapons.ammo[equipped]<=0 and world.player.bag.count(ItemBag.AMMO_IDS[equipped])==0:
+		for i in range(9):
+			if world.player.bag.slots[i].id=="bat":
+				world.select_hotbar(i); world.hud.page = i/4; world.hud.update_page(); clear_target(); break
 	launcher_spent = false
 	if world.player.bag.hand() in ["grenade","medkit"]:
 		clear_target()

@@ -24,6 +24,7 @@ func _ready() -> void:
 		warning.global_position = destination*Vector3(1,0,1)+Vector3(0,.08,0)
 
 func _physics_process(delta: float) -> void:
+	if world.has_method("combat_paused") and world.combat_paused(): return
 	if world.phase=="ended": queue_free(); return
 	if world.has_method("region_active"):
 		if not world.region_active(region_key): queue_free(); return

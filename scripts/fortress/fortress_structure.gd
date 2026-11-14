@@ -39,7 +39,7 @@ func set_open_visual() -> void:
 	if door!=null: door.position.y = 2.25 if opened else 0.0
 
 func _physics_process(delta: float) -> void:
-	if health.dead or world.phase=="ended" or world.is_client: return
+	if health.dead or world.phase=="ended" or world.is_client or world.combat_paused(): return
 	label.visible = health.current<health.maximum or global_position.distance_to(world.player.position)<5 or disabled_left>0
 	label.text = "%s N%d · %d/%d" % [spec.title,tier,ceili(health.current),ceili(health.maximum)]
 	disabled_left = maxf(0,disabled_left-delta)

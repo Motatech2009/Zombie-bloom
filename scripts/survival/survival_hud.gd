@@ -15,6 +15,7 @@ var parts_count: Label
 var status_text: Label
 var airdrop_text: Label
 var airdrop_map_info: Label
+var party_map_info: Label
 var map_focus: Variant = null
 var drop_map_stamp: String = ""
 var roll_text: Label
@@ -154,6 +155,8 @@ func _process(delta: float) -> void:
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
 	super._process(delta)
 	var actor: Node3D = world.player
+	notice_text.text = world.notice_for(actor.peer_id); notice_text.visible = not notice_text.text.is_empty()
+	if world.combat_paused(): wave_detail.text = "MELHORIA DO GRUPO · COMBATE PAUSADO"
 	for i in range(9):
 		var item: Dictionary = actor.bag.slots[i]
 		hotbar[i].set_item(item.id,int(item.qty),actor.bag.selected==i)
@@ -170,7 +173,7 @@ func _process(delta: float) -> void:
 	if hand in ItemBag.WEAPON_IDS:
 		var index := ItemBag.WEAPON_IDS.find(hand)
 		ammo_text.text = "%d / %d" % [actor.weapons.ammo[index],actor.bag.count(ItemBag.AMMO_IDS[index])]
-	else: ammo_text.text = "%d/18" % (18-actor.bag.free_slots())
+	else: ammo_text.text = "CORPO A CORPO" if hand=="bat" else "%d/18" % (18-actor.bag.free_slots())
 	power_text.text = "BOLSA · %d espaços livres" % actor.bag.free_slots()
 	quota_text.text = "CONSTRUÇÕES %d/%d   ·   EQUIPE %d   ·   HOSTIS ×%d" % [world.built_this_round,world.build_quota(),world.party_count(),world.team_multiplier()]
 	gather_bar.visible = actor.gather_target!=null or actor.gather_progress>0
@@ -184,6 +187,7 @@ func _process(delta: float) -> void:
 		var stamp := str(world.airdrops.serial)+str(world.airdrops.state.get("collected",true))
 		if stamp!=drop_map_stamp: close_modal(); show_routes()
 		if is_instance_valid(airdrop_map_info): airdrop_map_info.text = airdrop_summary()+"\n"+airdrop_route()
+		if is_instance_valid(party_map_info): party_map_info.text = party_locations()
 	if world.builder.active: build_text.text = "1–9 / 0 peça · Q gira · clique instala · B sai\n"+world.builder.reason
 	if mode=="inventory": refresh_inventory()
 	if world.area_index==-1 and actor.position.distance_to(world.core.position)<4: build_text.text = "SEGURE E / GUARDAR MATERIAIS · I / DEPÓSITO"
@@ -296,7 +300,7 @@ func show_upgrade() -> void:
 		offers = world.upgrades.roll()
 	var box := open_modal("upgrade",1000)
 	UI.label(box,"EVOLUÇÃO DO GRUPO",30,UI.LIME)
-	UI.label(box,"A primeira escolha válida beneficia todos. No cooperativo, a simulação continua.",16,UI.MUTED)
+	UI.label(box,"A primeira escolha válida beneficia todos. Inimigos, perigos e relógio ficam pausados durante a escolha.",16,UI.MUTED)
 	for i in range(offers.size()):
 		var index := i
 		UI.button(box,offers[i].title+" · "+offers[i].text,func(): world.send_action("choice",{"index":index}); choice_cooldown = .5; close_modal())
@@ -385,6 +389,8 @@ func show_routes() -> void:
 	var side: Node = map_detail.get_parent()
 	airdrop_map_info = UI.label(side,airdrop_summary()+"\n"+airdrop_route(),14,Color("e8bc77"))
 	airdrop_map_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	party_map_info = UI.label(side,party_locations(),14,UI.LIME)
+	party_map_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if not world.airdrops.state.is_empty() and not world.airdrops.state.collected:
 		mark_drop_cells(overlay_box,world.airdrops.coord())
 		UI.button(side,"VER AIRDROP",func(): map_focus = world.airdrops.coord(); close_modal(); show_routes()).custom_minimum_size.y = 34
@@ -426,3 +432,10 @@ func show_connection() -> void:
 	UI.label(box,"Se UPnP não funcionar ou houver CGNAT: ambos instalam Tailscale, o anfitrião compartilha seu computador com o amigo e o convidado entra pelo IP 100.x do anfitrião. Usem a mesma porta UDP da sala.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(box,"GUIA OFICIAL DE CONEXÃO",func(): OS.shell_open("https://tailscale.com/docs/use-cases/personal-or-at-home-use/share-private-game-server"))
 	UI.button(box,"VOLTAR",func(): close_modal(); show_pause(),true)
+
+func party_locations() -> String:
+	var lines: Array[String] = ["EQUIPE / QUADRANTES"]
+	for actor in world.avatars.values():
+		var point: Vector2i = actor.region_coord if world.connected_game() else world.sector_coord
+		lines.append("%s: (%d,%d)%s" % [actor.display_name,point.x,point.y," · CAÍDO" if actor.health.dead else ""])
+	return "\n".join(lines)

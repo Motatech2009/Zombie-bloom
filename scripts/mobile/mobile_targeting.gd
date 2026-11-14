@@ -14,9 +14,9 @@ static func direction(actor: Node3D,target: Node3D) -> Vector3:
 static func can_fire(actor: Node3D,target: Node3D) -> bool:
 	if not alive(target) or actor.health.dead: return false
 	var weapon := ItemBag.WEAPON_IDS.find(actor.bag.hand())
-	if weapon<0: return false
+	if weapon<0 and actor.bag.hand()!="bat": return false
 	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
-	if origin.distance_to(point(target))>float(Arsenal.WEAPONS[weapon].values.range): return false
+	if origin.distance_to(point(target))>(2.6 if actor.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range)): return false
 	ray_checks += 1
 	var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,point(target),1|4|8,[actor.get_rid()]))
 	# A zombie in front can receive the shot; solid cover cannot.
@@ -28,7 +28,7 @@ static func resolve(world: Node3D,actor: Node3D,frame: Dictionary) -> Dictionary
 	var request: Dictionary = frame.target
 	var requested: bool = frame.get("fire",false)
 	frame.fire = false
-	if request.rev!=world.scene_revision: return frame
+	if request.rev!=world.actor_revision(actor): return frame
 	var target: Node3D = world.target_enemy(int(request.id))
 	if not alive(target): return frame
 	frame.aim = direction(actor,target)

@@ -18,13 +18,13 @@ func start() -> bool:
 	return true
 
 func _physics_process(delta: float) -> void:
-	if world.phase=="ended": return
+	if world.phase=="ended" or (world.has_method("combat_paused") and world.combat_paused()): return
 	if not running:
 		world.horde_left = maxf(0,world.horde_left-delta)
 		var level := 3 if world.horde_left<=10 else 2 if world.horde_left<=30 else 1 if world.horde_left<=60 else 0
 		if level>alarm_level:
 			alarm_level = level
-			world.notify("NÚCLEO · Horda em %d s. %s" % [ceili(world.horde_left),world.return_hint()])
+			world.notify("NÚCLEO · Horda em %d s. %s" % [ceili(world.horde_left),"Abra o mapa e retorne ao Núcleo (0,0)."])
 			world.audio.play_tone(240,.25,.12)
 		if world.horde_left<=0: start()
 		return
@@ -55,7 +55,7 @@ func complete() -> void:
 		world.finish(true,"Vinte cercos e seus chefes vencidos. O Núcleo resistiu.")
 	else:
 		world.phase = "prep" if world.area_index==-1 else "expedition"
-		world.horde_left = maxf(100,180-wave*3)
+		world.horde_left = world.HORDE_INTERVAL
 		alarm_level = 0
 		world.notify("REFÚGIO DEFENDIDO · Próximo cerco em %d s." % ceili(world.horde_left))
 		if world.area_index==-1: world.save_checkpoint(false)

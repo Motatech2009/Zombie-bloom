@@ -1,4 +1,4 @@
-# Zombie Bloom — PC + Android 0.13.2
+# Zombie Bloom — PC + Android 0.14.0
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**
 
@@ -6,7 +6,9 @@ Godot 4.6.3, cenário 3D low-poly e câmera 2.5D. Campanha de 20 hordas, defesa 
 
 ## Jogar
 
-**Atualização 0.13.2:** corrigidos os saltos de posição do convidado ao andar e a câmera durante reconciliação. [Causa, teste e limites](NETWORK_0132.md).
+**Atualização 0.14.0:** dez minutos entre hordas, combate pausado durante melhorias, taco de beisebol, trilha original e exploração independente por jogador. [Regras e verificação](FRONTIER_014.md).
+
+**Na 0.13.2:** corrigidos os saltos de posição do convidado ao andar e a câmera durante reconciliação. [Causa, teste e limites](NETWORK_0132.md).
 
 **Na 0.13.1:** ações contextuais separadas, catálogos por categoria, munição no canto direito, correção da mira nos setores e tela cheia adaptável. [Detalhes](MOBILE_0131.md).
 
@@ -87,10 +89,12 @@ godot --headless --path . --script res://tests/mobile_tests.gd
 python3 tests/run_coop_test.py
 ```
 
-**1018 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 93 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 48 móveis, 35 de mira por toque, 26 de desempenho/controle assistido, 43 de progressão, 30 de experiência móvel, 113 de rede com quatro processos reais e 9 de movimento com dois processos ENet e convidado limitado a 30 FPS. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
+**1071 verificações aprovadas localmente**: 342 anteriores, 80 de sobrevivência, 95 de arsenal, 100 de fortaleza, 33 de rolamento, 35 de argila/casas, 31 de conexão, 48 móveis, 35 de mira por toque, 26 de desempenho/controle assistido, 43 de progressão, 30 de experiência móvel, 113 de rede com quatro processos reais 9 de movimento com dois processos ENet e convidado limitado a 30 FPS, 31 das novas mecânicas e 20 de exploração em setores distintos com três processos. Um cliente de rede usa a interface de toque em Linux; não substitui teste em aparelho físico. O menu abre `scenes/survival/SurvivalWorld.tscn`; as cenas anteriores permanecem para regressão. CI repete as suítes, o teste de ENet/UDP, exporta Windows x64 e APK Android assinado para desenvolvimento.
 
 [Regras de sobrevivência](SURVIVAL.md) · [Cooperativo](MULTIPLAYER.md) · [Setores](WORLD_SECTORS.md) · [Armas e defesas anteriores](CAMPAIGN.md) · [Testes](TEST_REPORT.md)
 
 Verificação de rede foi por loopback, sem latência/perda simulada. Conexão real entre casas, desempenho no hardware alvo, execução nativa no Windows e balanceamento de uma campanha humana completa ainda precisam de playtest. O artefato Windows só deve ser considerado exportado após sucesso do Actions do commit entregue.
 
 Android: baixe o artefato **ZombieBloom-Android-APK**, extraia e instale o APK de teste. No PC, crie uma sala; no celular, entre pelo IPv4 do PC e porta UDP 24567. Atualize ambos. Fora da mesma rede, veja as opções de conexão externa e Tailscale em MOBILE.md. Ainda não há versão iOS nem validação em telefone físico.
+
+Planejamento futuro: [login e rankings da versão 1.0](ROADMAP_1_0.md).

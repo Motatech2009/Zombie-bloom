@@ -193,7 +193,14 @@ func run() -> void:
 	check(actor.bag.count("scrap")==40 and world.airdrops.state.contents.scrap==120,"finished airdrop gathering transfers one capped stack and preserves its remainder")
 	bank_before = world.resources.scrap
 	while not world.airdrops.state.contents.is_empty():
-		if not world.transfer_source(actor,crate): break
+		if not world.transfer_source(actor,crate):
+			# The extra melee weapon can require another load. Make room by dropping
+			# one real material stack, keeping cargo in the world rather than deleting it.
+			var freed := false
+			for i in range(ItemBag.SIZE):
+				if actor.bag.slots[i].id in ["scrap","wood","parts"]:
+					freed = world.drop_slot(actor,i); break
+			if not freed: break
 	check(world.airdrops.state.collected and world.airdrops.state.contents.is_empty(),"supply event becomes collected exactly once when all contents are recovered")
 	check(world.resources.scrap==bank_before,"airdrop resources also require transport back to the core")
 	clear_choices(); check(step(3),"returning preserves the existing fortress after supply recovery")

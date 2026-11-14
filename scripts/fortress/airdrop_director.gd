@@ -28,7 +28,7 @@ func can_open() -> bool:
 	return at_sector() and state.land<=0 and remaining()==0 and active_guards().is_empty()
 
 func tick(delta: float) -> void:
-	if world.is_client or world.phase=="ended": return
+	if world.is_client or world.phase=="ended" or world.combat_paused(): return
 	left -= delta
 	if left<=0:
 		var overdue := -left
@@ -40,7 +40,7 @@ func tick(delta: float) -> void:
 	elif not state.is_empty(): state.land = maxf(0,float(state.land)-delta)
 	ensure_crate()
 	spawn_left = maxf(0,spawn_left-delta)
-	if at_sector() and state.land<=0 and spawn_left<=0:
+	if available_sector() and state.land<=0 and spawn_left<=0:
 		spawn_guard()
 		spawn_left = .45
 
@@ -56,10 +56,7 @@ func start_drop() -> void:
 	contents[weapon] = 1
 	state = {"serial":serial,"coord":[target.x,target.y],"land":LANDING,"seed":world.world_rng.randi_range(1,2147483647),"base_guards":20+mini(20,world.waves.wave)*2,"dead":[],"contents":contents,"collected":false}
 	world.notify("AIRDROP · Setor (%d,%d). Escolta pesada e um chefe. M mostra a queda." % [target.x,target.y])
-	if at_sector():
-		world.descriptor = decorate(world.descriptor)
-		world.scale_field_population()
-		world.scene_revision += 1
+	if available_sector(): world.regions.run_in(coord(),refresh_live_sector) if world.regions.enabled() else refresh_live_sector()
 
 func decorate(data: Dictionary) -> Dictionary:
 	if state.is_empty() or state.collected or data.coord!=coord(): return data
@@ -72,6 +69,8 @@ func decorate(data: Dictionary) -> Dictionary:
 	return data
 
 func ensure_crate() -> void:
+	if world.regions.enabled() and coord()!=world.sector_coord and available_sector():
+		world.regions.run_in(coord(),ensure_crate); return
 	if not at_sector():
 		if is_instance_valid(crate): crate.queue_free()
 		crate = null; return
@@ -84,6 +83,7 @@ func ensure_crate() -> void:
 	world.field_root.add_child(crate)
 
 func spawn_guard() -> bool:
+	if world.regions.enabled() and coord()!=world.sector_coord and available_sector(): return world.regions.run_in(coord(),spawn_guard)==true
 	if not at_sector() or world.field_alive()>=24 or world.get_tree().get_nodes_in_group("enemies").size()>=60 or active_guards().size()>=12: return false
 	var alive := {}
 	for enemy in active_guards(): alive[int(enemy.get_meta("supply_index"))] = true
@@ -141,3 +141,10 @@ static func valid(data: Variant) -> bool:
 		var quantity = s.contents[id]
 		if id not in ItemBag.IDS or not (quantity is int or quantity is float) or not is_finite(float(quantity)) or int(quantity)!=quantity or quantity<1 or quantity>10000: return false
 	return s.collected==s.contents.is_empty()
+
+func available_sector() -> bool:
+	return not state.is_empty() and not state.collected and (world.regions.has(coord()) if world.regions.enabled() else at_sector())
+func refresh_live_sector() -> void:
+	world.descriptor = decorate(world.descriptor)
+	world.scale_field_population()
+	world.bump_region_revision(world.sector_coord)

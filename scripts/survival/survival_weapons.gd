@@ -3,6 +3,7 @@ var hand_weapon: int = -1
 var visual_item: String = ""
 var last_item: String = ""
 var last_model: int = -2
+var swing_left: float = 0
 
 func _init() -> void:
 	super()
@@ -30,6 +31,7 @@ func equip(index: int) -> void:
 	cooldown = maxf(cooldown,.15)
 
 func _process(delta: float) -> void:
+	swing_left = maxf(0,swing_left-delta)
 	if world.is_client: return
 	cooldown = maxf(0,cooldown-delta)
 	if reload_left<=0: return
@@ -53,6 +55,8 @@ func capacity(index: int = -1) -> int:
 	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier))
 
 func shoot(direction: Vector3) -> bool:
+	if world.combat_paused(): return false
+	if actor.bag.hand()=="bat": return swing(direction)
 	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
 	var result := false
@@ -119,7 +123,7 @@ func rebuild_model() -> void:
 	last_model = hand_weapon
 	last_item = visual_item
 	var gun: MeshInstance3D = actor.rig.get_node("Gun")
-	gun.visible = hand_weapon>=0 or visual_item in ["grenade","medkit"]
+	gun.visible = hand_weapon>=0 or visual_item in ["grenade","medkit","bat"]
 	for child in gun.get_children(): gun.remove_child(child); child.queue_free()
 	gun.mesh = null
 	if not gun.visible: return
@@ -128,3 +132,26 @@ func rebuild_model() -> void:
 	var model: Node3D = load(model_path).instantiate()
 	gun.add_child(model)
 	ClayStyle.apply_tree(model)
+
+func swing(direction: Vector3) -> bool:
+	if world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
+	cooldown = .65; swing_left = .32; actor.cancel_gather()
+	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
+	var victims: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not MobileTargeting.alive(enemy): continue
+		var offset: Vector3 = MobileTargeting.point(enemy)-origin
+		if offset.length()>2.6 or offset.normalized().dot(direction.normalized())<.3: continue
+		var ray := PhysicsRayQueryParameters3D.create(origin,MobileTargeting.point(enemy),1|8,[actor.get_rid()])
+		if not actor.get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): continue
+		victims.append(enemy)
+	victims.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
+	for enemy in victims.slice(0,3):
+		enemy.take_damage(32*damage_multiplier)
+		enemy.stun_left = maxf(enemy.stun_left,.12 if enemy.is_boss else .2)
+		world.effects.burst(MobileTargeting.point(enemy),Color("d6b077"),3)
+	world.shot_owner = actor.peer_id
+	world.shot_visual(origin,origin+direction.normalized()*2,Color("d6b077"))
+	world.shot_owner = 1
+	world.audio.play_tone(110,.14,.1); fired.emit()
+	return true

@@ -75,7 +75,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,13)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,14)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -120,12 +120,12 @@ func _physics_process(delta: float) -> void:
 		for id in world.avatars:
 			if id==1 or not multiplayer.get_peers().has(id): continue
 			if peer.get_peer(id).get_state()!=ENetPacketPeer.STATE_CONNECTED or peer.get_peer(id).get_channels()<5: continue
-			if int(scene_sent.get(id,-1))!=world.scene_revision:
-				_receive_scene.rpc_id(id,world.net_scene())
-				scene_sent[id] = world.scene_revision
+			if int(scene_sent.get(id,-1))!=world.peer_revision(id):
+				_receive_scene.rpc_id(id,world.net_scene(id))
+				scene_sent[id] = world.peer_revision(id)
 				slow_cache.erase(id)
 			var full: Dictionary = world.net_state(id,include_bulk or not slow_cache.has(id))
-			var bulk := {"rev":world.scene_revision}
+			var bulk := {"rev":world.peer_revision(id)}
 			for key in ["structures","loot","houses","airdrops","discovered","sector_times","depot"]:
 				bulk[key] = full[key]; full.erase(key)
 			if include_bulk or not slow_cache.has(id):
@@ -154,14 +154,14 @@ func blast_event(point: Vector3,radius: float) -> void:
 func _join_ready(token: String,name_text: String,protocol: int = 12) -> void:
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=13:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 0.13."); return
+	if protocol!=14:
+		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 0.14."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return
 	if world.attach_peer(id,token,name_text):
-		_receive_scene.rpc_id(id,world.net_scene())
-		scene_sent[id] = world.scene_revision
+		_receive_scene.rpc_id(id,world.net_scene(id))
+		scene_sent[id] = world.peer_revision(id)
 	else: _rejected.rpc_id(id,"Sala cheia, encerrada ou perfil já ativo.")
 
 @rpc("authority","call_remote","reliable",0)
@@ -247,9 +247,9 @@ func _input_batch(packet: PackedByteArray,revision: int) -> void:
 	if raw.is_empty(): return
 	var frames = bytes_to_var(raw)
 	if not frames is Array: return
-	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision or frames.size()>32: return
+	if mode!="host" or not is_instance_valid(world) or world.combat_paused() or frames.size()>32: return
 	var id := multiplayer.get_remote_sender_id()
-	if not world.avatars.has(id): return
+	if not world.avatars.has(id) or revision!=world.peer_revision(id): return
 	var actor: Node3D = world.avatars[id]
 	for frame in frames:
 		if not frame is Dictionary or frame.size()>10 or not frame.get("seq") is int or not frame.get("move") is Vector2 or not frame.get("aim") is Vector3 or not frame.get("slot") is int: return
@@ -269,9 +269,9 @@ func roll_intent(sequence: int,direction: Vector3,revision: int) -> void:
 
 @rpc("any_peer","call_remote","reliable",0)
 func _roll_intent(sequence: int,direction: Vector3,revision: int) -> void:
-	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision or sequence<1 or not direction.is_finite() or direction.length_squared()>1.01: return
+	if mode!="host" or not is_instance_valid(world) or sequence<1 or not direction.is_finite() or direction.length_squared()>1.01: return
 	var id := multiplayer.get_remote_sender_id()
-	if not world.avatars.has(id): return
+	if not world.avatars.has(id) or revision!=world.peer_revision(id): return
 	var actor: Node3D = world.avatars[id]
 	if sequence<=actor.roll_intent_seen: return
 	actor.roll_intent_seen = sequence
@@ -280,6 +280,6 @@ func _roll_intent(sequence: int,direction: Vector3,revision: int) -> void:
 
 @rpc("any_peer","call_remote","reliable",0)
 func _scene_ready(revision: int) -> void:
-	if mode!="host" or not is_instance_valid(world) or revision!=world.scene_revision: return
+	if mode!="host" or not is_instance_valid(world): return
 	var id := multiplayer.get_remote_sender_id()
-	if world.avatars.has(id): scene_confirmed[id] = revision
+	if world.avatars.has(id) and revision==world.peer_revision(id): scene_confirmed[id] = revision

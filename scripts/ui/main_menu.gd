@@ -8,6 +8,7 @@ var actors: Array[Node3D] = []
 var clock: float = 0
 
 func _ready() -> void:
+	var music := MusicDirector.new(); add_child(music)
 	MobilePlatform.configure(get_tree().root)
 	get_tree().paused = false
 	Controls.setup()

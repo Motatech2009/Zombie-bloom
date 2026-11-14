@@ -78,8 +78,12 @@ jobs:
           godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-experience-tests.log; then exit 1; fi
           grep -E 'MOBILE EXPERIENCE RESULT: [0-9]+ checks, 0 failures' mobile-experience-tests.log
+          godot --headless --path . --script res://tests/frontier_features_tests.gd 2>&1 | tee frontier-features-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' frontier-features-tests.log; then exit 1; fi
+          grep -E 'FRONTIER FEATURES RESULT: [0-9]+ checks, 0 failures' frontier-features-tests.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
           python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
+          python3 tests/run_split_test.py 2>&1 | tee split-tests.log
       - name: Install matching export templates
         shell: bash
         run: |
@@ -97,9 +101,9 @@ jobs:
           godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
           test -s builds/windows/ZombieBloom.exe
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
-          cp NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          cp ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
-          cp docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+          cp docs/frontier014-results.txt docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -132,7 +136,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging builds/android/ZombieBloom-Android.apk | tee android-manifest.log
           grep 'android.permission.INTERNET' android-manifest.log
           grep "native-code:.*arm64-v8a" android-manifest.log
-          cp NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
+          cp ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
       - name: Upload Android build
         uses: actions/upload-artifact@v4
         with:
@@ -148,3 +152,4 @@ jobs:
             *.log
             builds/coop-test/*.log
             builds/motion-test/*.log
+            builds/split-test/*.log

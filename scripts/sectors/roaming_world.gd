@@ -5,7 +5,8 @@ var discovered: Dictionary = {}
 var world_rng := RandomNumberGenerator.new()
 var world_seed: int = 1
 var visit_serial: int = 0
-var horde_left: float = 210
+const HORDE_INTERVAL := 600.0
+var horde_left: float = HORDE_INTERVAL
 var travel_cooldown: float = 0
 var exit_labels: Array[Label3D] = []
 var base_exit_labels: Array[Label3D] = []
@@ -82,6 +83,9 @@ func _process(delta: float) -> void:
 	shop_clock += delta
 	if area_index==-1: VisualFactory.animate_human(vendor_rig,shop_clock,.12,0,false)
 	for i in range(exit_labels.size()): exit_labels[i].visible = local_player().distance_to(SectorGenerator.EXITS[i])<9
+	tick_exploration(delta)
+
+func tick_exploration(delta: float) -> void:
 	if area_index!=-1:
 		field_spawn_left -= delta
 		if field_spawn_left<=0 and not field_queue.is_empty() and field_alive()<24 and get_tree().get_nodes_in_group("enemies").size()<60:
@@ -359,7 +363,7 @@ func migrate_snapshot(data: Variant) -> Variant:
 	if not converted is Dictionary or converted.get("format")!=2: return converted
 	converted = converted.duplicate(true)
 	converted.format = 3
-	converted.horde_left = 210.0
+	converted.horde_left = HORDE_INTERVAL
 	converted.world_seed = world_seed
 	converted.rng_state = str(world_rng.state)
 	converted.visit_serial = 0
@@ -370,7 +374,7 @@ func valid_snapshot(data: Variant) -> bool:
 	if not data is Dictionary or data.get("format")!=3: return false
 	for key in ["horde_left","world_seed","rng_state","visit_serial","discovered"]:
 		if not data.has(key): return false
-	if not bounded(data.horde_left,0,210) or not bounded(data.world_seed,1,2147483647) or not bounded(data.visit_serial,0,100000000): return false
+	if not bounded(data.horde_left,0,HORDE_INTERVAL) or not bounded(data.world_seed,1,2147483647) or not bounded(data.visit_serial,0,100000000): return false
 	if not data.rng_state is String or not data.rng_state.is_valid_int() or not data.discovered is Dictionary or data.discovered.size()>8192 or not data.discovered.has("0:0"): return false
 	for key in data.discovered:
 		if not key is String: return false

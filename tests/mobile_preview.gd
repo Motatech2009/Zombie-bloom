@@ -20,3 +20,7 @@ func run() -> void:
 		world.hud.show_shop()
 	if "--core" in OS.get_cmdline_user_args():
 		world.player.position = Vector3(0,0,3); world.player.bag.add("wood",5)
+	if "--bat" in OS.get_cmdline_user_args():
+		world.player.bag.selected = 4; world.player.weapons.sync_hand(); world.touch_controls.layout_controls()
+		var enemy: Node3D = world.make_enemy(0,world.player.position+Vector3(0,0,-2),false,1)
+		enemy.set_physics_process(false); enemy.health.setup(1000)

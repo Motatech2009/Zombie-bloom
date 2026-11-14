@@ -1,3 +1,13 @@
+# Validação 0.14.0 — setores independentes, taco e trilha
+
+1071 verificações aprovadas: 929 nas 16 suítes, 113 no cooperativo com quatro processos, 9 no teste de movimento e 20 na sessão ENet com anfitrião ao norte e dois convidados ao sul. [Resultados](docs/frontier014-results.txt). [Comportamento e limites](FRONTIER_014.md).
+
+Os testes cobrem duas áreas ocupadas e o núcleo simultaneamente, loot compartilhado por setor e bolsas privadas, cena enviada por conexão, IA por quadrante, golpes remotos, horda sem teletransporte, checkpoint, entrada tardia e descarregamento após a última saída. Também cobrem intervalo de 600 segundos e pausa sincronizada de inimigos/perigos. O ícone e modelo do taco são verificados pela suíte de arsenal. Inspeção visual do golpe móvel e do volume musical separado.
+
+Sem teste físico em Android, medição de FPS em múltiplos aparelhos nem validação WAN. A assinatura e as bibliotecas ARM serão conferidas no export do CI.
+
+## Histórico da validação 0.13.2
+
 # Validação 0.13.2 — movimento do convidado
 
 1018 verificações locais: 896 nas 15 suítes, 113 no cooperativo com quatro processos e 9 no teste de movimento com dois processos reais. [Resultados](docs/network0132-results.txt). [Reprodução e correção](NETWORK_0132.md).

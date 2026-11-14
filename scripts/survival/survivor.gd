@@ -33,6 +33,9 @@ var input_ack: int = 0
 var input_received: int = 0
 var input_stream: bool = false
 var presentation_offset := Vector3.ZERO
+var region_coord := Vector2i.ZERO
+var region_revision: int = 0
+var region_travel_left: float = 0
 
 static func movement_direction(input: Vector2) -> Vector3:
 	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
@@ -70,6 +73,12 @@ func animate_pose(moving: float) -> void:
 	elif gather_progress>0:
 		rig.get_node("ArmL").rotation.x = .65+sin(clock*8)*.15
 		gun.rotation.x = .5
+	if bag.hand()=="bat":
+		var swing: float = 1-weapons.swing_left/.32
+		gun.position = Vector3(.34,1.1,-.25)
+		gun.rotation.y = lerpf(-1.2,1.4,swing) if weapons.swing_left>0 else -.45
+		gun.rotation.z = -.25
+		rig.get_node("ArmR").rotation.x = 1.1
 	if roll_left>0:
 		rig.get_node("LegL").rotation.x = 1.0
 		rig.get_node("LegR").rotation.x = 1.0
@@ -117,6 +126,8 @@ func read_input() -> Dictionary:
 
 func _physics_process(delta: float) -> void:
 	if proxy or world.phase=="ended": return
+	if world.combat_paused(): velocity = Vector3.ZERO; net_input.clear(); input_queue.clear(); roll_intents.clear(); return
+	region_travel_left = maxf(0,region_travel_left-delta)
 	roll_cooldown = maxf(0,roll_cooldown-delta)
 	if health.dead: return
 	var frame := read_input()

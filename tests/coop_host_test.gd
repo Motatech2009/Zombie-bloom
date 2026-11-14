@@ -9,8 +9,8 @@ func check(ok: bool,message: String) -> void:
 
 func wait_ready(link: Node,world: Node3D) -> void:
 	var deadline := Time.get_ticks_msec()+8000
-	while world.avatars.keys().any(func(id): return id!=1 and int(link.scene_confirmed.get(id,-1))!=world.scene_revision) and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
-	check(world.avatars.keys().all(func(id): return id==1 or int(link.scene_confirmed.get(id,-1))==world.scene_revision),"every connected guest acknowledges complete scene data before the next test transition")
+	while world.avatars.keys().any(func(id): return id!=1 and int(link.scene_confirmed.get(id,-1))!=world.peer_revision(id)) and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
+	check(world.avatars.keys().all(func(id): return id==1 or int(link.scene_confirmed.get(id,-1))==world.peer_revision(id)),"every connected guest acknowledges complete scene data before the next test transition")
 
 func run() -> void:
 	var link := root.get_node("Coop")
@@ -97,7 +97,7 @@ func run() -> void:
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
-	check(world.step_sector(0),"the complete party crosses the northern exit")
+	check(travel_party(world,0),"the complete party crosses the northern exit")
 	check(world.airdrops.at_sector() and world.descriptor.risk==4 and world.airdrops.crate!=null,"server loads the guarded airdrop into the same procedural party sector")
 	var house: Node3D = world.raid_house(0)
 	check(house!=null and house.guard_total==int(house.data.guards)*8,"house scene and guard objective use the same four-player scaling")
@@ -110,18 +110,18 @@ func run() -> void:
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
-	check(world.step_sector(2) and world.sector_coord==Vector2i.ZERO,"the party returns to the persistent core sector")
+	check(travel_party(world,2) and world.sector_coord==Vector2i.ZERO,"the party returns to the persistent core sector")
 	await wait_ready(link,world)
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
-	check(world.step_sector(0) and world.descriptor.seed==sector_seed,"a four-player revisit keeps the same procedural generation during its cooldown")
+	check(travel_party(world,0) and world.descriptor.seed==sector_seed,"a four-player revisit keeps the same procedural generation during its cooldown")
 	check(world.caches[0].get_meta("contents")=={"rifle_ammo":7,"parts":2} and world.raid_house(0).dead==[0],"host preserves partial supplies and house progress during the shared revisit")
 	await wait_ready(link,world)
 	await create_timer(2).timeout
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = world.sector_offset(world.sector_coord)+SectorGenerator.EXITS[2]
-	check(world.step_sector(2),"the party returns safely after its preserved-sector visit")
+	check(travel_party(world,2),"the party returns safely after its preserved-sector visit")
 	await wait_ready(link,world)
 	await create_timer(2).timeout
 	deadline = Time.get_ticks_msec()+10000
@@ -132,3 +132,8 @@ func run() -> void:
 	await create_timer(.35).timeout
 	print("COOP HOST RESULT: %d checks, %d failures" % [checks,failures])
 	quit(1 if failures else 0)
+
+func travel_party(world: Node3D,direction: int) -> bool:
+	var ok := true
+	for id in world.avatars.keys(): ok = world.perform_action(id,"travel",{"direction":direction}) and ok
+	return ok

@@ -111,6 +111,9 @@ static func settings(parent: Node, on_change: Callable) -> void:
 	slider.custom_minimum_size = Vector2(360, 40)
 	parent.add_child(slider)
 	slider.value_changed.connect(func(value: float): GameSettings.volume = value; GameSettings.save_settings())
+	label(parent,"TRILHA SONORA",13,MUTED)
+	var music := HSlider.new(); music.min_value = 0; music.max_value = 1; music.step = .05; music.value = GameSettings.music_volume; music.custom_minimum_size = Vector2(360,40); parent.add_child(music)
+	music.value_changed.connect(func(value: float): GameSettings.music_volume = value; GameSettings.save_settings())
 	var check := CheckButton.new()
 	check.text = "Sombras dinâmicas"
 	check.button_pressed = GameSettings.shadows

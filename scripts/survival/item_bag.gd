@@ -1,9 +1,9 @@
 class_name ItemBag
 extends RefCounted
 const SIZE := 18
-const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells"]
-const TITLES = {"pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
-const SHORT = {"pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
+const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells","bat"]
+const TITLES = {"bat":"Taco de beisebol","pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
+const SHORT = {"bat":"TACO","pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
 const WEAPON_IDS = ["pistol","shotgun","rifle","smg","launcher","revolver","sniper","lmg","tesla"]
 const AMMO_IDS = ["light","shell","rifle_ammo","light","rocket","heavy","rifle_ammo","rifle_ammo","cells"]
 var slots: Array = []
@@ -13,7 +13,7 @@ func _init() -> void:
 	for i in range(SIZE): slots.append({"id":"","qty":0})
 
 static func stack(id: String) -> int:
-	if id in WEAPON_IDS: return 1
+	if id in WEAPON_IDS or id=="bat": return 1
 	match id:
 		"wood": return 20
 		"parts": return 12
@@ -34,7 +34,7 @@ func count(id: String) -> int:
 
 func add(id: String,quantity: int) -> int:
 	if id not in IDS or quantity<=0: return 0
-	if id in WEAPON_IDS:
+	if id in WEAPON_IDS or id=="bat":
 		if count(id)>0: return 0
 		quantity = mini(quantity,1)
 	var remaining := quantity

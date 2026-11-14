@@ -17,6 +17,7 @@ func _ready() -> void:
 	VisualFactory.ring(self,radius,Vector3(0,.04,0),Color("b5ee64"))
 
 func _physics_process(delta: float) -> void:
+	if world.has_method("combat_paused") and world.combat_paused(): return
 	if world.phase=="ended": queue_free(); return
 	if world.has_method("region_active"):
 		if not world.region_active(region_key): queue_free(); return

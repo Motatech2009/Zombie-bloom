@@ -27,6 +27,8 @@ var client_scene_ready: bool = false
 var remote_interaction_hint: String = ""
 var remote_mobile_context: Dictionary = {}
 var prediction := ClientPrediction.new()
+var regions := SectorSessions.new()
+var private_notices: Dictionary = {}
 var ai_frame: int = -1
 var ai_budget: int = 0
 
@@ -54,6 +56,7 @@ func restore_sector_state() -> void:
 	pending_sector_memory.clear()
 
 func sector_remaining(coord: Vector2i) -> float:
+	if regions.enabled() and coord!=sector_coord and regions.sessions.has(coord): return maxf(0,float(regions.sessions[coord].sector_deadline)-elapsed)
 	var key := SectorGenerator.key(coord)
 	if is_client: return float(remote_sector_times.get(key,0))
 	if coord==sector_coord and area_index!=-1: return maxf(0,sector_deadline-elapsed)
@@ -66,6 +69,9 @@ func sector_refresh_text(coord: Vector2i) -> String:
 
 func sector_times() -> Dictionary:
 	var times := {}
+	if regions.enabled():
+		for coord in regions.sessions:
+			if coord!=Vector2i.ZERO: times[SectorGenerator.key(coord)] = maxf(0,float(regions.sessions[coord].sector_deadline)-elapsed)
 	for key in sector_memory: times[key] = maxf(0,float(sector_memory[key].expires)-elapsed)
 	if area_index!=-1: times[SectorGenerator.key(sector_coord)] = maxf(0,sector_deadline-elapsed)
 	return times
@@ -96,8 +102,10 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("light",48)
 	bag.add("grenade",1)
 	bag.add("medkit",1)
+	bag.add("bat",1)
 
 func _ready() -> void:
+	regions.world = self
 	prediction.world = self
 	MobilePlatform.configure(get_tree().root)
 	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
@@ -114,6 +122,7 @@ func _ready() -> void:
 		camera.size = 27
 	if MobilePlatform.lightweight(): MobileVisuals.prewarm(self)
 	ClayScenery.decorate(base_arena,8417,0)
+	var music := MusicDirector.new(); music.world = self; add_child(music)
 	player.weapons.sync_hand()
 	refresh_core_model()
 	if network!=null and network.mode=="host": player.display_name = network.nickname
@@ -136,7 +145,7 @@ func select_hotbar(index: int) -> void:
 	else: player.weapons.sync_hand()
 
 func local_input(actor: Node3D) -> Dictionary:
-	var blocked: bool = (hud!=null and not hud.mode.is_empty()) or (is_client and not client_scene_ready)
+	var blocked: bool = combat_paused() or (hud!=null and not hud.mode.is_empty()) or (is_client and not client_scene_ready)
 	if MobilePlatform.enabled() and is_instance_valid(touch_controls):
 		var frame := touch_controls.frame()
 		if blocked:
@@ -167,7 +176,11 @@ func _process(delta: float) -> void:
 			enemy.animate_replica(delta)
 		notice_left = maxf(0,notice_left-delta)
 		return
+	if combat_paused():
+		if upgrades.offers.is_empty(): upgrades.roll()
+		return
 	super._process(delta)
+	regions.tick(delta)
 	airdrops.tick(delta)
 	for cache in caches:
 		if cache.has_meta("weapon"):
@@ -177,6 +190,9 @@ func _process(delta: float) -> void:
 	rockets = player.bag.count("rocket")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("melee") and hud.mode.is_empty():
+		for i in range(9):
+			if player.bag.slots[i].id=="bat": select_hotbar(i); return
 	if MobilePlatform.enabled() and (event is InputEventMouseButton or event is InputEventMouseMotion): return
 	# Consume Space here so it never reaches the legacy manual-wave action.
 	if event.is_action_pressed("roll"):
@@ -223,6 +239,10 @@ func send_action(action: String,data: Dictionary) -> void:
 	else: perform_action(1,action,data)
 
 func perform_action(peer: int,action: String,data: Dictionary) -> bool:
+	if combat_paused() and action!="choice": return false
+	if regions.enabled() and avatars.has(peer):
+		if action=="travel": return regions.travel(avatars[peer],int(data.get("direction",-1)))
+		if avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return perform_action(peer,action,data))==true
 	if is_client or not avatars.has(peer) or phase=="ended": return false
 	var actor: Node3D = avatars[peer]
 	if actor.health.dead: return false
@@ -281,7 +301,11 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 	player = saved
 	return result
 
+func load_individual_sector(direction: int) -> bool:
+	return super.step_sector(direction)
+
 func step_sector(direction: int) -> bool:
+	if regions.enabled(): return regions.travel(player,direction)
 	if is_client: return false
 	if direction<0 or direction>3: return false
 	for actor in avatars.values():
@@ -324,7 +348,7 @@ func scale_field_population() -> void:
 	field_queue.clear()
 	var occupied := {}
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.field_enemy and enemy.encounter_index>=0: occupied[enemy.encounter_index] = true
+		if enemy.field_enemy and field_root.is_ancestor_of(enemy) and enemy.encounter_index>=0: occupied[enemy.encounter_index] = true
 	for i in range(descriptor.count):
 		if not i in field_defeated and not occupied.has(i): field_queue.append(i)
 
@@ -361,6 +385,8 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	return enemy
 
 func spawn_minion(parent: Node3D,kind: int,index: int) -> void:
+	if regions.enabled() and coord_at(parent.global_position)!=sector_coord:
+		regions.run_in(coord_at(parent.global_position),func(): spawn_minion(parent,kind,index)); return
 	if get_tree().get_nodes_in_group("enemies").size()>=72: return
 	var root_node: Node3D = field_root if parent.field_enemy else base_root
 	var pos: Vector3 = parent.global_position-root_node.global_position+Vector3(1.5+index,0,1)
@@ -376,6 +402,8 @@ func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 		if offset.length()<radius: body.take_damage(damage)
 
 func enemy_defeated(enemy: Node3D) -> void:
+	if regions.enabled() and coord_at(enemy.global_position)!=sector_coord:
+		regions.run_in(coord_at(enemy.global_position),func(): enemy_defeated(enemy)); return
 	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
 		enemy.set_meta("boss_rewarded",true)
 		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
@@ -431,7 +459,7 @@ func mark_boss_drop(loot: Node3D) -> void:
 		var ring := VisualFactory.ring(loot,.7,Vector3(0,.08,0),Color("efc86d")); ring.name = "BossReward"
 
 func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true) -> Node3D:
-	var parent: Node3D = base_root if region_at(pos)=="0:0" else field_root
+	var parent: Node3D = regions.root_at(coord_at(pos)) if regions.enabled() else base_root if region_at(pos)=="0:0" else field_root
 	if parent==null: return null
 	var items := get_tree().get_nodes_in_group("survival_loot").filter(func(pile): return pile.get_parent()==parent and not pile.is_queued_for_deletion())
 	if items.size()>=128:
@@ -466,6 +494,7 @@ func raid_house(id: int) -> Node3D:
 	return null
 
 func house_source_open(actor: Node3D,source: Node3D) -> bool:
+	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return house_source_open(actor,source))==true
 	if not source.has_meta("house_id"): return true
 	var house := raid_house(int(source.get_meta("house_id")))
 	if house==null or not house.can_open(): return false
@@ -482,6 +511,8 @@ func nearest_source(actor: Node3D) -> Node3D:
 	return result
 
 func tick_gather(actor: Node3D,delta: float) -> void:
+	if regions.enabled() and actor.region_coord!=sector_coord:
+		regions.run_in(actor.region_coord,func(): tick_gather(actor,delta)); return
 	if actor.roll_left>0: actor.cancel_gather(); return
 	if is_client: return
 	if actor.gather_target==null:
@@ -724,6 +755,10 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.weapons.sync_hand()
 
 func snapshot() -> Dictionary:
+	if regions.enabled():
+		regions.initialize()
+		for coord in regions.sessions.keys():
+			if coord!=Vector2i.ZERO: regions.run_in(coord,remember_sector)
 	prune_sector_memory()
 	var saved_player: CharacterBody3D = player
 	player = avatars.get(1,player)
@@ -732,6 +767,7 @@ func snapshot() -> Dictionary:
 	rockets = player.bag.count("rocket")
 	var data := super.snapshot()
 	data.format = 6
+	data.horde_interval = HORDE_INTERVAL
 	data.airdrops = airdrops.dump()
 	data.sector_memory = sector_memory.duplicate(true)
 	data.bag = player.bag.dump()
@@ -805,6 +841,8 @@ func migrate_snapshot(data: Variant) -> Variant:
 	return converted
 
 func apply_snapshot(data: Dictionary) -> void:
+	if not data.has("horde_interval") and float(data.get("horde_left",0))>0:
+		data = data.duplicate(true); data.horde_left = HORDE_INTERVAL
 	super.apply_snapshot(data)
 	player.bag.restore(data.bag)
 	player.weapons.sync_hand()
@@ -871,6 +909,7 @@ func attach_peer(peer: int,identity: String,nickname: String) -> bool:
 	actor.set_script(load("res://scripts/survival/survivor.gd"))
 	actor.world = self
 	actor.peer_id = peer
+	actor.region_coord = sector_coord
 	actor.profile_id = identity
 	actor.display_name = nickname.left(16)
 	starter_bag(actor.bag)
@@ -891,7 +930,7 @@ func attach_peer(peer: int,identity: String,nickname: String) -> bool:
 		actor.weapons.sync_hand()
 	actor.invulnerable = 3
 	waves.rescale()
-	if area_index!=-1: scale_field_population()
+	rescale_regions()
 	notify("%s entrou · %d jogadores · população x%d" % [actor.display_name,party_count(),team_multiplier()])
 	return true
 
@@ -902,10 +941,11 @@ func detach_peer(peer: int) -> void:
 	avatars.erase(peer)
 	actor.queue_free()
 	waves.rescale()
-	if area_index!=-1: scale_field_population()
+	rescale_regions()
 
-func net_scene() -> Dictionary:
-	return {"rev":scene_revision,"coord":sector_coord,"descriptor":descriptor.duplicate(true),"mode":game_mode}
+func net_scene(peer: int = 1) -> Dictionary:
+	if regions.enabled() and avatars.has(peer) and avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return net_scene(peer))
+	return {"rev":peer_revision(peer),"coord":sector_coord,"descriptor":descriptor.duplicate(true),"mode":game_mode}
 
 func apply_net_scene(data: Dictionary) -> void:
 	if not is_client: return
@@ -939,29 +979,34 @@ func apply_net_scene(data: Dictionary) -> void:
 	last_scene_revision = int(data.rev)
 
 func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
+	if regions.enabled() and avatars.has(peer) and avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return net_state(peer,include_bulk))
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"cast":enemy.windup})
 	var structures: Array = []
-	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk else []):
+	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
 		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left})
 	var loot: Array = []
 	for s in (get_tree().get_nodes_in_group("survival_sources") if include_bulk else []):
+		if regions.enabled() and coord_at(s.global_position)!=sector_coord: continue
 		if s.is_queued_for_deletion() or s.get_meta("airdrop",false) or s.has_meta("house_id"): continue
 		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible,"boss":bool(s.get_meta("boss_drop",false))})
 	var hazards: Array = []
 	for group in ["campaign_projectiles","acid_pools"]:
 		for node in get_tree().get_nodes_in_group(group):
+			if regions.enabled() and coord_at(node.global_position)!=sector_coord: continue
 			if not node.has_meta("uid"): node.set_meta("uid",next_id())
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not is_client or int(data.rev)!=last_scene_revision: return
@@ -1022,6 +1067,8 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			add_child(actor)
 			avatars[id] = actor
 		var actor: Node3D = avatars[id]
+		actor.region_coord = state.get("region",sector_coord)
+		actor.weapons.swing_left = maxf(actor.weapons.swing_left,float(state.get("swing",0)))
 		actor.target_position = state.p
 		if actor!=player or not prediction.enabled():
 			if actor.position.distance_to(state.p)>15: actor.position = state.p
@@ -1238,6 +1285,7 @@ func interaction_hint(actor: Node3D) -> String:
 	return ""
 
 func mobile_context(actor: Node3D) -> Dictionary:
+	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return mobile_context(actor))
 	if actor.health.dead or phase=="ended": return {}
 	var preparing := sector_coord==Vector2i.ZERO and area_index==-1 and phase=="prep" and not waves.running
 	var collect := ""
@@ -1264,7 +1312,7 @@ func local_mobile_context() -> Dictionary:
 	return mobile_context(player)
 
 func local_position(actor: Node3D) -> Vector3:
-	return actor.position-sector_offset(sector_coord)
+	return actor.position-sector_offset(actor.region_coord if regions.enabled() else sector_coord)
 
 func _physics_process(_delta: float) -> void:
 	if is_client: prediction.tick()
@@ -1285,3 +1333,45 @@ func allow_enemy_think(enemy: Node3D) -> bool:
 	if int(enemy.get_instance_id()%4)!=int(tick%4) or ai_budget>=4: return false
 	ai_budget += 1
 	return true
+
+func combat_paused() -> bool:
+	return resources.pending>0 and phase!="ended"
+
+func coord_at(point: Vector3) -> Vector2i:
+	return Vector2i(roundi(point.x/120),roundi(point.z/120))
+func peer_revision(peer: int) -> int:
+	return avatars[peer].region_revision if regions.enabled() and avatars.has(peer) else scene_revision
+func actor_revision(actor: Node3D) -> int:
+	return peer_revision(actor.peer_id)
+func region_at(point: Vector3) -> String:
+	return SectorGenerator.key(coord_at(point)) if regions.enabled() else super.region_at(point)
+func region_active(key: String) -> bool:
+	if not regions.enabled(): return super.region_active(key)
+	var parts := key.split(":")
+	return parts.size()==2 and regions.has(Vector2i(int(parts[0]),int(parts[1])))
+func route_for_enemy(enemy: Node3D,target: Vector3) -> PackedVector2Array:
+	if regions.enabled() and enemy.field_enemy and coord_at(enemy.global_position)!=sector_coord: return regions.run_in(coord_at(enemy.global_position),func(): return route_for_enemy(enemy,target))
+	return super.route_for_enemy(enemy,target)
+func field_alive() -> int:
+	if not regions.enabled(): return super.field_alive()
+	return get_tree().get_nodes_in_group("enemies").filter(func(e): return e.field_enemy and is_instance_valid(field_root) and field_root.is_ancestor_of(e)).size()
+func bump_region_revision(coord: Vector2i) -> void:
+	if not regions.enabled(): scene_revision += 1; return
+	for actor in avatars.values():
+		if actor.region_coord==coord: actor.region_revision += 1
+	scene_revision = avatars[1].region_revision
+
+func rescale_regions() -> void:
+	if not regions.enabled():
+		if area_index!=-1: scale_field_population()
+		return
+	regions.initialize()
+	for coord in regions.sessions.keys():
+		if coord!=Vector2i.ZERO: regions.run_in(coord,scale_field_population)
+
+func notice_for(peer: int) -> String:
+	var entry: Dictionary = private_notices.get(peer,{})
+	if not entry.is_empty() and Time.get_ticks_msec()<int(entry.expires): return entry.text
+	return notice if notice_left>0 else ""
+func private_notice(peer: int,text: String) -> void:
+	private_notices[peer] = {"text":text,"expires":Time.get_ticks_msec()+4000}

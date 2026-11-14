@@ -45,6 +45,7 @@ func tick() -> void:
 	if not pending_state.is_empty():
 		var state := pending_state; pending_state = {}
 		reconcile(state)
+	if world.combat_paused(): history.clear(); pending_roll = null; world.player.velocity = Vector3.ZERO; return
 	if not enabled() or not ready or world.phase=="ended" or world.player.health.dead: return
 	# Bound replay storage while continuing to send the newest intent during packet gaps.
 	if history.size()>=MAX_HISTORY: history.pop_front()
@@ -81,6 +82,10 @@ func reconcile(state: Dictionary) -> void:
 func preview_fire(frame: Dictionary) -> void:
 	fire_left = maxf(0,fire_left-STEP)
 	var actor: Node3D = world.player
+	if actor.bag.hand()=="bat":
+		if frame.get("fire",false) and fire_left<=0 and actor.roll_left<=0 and not world.combat_paused():
+			fire_left = .65; actor.weapons.swing_left = .32; world.audio.play_tone(110,.14,.1)
+		return
 	var slot: int = ItemBag.WEAPON_IDS.find(actor.bag.hand())
 	if not frame.get("fire",false) or slot<0  or fire_left>0 or actor.roll_left>0 or actor.weapons.reload_left>0 or frame.get("interact",false): return
 	var pending := 0

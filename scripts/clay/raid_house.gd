@@ -63,7 +63,7 @@ func _ready() -> void:
 	label = VisualFactory.health_label(self,2.7); label.position = Vector3(0,2.7,-5.5); label.font_size = 21
 
 func active_guards() -> Array[Node]:
-	return get_tree().get_nodes_in_group("house_guards").filter(func(enemy): return not enemy.health.dead and int(enemy.get_meta("house_id",-1))==int(data.id))
+	return get_tree().get_nodes_in_group("house_guards").filter(func(enemy): return not enemy.health.dead and int(enemy.get_meta("house_id",-1))==int(data.id) and world.coord_at(enemy.global_position)==world.coord_at(global_position))
 
 func remaining() -> int:
 	if not world.is_client: guard_total = int(data.guards)*world.team_multiplier()
@@ -74,7 +74,12 @@ func defeated(index: int) -> void:
 	if remaining()==0: world.notify("CASA %d LIMPA · Caixa de suprimentos liberada. Segure E no interior." % (int(data.id)+1))
 
 func _physics_process(delta: float) -> void:
-	if world.is_client or world.phase=="ended": return
+	if world.regions.enabled() and world.coord_at(global_position)!=world.sector_coord:
+		world.regions.run_in(world.coord_at(global_position),func(): tick_guards(delta)); return
+	tick_guards(delta)
+
+func tick_guards(delta: float) -> void:
+	if world.is_client or world.phase=="ended" or world.combat_paused(): return
 	guard_total = int(data.guards)*world.team_multiplier()
 	if not activated:
 		for actor in world.avatars.values():

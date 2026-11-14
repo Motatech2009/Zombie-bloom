@@ -218,7 +218,7 @@ func run() -> void:
 	old.format = 2
 	for key in ["horde_left","world_seed","rng_state","visit_serial","discovered"]: old.erase(key)
 	var migrated: Dictionary = world.migrate_snapshot(old)
-	check(world.valid_snapshot(migrated) and migrated.horde_left==210 and old.format==2,"old manual-wave save converts without changing its source")
+	check(world.valid_snapshot(migrated) and migrated.horde_left==600 and old.format==2,"old manual-wave save converts without changing its source")
 	var saved_visits: int = int(world.discovered["1:0"].visits)
 	world.queue_free()
 	await process_frame

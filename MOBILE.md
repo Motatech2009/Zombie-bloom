@@ -1,6 +1,8 @@
 # Zombie Bloom 0.13 — PC + Android
 
-**Atualização 0.13.2:** [correção dos recuos do convidado ao andar](NETWORK_0132.md).
+**Atualização 0.14.0:** [taco, música, pausa de melhorias e viagens independentes](FRONTIER_014.md). Atualize todos os participantes; protocolo 14.
+
+**Na 0.13.2:** [correção dos recuos do convidado ao andar](NETWORK_0132.md).
 
 **Na 0.13.1:** [ações, vendedor, mira e tela cheia](MOBILE_0131.md). [Base da 0.13: qualidade e rede](MOBILE_013.md).
 
@@ -32,6 +34,7 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 | Toque no zumbi | Seleciona esse alvo; segure ATIRAR para disparar e toque no chão para cancelar |
 | SEGURE ATIRAR | Escolhe um alvo visível no alcance da arma; continua procurando enquanto estiver segurado; solte para parar |
 | LANÇAR GRANADA / USAR KIT | Usa uma unidade do item selecionado por toque; toque no cenário antes para apontar a granada |
+| GOLPEAR | Taco sem gasto de munição; a assistência exige alvo próximo e sem parede |
 | ROLAR | Esquiva com recarga de cinco segundos, validada pelo anfitrião |
 | RECARGA | Recarregar a arma com munição da mochila |
 | Segurar COLETAR / GUARDAR | Abrir caixas ou transferir materiais ao Núcleo; aparece só quando existe essa ação |
@@ -57,7 +60,7 @@ Interface em paisagem 960×540, com proporção mantida e faixas quando necessá
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 1018 verificações, incluindo 48 de entrada/UI móvel, 35 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 1071 verificações, incluindo 48 de entrada/UI móvel, 35 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 
