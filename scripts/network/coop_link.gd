@@ -75,7 +75,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,14)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,15)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -154,8 +154,8 @@ func blast_event(point: Vector3,radius: float) -> void:
 func _join_ready(token: String,name_text: String,protocol: int = 12) -> void:
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=14:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 0.14."); return
+	if protocol!=15:
+		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 0.15."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return

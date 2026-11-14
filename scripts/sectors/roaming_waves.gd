@@ -55,7 +55,7 @@ func complete() -> void:
 		world.finish(true,"Vinte cercos e seus chefes vencidos. O Núcleo resistiu.")
 	else:
 		world.phase = "prep" if world.area_index==-1 else "expedition"
-		world.horde_left = world.HORDE_INTERVAL
+		world.horde_left = world.preparation_seconds(wave+1)
 		alarm_level = 0
 		world.notify("REFÚGIO DEFENDIDO · Próximo cerco em %d s." % ceili(world.horde_left))
 		if world.area_index==-1: world.save_checkpoint(false)

@@ -1,6 +1,6 @@
 class_name MusicDirector
 extends Node
-## Original generative score: minor-key pads, melody, bass and soft percussion.
+## Original dark ambient score: slow dissonant drones and sparse low pulses.
 var world: Node3D
 var voices: Array[AudioStreamPlayer] = []
 var next_voice := 0
@@ -8,8 +8,8 @@ var cache: Dictionary = {}
 var beat := 0
 var clock := .5
 var combat := false
-const MELODY := [62,69,65,72,69,65,64,60,58,65,62,69,65,62,60,57]
-const ROOTS := [50,46,53,48]
+const MELODY := [50,51,57,53,50,48,51,45]
+const ROOTS := [38,37,41,36]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -25,8 +25,8 @@ func note(midi: int,duration: float,kind: String,gain: float) -> void:
 		var rng := RandomNumberGenerator.new(); rng.seed = midi+count
 		for i in range(count):
 			var t := float(i)/16000
-			var envelope := minf(1,t/.025)*pow(1-t/duration,1.5 if kind=="pad" else 3.0)
-			var value := sin(TAU*frequency*t)*.65+sin(TAU*frequency*2*t)*.17+sin(TAU*frequency*.5*t)*.12
+			var envelope := minf(1,t/(.65 if kind=="pad" else .025))*pow(1-t/duration,1.5 if kind=="pad" else 3.0)
+			var value := sin(TAU*frequency*t)*.65+sin(TAU*frequency*1.007*t)*.17+sin(TAU*frequency*.5*t)*.12
 			if kind=="drum": value = (rng.randf_range(-1,1)*.4+sin(TAU*70*t*(1-t/duration))*.5)*exp(-t*22)
 			bytes.encode_s16(i*2,int(clampf(value*envelope,-1,1)*21000))
 		var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS; stream.mix_rate = 16000; stream.data = bytes
@@ -40,12 +40,12 @@ func _process(delta: float) -> void:
 	for voice in voices: voice.volume_db = linear_to_db(maxf(.0001,GameSettings.music_volume*float(voice.get_meta("gain",.1))*quiet))
 	clock -= delta
 	if clock>0: return
-	clock = .30 if combat else .48
+	clock = .40 if combat else .85
 	var root_note: int = ROOTS[(beat/8)%ROOTS.size()]
 	if beat%8==0:
-		note(root_note+12,1.6,"pad",.3); note(root_note+19,1.6,"pad",.16)
-	if beat%4==0: note(root_note,1.0,"bass",.28)
-	note(MELODY[beat%MELODY.size()]+(12 if combat and beat%4==3 else 0),.38,"bell",.16 if combat else .12)
+		note(root_note+12,3.8,"pad",.28); note(root_note+13,3.8,"pad",.065)
+	if beat%4==0: note(root_note,1.8,"bass",.24)
+	if beat%4==2: note(MELODY[(beat/4)%MELODY.size()],1.4,"pad",.10 if combat else .07)
 	if combat: note(36 if beat%4==0 else 48,.16,"drum",.22 if beat%2==0 else .09)
 	beat = (beat+1)%64
 

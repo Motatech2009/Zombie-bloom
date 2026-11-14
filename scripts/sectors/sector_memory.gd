@@ -48,7 +48,7 @@ static func capture(world: Node3D) -> Dictionary:
 		state.enemies.append({"kind":enemy.enemy_kind,"stage":int(enemy.get_meta("boss_stage",0)),"index":enemy.encounter_index,"pos":vector(enemy.position),"hp":enemy.health.current,"max":enemy.health.maximum,"damage":enemy.spec.values.damage,"speed":enemy.spec.values.speed,"enraged":enemy.enraged,"shield":enemy.shield_left,"ability":.3 if enemy.windup>0 else clampf(enemy.ability_left,-1,100),"summons":enemy.summon_casts,"house":int(enemy.get_meta("house_id",-1)),"guard":int(enemy.get_meta("house_guard",-1)),"event":int(enemy.get_meta("supply_event",-1)),"supply_index":int(enemy.get_meta("supply_index",-1))})
 	for loot in world.get_tree().get_nodes_in_group("survival_loot"):
 		if loot.get_parent()!=world.field_root or loot.is_queued_for_deletion(): continue
-		state.loose.append({"pos":vector(loot.position),"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":str(loot.get_meta("power","")),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false))})
+		state.loose.append({"pos":vector(loot.position),"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":str(loot.get_meta("power","")),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false)),"origin":bool(loot.get_meta("world_origin",false))})
 	return state
 
 static func restore(world: Node3D,state: Dictionary) -> void:
@@ -77,7 +77,7 @@ static func restore(world: Node3D,state: Dictionary) -> void:
 		if item.event>=0:
 			enemy.set_meta("supply_event",int(item.event)); enemy.set_meta("supply_index",int(item.supply_index)); enemy.add_to_group("airdrop_guards")
 	for item in state.loose:
-		var loot: Node3D = world.spawn_loot(world.sector_offset(world.sector_coord)+point(item.pos),items(item.contents),int(item.xp),item.power,int(item.loaded),item.auto)
+		var loot: Node3D = world.spawn_loot(world.sector_offset(world.sector_coord)+point(item.pos),items(item.contents),int(item.xp),item.power,int(item.loaded),item.auto,bool(item.get("origin",false)))
 		if loot!=null and item.boss: world.mark_boss_drop(loot)
 
 static func number(value,low: float,high: float,integer: bool = false) -> bool:

@@ -101,11 +101,12 @@ func show_main() -> void:
 	if FileAccess.file_exists("user://zombie_bloom_endless_v6.json") or FileAccess.file_exists("user://zombie_bloom_endless_v5.json") or FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
 		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
 	UI.button(content,"JOGAR COM AMIGOS",show_multiplayer)
+	UI.button(content,"PERFIL / LOGIN / RANKINGS",show_account)
 	UI.button(content, "COMO JOGAR", show_help)
 	UI.button(content, "CONFIGURAÇÕES", show_settings)
 	UI.button(content, "SAIR", func(): get_tree().quit())
 	UI.spacer(content, 4)
-	UI.label(content, "PC + ANDROID 0.12   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+	UI.label(content, "PC + ANDROID 0.15   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
 
 func resume_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
@@ -160,11 +161,11 @@ func _process(delta: float) -> void:
 func show_multiplayer() -> void:
 	clear_content()
 	UI.label(content,"COOPERATIVO / ATÉ 4",28,UI.LIME)
-	UI.label(content,"Conexão direta. O grupo viaja junto.
+	UI.label(content,"Conexão direta. Exploração por quadrantes independentes.
 2 jogadores = x2; 3 = x4; 4 = x8 infectados.",17,UI.MUTED)
 	var name_field := LineEdit.new()
 	name_field.placeholder_text = "Seu nome"
-	name_field.text = "Sobrevivente"
+	name_field.text = Account.nickname
 	name_field.max_length = 16
 	content.add_child(name_field)
 	var address := LineEdit.new()
@@ -206,3 +207,36 @@ func show_multiplayer() -> void:
 
 func _notification(what: int) -> void:
 	if MobilePlatform.enabled() and what==NOTIFICATION_WM_GO_BACK_REQUEST and is_instance_valid(content): show_main()
+
+func show_account() -> void:
+	clear_content()
+	UI.label(content,"PERFIL E RANKINGS",28,UI.LIME)
+	var name_field := LineEdit.new(); name_field.text = Account.nickname; name_field.max_length = 16; content.add_child(name_field)
+	UI.button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
+	var email := LineEdit.new(); email.placeholder_text = "E-mail privado"; content.add_child(email)
+	var password := LineEdit.new(); password.placeholder_text = "Senha (mínimo 8 caracteres)"; password.secret = true; content.add_child(password)
+	UI.button(content,"ENTRAR",func():
+		var value := password.text; password.clear(); Account.authenticate(email.text,value))
+	UI.button(content,"CRIAR CONTA",func():
+		var value := password.text; password.clear(); Account.authenticate(email.text,value,true))
+	UI.button(content,"SAIR DA CONTA",func(): Account.logout())
+	UI.button(content,"ENVIAR CÓDIGO DE RECUPERAÇÃO",func(): Account.recover(email.text))
+	var code := LineEdit.new(); code.placeholder_text = "Código de recuperação do e-mail"; content.add_child(code)
+	UI.button(content,"TROCAR SENHA COM CÓDIGO",func():
+		var value := password.text; password.clear(); Account.reset_password(email.text,code.text,value))
+	var status_label := UI.label(content,Account.status,16,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var mode := OptionButton.new(); mode.add_item("Campanha"); mode.add_item("Infinito"); content.add_child(mode)
+	var metric := OptionButton.new(); metric.add_item("Abates"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); content.add_child(metric)
+	var page := SpinBox.new(); page.min_value = 1; page.max_value = 1000; content.add_child(page)
+	UI.button(content,"CONSULTAR RANKING",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected],["campaign","endless"][mode.selected],(int(page.value)-1)*25))
+	var results := UI.label(content,"Ranking competitivo pendente de serviço de partidas verificadas. Login não valida pontuações.",16,UI.MUTED); results.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var refresh := func():
+		if not is_instance_valid(status_label): return
+		status_label.text = Account.status
+		results.text = ""
+		for row in Account.rows: results.text += "%s · %s · %s\n" % [row.get("position",""),row.get("nickname",""),row.get("score",0)]
+		if results.text.is_empty(): results.text = "Sem resultados verificados disponíveis. Offline e saves continuam disponíveis."
+	Account.changed.connect(refresh)
+	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
+	UI.label(content,"Senha e sessão ficam apenas na memória. Entre novamente ao abrir o jogo. O apelido local não vincula saves à conta.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(content,"VOLTAR / JOGAR OFFLINE",show_main)

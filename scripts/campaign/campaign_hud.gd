@@ -269,6 +269,8 @@ func show_pause() -> void:
 	save.disabled = world.area_index!=-1 or world.phase!="prep" or world.resources.pending>0
 	var restore := UI.button(box,"RESTAURAR CHECKPOINT",func(): world.load_checkpoint())
 	restore.disabled = world.area_index!=-1 or world.phase!="prep" or not FileAccess.file_exists(world.checkpoint_path())
+	if world.get("records")!=null and has_method("show_run_records"):
+		UI.button(box,"ESTATÍSTICAS DO SAVE",func(): close_modal(); call("show_run_records"))
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"VOLTAR AO MENU",menu)
 

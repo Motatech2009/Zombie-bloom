@@ -1,3 +1,7 @@
+# 0.15.0 validation — 2026-11-14
+
+1,180 checks passed: 18 suites (1,038), four-process ENet co-op (113), capped-motion regression (9), independent-sector ENet regression (20). New account tests use a mocked provider, not real credentials. PC/touch forms instantiated headlessly with scrolling and masked passwords; no rendered/mobile hardware certification. The new preparation suite runs without SFX to avoid shutting down during a transient audio playback. Full import has no parse/compile errors. SQL schema was reviewed but not executed on PostgreSQL/Supabase. See ACCOUNTS_015.md for external blockers. CI results are independent of local results.
+
 # Validação 0.14.0 — setores independentes, taco e trilha
 
 1071 verificações aprovadas: 929 nas 16 suítes, 113 no cooperativo com quatro processos, 9 no teste de movimento e 20 na sessão ENet com anfitrião ao norte e dois convidados ao sul. [Resultados](docs/frontier014-results.txt). [Comportamento e limites](FRONTIER_014.md).

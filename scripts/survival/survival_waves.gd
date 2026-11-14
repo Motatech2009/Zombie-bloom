@@ -17,6 +17,7 @@ func enemy_type(index: int) -> int:
 
 func complete() -> void:
 	if not running: return
+	world.record_victory(wave)
 	var enabled: bool = world.checkpoint_enabled
 	world.checkpoint_enabled = false
 	super.complete()

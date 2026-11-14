@@ -338,6 +338,7 @@ func show_pause() -> void:
 		var save := UI.button(box,"SALVAR REFÚGIO",func(): world.save_checkpoint(); close_modal())
 		save.disabled = world.area_index!=-1 or world.phase!="prep" or world.resources.pending>0
 	UI.button(box,"CONEXÃO / AMIGOS",func(): close_modal(); show_connection())
+	UI.button(box,"ESTATÍSTICAS DO SAVE",func(): close_modal(); show_run_records())
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"ENCERRAR SALA" if not world.is_client else "SAIR DA SALA",menu)
 
@@ -439,3 +440,12 @@ func party_locations() -> String:
 		var point: Vector2i = actor.region_coord if world.connected_game() else world.sector_coord
 		lines.append("%s: (%d,%d)%s" % [actor.display_name,point.x,point.y," · CAÍDO" if actor.health.dead else ""])
 	return "\n".join(lines)
+
+func show_run_records() -> void:
+	if not mode.is_empty(): return
+	var box := open_modal("records",700)
+	UI.label(box,"ESTATÍSTICAS DESTE SAVE · NÃO VERIFICADAS",20,UI.LIME)
+	for identity in world.records.totals:
+		var row: Dictionary = world.records.totals[identity]
+		UI.label(box,"%s: %d abates · %d hordas · %d sucata" % [identity,row.kills,row.hordes,row.scrap],16)
+	UI.button(box,"FECHAR",close_modal)

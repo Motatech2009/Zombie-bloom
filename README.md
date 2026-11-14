@@ -1,3 +1,7 @@
+# Atualização 0.15.0
+
+Preparação progressiva, trilha sombria e integração de contas ainda não ativada. Consulte [ACCOUNTS_015.md](ACCOUNTS_015.md) antes de usar login/rankings. Todos devem atualizar e abrir sala nova (protocolo 15).
+
 # Zombie Bloom — PC + Android 0.14.0
 
 **Explore por partes. Transporte sua carga. Construa o refúgio. Sobreviva ao cerco.**

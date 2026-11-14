@@ -6,6 +6,13 @@ var world_rng := RandomNumberGenerator.new()
 var world_seed: int = 1
 var visit_serial: int = 0
 const HORDE_INTERVAL := 600.0
+static func preparation_seconds(next_wave: int) -> float:
+	if next_wave<=2: return 600.0
+	if next_wave==3: return 480.0
+	if next_wave==4: return 360.0
+	if next_wave==5: return 300.0
+	return 180.0
+
 var horde_left: float = HORDE_INTERVAL
 var travel_cooldown: float = 0
 var exit_labels: Array[Label3D] = []

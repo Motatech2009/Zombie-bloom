@@ -130,6 +130,7 @@ func choose_target() -> void:
 			if not survivor.health.dead: target = survivor; break
 
 func take_damage(amount: float) -> void:
+	if amount>0 and not health.dead: set_meta("killer_peer",world.shot_owner)
 	super.take_damage(amount*.35 if shield_left>0 else amount)
 
 func die() -> void:

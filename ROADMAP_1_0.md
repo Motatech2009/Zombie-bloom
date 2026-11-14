@@ -1,6 +1,6 @@
 # Planejamento da versão 1.0 — contas e rankings
 
-Status: ideia aprovada para planejamento futuro. Login, backend e rankings ainda não implementados. A 0.14 permanece focada no jogo e no cooperativo.
+Status: 0.15 implementa formulário/adaptador de contas, consultas de rankings e estatísticas locais não verificadas. Integração online não ativada: falta projeto dedicado e validador autoritativo. Veja ACCOUNTS_015.md para configuração, autoria e limites. Não há sincronização de saves nem ranking competitivo operacional.
 
 ## Objetivo
 

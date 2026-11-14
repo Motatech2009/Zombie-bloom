@@ -68,7 +68,7 @@ func shoot(direction: Vector3) -> bool:
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
-	world.shot_owner = 1
+	world.shot_owner = 0
 	return result
 
 func special_shot(direction: Vector3) -> bool:
@@ -146,12 +146,13 @@ func swing(direction: Vector3) -> bool:
 		if not actor.get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): continue
 		victims.append(enemy)
 	victims.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
+	world.shot_owner = actor.peer_id
 	for enemy in victims.slice(0,3):
 		enemy.take_damage(32*damage_multiplier)
 		enemy.stun_left = maxf(enemy.stun_left,.12 if enemy.is_boss else .2)
 		world.effects.burst(MobileTargeting.point(enemy),Color("d6b077"),3)
 	world.shot_owner = actor.peer_id
 	world.shot_visual(origin,origin+direction.normalized()*2,Color("d6b077"))
-	world.shot_owner = 1
+	world.shot_owner = 0
 	world.audio.play_tone(110,.14,.1); fired.emit()
 	return true
