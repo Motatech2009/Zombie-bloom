@@ -1,0 +1,161 @@
+name: Validate and build Zombie Bloom
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GODOT_VERSION: 4.6.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned official Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          echo 'd0bc2113065e481c9c2c2b2c37daa4e8be3fe9e27f0ab9ab0b6096e9a37907f3  /tmp/godot.zip' | sha256sum --check
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_*
+          echo /tmp/godot >> "$GITHUB_PATH"
+          ln -s "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /tmp/godot/godot
+      - name: Import project and run integration suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
+          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
+          grep -E 'RESULT: [0-9]+ checks, 0 failures' tests.log
+          godot --headless --path . --script res://tests/campaign_tests.gd 2>&1 | tee campaign-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' campaign-tests.log; then exit 1; fi
+          grep -E 'CAMPAIGN RESULT: [0-9]+ checks, 0 failures' campaign-tests.log
+          godot --headless --path . --script res://tests/defense_tests.gd 2>&1 | tee defense-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' defense-tests.log; then exit 1; fi
+          grep -E 'DEFENSE RESULT: [0-9]+ checks, 0 failures' defense-tests.log
+          godot --headless --path . --script res://tests/sectors_tests.gd 2>&1 | tee sectors-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' sectors-tests.log; then exit 1; fi
+          grep -E 'SECTORS RESULT: [0-9]+ checks, 0 failures' sectors-tests.log
+          godot --headless --path . --script res://tests/survival_tests.gd 2>&1 | tee survival-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' survival-tests.log; then exit 1; fi
+          grep -E 'SURVIVAL RESULT: [0-9]+ checks, 0 failures' survival-tests.log
+          godot --headless --path . --script res://tests/arsenal_tests.gd 2>&1 | tee arsenal-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' arsenal-tests.log; then exit 1; fi
+          grep -E 'ARSENAL RESULT: [0-9]+ checks, 0 failures' arsenal-tests.log
+          godot --headless --path . --script res://tests/fortress_tests.gd 2>&1 | tee fortress-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' fortress-tests.log; then exit 1; fi
+          grep -E 'FORTRESS RESULT: [0-9]+ checks, 0 failures' fortress-tests.log
+          godot --headless --path . --script res://tests/roll_tests.gd 2>&1 | tee roll-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' roll-tests.log; then exit 1; fi
+          grep -E 'ROLL RESULT: [0-9]+ checks, 0 failures' roll-tests.log
+          godot --headless --path . --script res://tests/clay_tests.gd 2>&1 | tee clay-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' clay-tests.log; then exit 1; fi
+          grep -E 'CLAY RESULT: [0-9]+ checks, 0 failures' clay-tests.log
+          godot --headless --path . --script res://tests/internet_tests.gd 2>&1 | tee internet-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' internet-tests.log; then exit 1; fi
+          grep -E 'INTERNET RESULT: [0-9]+ checks, 0 failures' internet-tests.log
+          godot --headless --path . --script res://tests/mobile_tests.gd 2>&1 | tee mobile-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-tests.log; then exit 1; fi
+          grep -E 'MOBILE RESULT: [0-9]+ checks, 0 failures' mobile-tests.log
+          godot --headless --path . --script res://tests/mobile_targeting_tests.gd 2>&1 | tee targeting-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' targeting-tests.log; then exit 1; fi
+          grep -E 'TARGETING RESULT: [0-9]+ checks, 0 failures' targeting-tests.log
+          godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-performance-tests.log; then exit 1; fi
+          grep -E 'MOBILE PERFORMANCE RESULT: [0-9]+ checks, 0 failures' mobile-performance-tests.log
+          godot --headless --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' progression-tests.log; then exit 1; fi
+          grep -E 'PROGRESSION RESULT: [0-9]+ checks, 0 failures' progression-tests.log
+          godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-experience-tests.log; then exit 1; fi
+          grep -E 'MOBILE EXPERIENCE RESULT: [0-9]+ checks, 0 failures' mobile-experience-tests.log
+          godot --headless --path . --script res://tests/frontier_features_tests.gd 2>&1 | tee frontier-features-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' frontier-features-tests.log; then exit 1; fi
+          grep -E 'FRONTIER FEATURES RESULT: [0-9]+ checks, 0 failures' frontier-features-tests.log
+          godot --headless --path . --script res://tests/online_preparation_tests.gd 2>&1 | tee online-preparation-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' online-preparation-tests.log; then exit 1; fi
+          grep -E 'ONLINE PREPARATION RESULT: [0-9]+ checks, 0 failures' online-preparation-tests.log
+          godot --headless --path . --script res://tests/account_tests.gd 2>&1 | tee account-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-tests.log; then exit 1; fi
+          grep -E 'ACCOUNT RESULT: [0-9]+ checks, 0 failures' account-tests.log
+          python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
+          python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
+          python3 tests/run_split_test.py 2>&1 | tee split-tests.log
+      - name: Install matching export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          echo '3fbe2c0e2dec9d537ab9ec97bcf8da91dcf23357fc51f67092dd068d839290a8  /tmp/templates.tpz' | sha256sum --check
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          mv /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Export portable Windows build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds/windows
+          godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
+          test -s builds/windows/ZombieBloom.exe
+          if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
+          cp ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          mkdir -p builds/windows/docs
+          cp docs/frontier014-results.txt docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-Windows-x64
+          path: builds/windows/
+          if-no-files-found: error
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK and development signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          python3 .ci/configure_android.py
+      - name: Export signed Android test APK
+        shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: builds/signing/development.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          mkdir -p builds/android
+          godot --headless --path . --export-debug "Android" builds/android/ZombieBloom-Android.apk 2>&1 | tee android-export.log
+          test -s builds/android/ZombieBloom-Android.apk
+          if grep -E 'SCRIPT ERROR:|ERROR:' android-export.log; then exit 1; fi
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose builds/android/ZombieBloom-Android.apk | tee android-signature.log
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging builds/android/ZombieBloom-Android.apk | tee android-manifest.log
+          grep 'android.permission.INTERNET' android-manifest.log
+          grep "native-code:.*arm64-v8a" android-manifest.log
+          cp ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-Android-APK
+          path: builds/android/
+          if-no-files-found: error
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Validation-logs
+          path: |
+            *.log
+            builds/coop-test/*.log
+            builds/motion-test/*.log
+            builds/split-test/*.log

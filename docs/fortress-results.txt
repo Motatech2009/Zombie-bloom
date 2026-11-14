@@ -1,0 +1,103 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ten defenses keep original indices and add four distinct tools
+PASS: editable defense model imports: barricade N1
+PASS: editable defense model imports: barricade N2
+PASS: editable defense model imports: barricade N3
+PASS: editable defense model imports: turret N1
+PASS: editable defense model imports: turret N2
+PASS: editable defense model imports: turret N3
+PASS: editable defense model imports: wall N1
+PASS: editable defense model imports: wall N2
+PASS: editable defense model imports: wall N3
+PASS: editable defense model imports: gate N1
+PASS: editable defense model imports: gate N2
+PASS: editable defense model imports: gate N3
+PASS: editable defense model imports: spikes N1
+PASS: editable defense model imports: spikes N2
+PASS: editable defense model imports: spikes N3
+PASS: editable defense model imports: station N1
+PASS: editable defense model imports: station N2
+PASS: editable defense model imports: station N3
+PASS: editable defense model imports: wire N1
+PASS: editable defense model imports: wire N2
+PASS: editable defense model imports: wire N3
+PASS: editable defense model imports: bastion N1
+PASS: editable defense model imports: bastion N2
+PASS: editable defense model imports: bastion N3
+PASS: editable defense model imports: cannon N1
+PASS: editable defense model imports: cannon N2
+PASS: editable defense model imports: cannon N3
+PASS: editable defense model imports: shock N1
+PASS: editable defense model imports: shock N2
+PASS: editable defense model imports: shock N3
+PASS: Nucleus has a distinct fortified model N1
+PASS: Nucleus has a distinct fortified model N2
+PASS: Nucleus has a distinct fortified model N3
+PASS: Nucleus has a distinct fortified model N4
+PASS: supply crate contains an actual parachute and multiple meshes
+PASS: walking over an actual infected death drop collects it without holding E
+PASS: automatic drops still go to the bag, never directly to the core wallet
+PASS: flying infected drops land on the ground and collect while passing underneath
+PASS: full bag leaves the physical material surplus on the ground
+PASS: XP collects instantly even when material stacks do not fit
+PASS: walking pickup cannot grant the same experience twice
+PASS: freeing one bag slot allows the remaining ground stack to collect automatically
+PASS: second authoritative survivor is available for pickup ownership
+PASS: nearest co-op survivor receives the stack exactly once
+PASS: timed crate test reaches a real generated sector
+PASS: walking across a regional supply box does not collect it
+PASS: regional box still requires uninterrupted gathering time
+PASS: finished regional gathering transfers a small batch
+PASS: party returns from timed crate test to the fixed base
+PASS: paid improvement raises an actual barricade to N2
+PASS: N2 replaces wood geometry/material with reinforced steel
+PASS: paid improvement reaches N3
+PASS: N3 replaces the model/material again with concrete and armor
+PASS: third-tier defense cannot charge for a fourth defense level
+PASS: opening a gate lifts its door while the frame stays fixed
+PASS: gate refuses to close over a survivor
+PASS: razor wire allows passage while cutting and slowing ground infected
+PASS: airborne infected are unaffected by razor wire
+PASS: razor wire wears down rather than granting permanent free contact damage
+PASS: cannon launches a delayed physical-flight shell
+PASS: cannon shell deals area damage to multiple infected
+PASS: defensive shells do not damage allied survivors or the core
+PASS: electric defense hits and briefly interrupts both ground and flying targets
+PASS: EMP disables new electric defense based on range
+PASS: EMP prevents new electric defense from firing
+PASS: authoritative build command accepts a new defense index above five
+PASS: new defenses consume the existing shared placement quota
+PASS: core upgrade replaces its complete fortified model
+PASS: airdrop does not occur before ten minutes
+PASS: ten-minute deadline generates one valid synchronized supply event
+PASS: random supply area is reachable and never replaces the fixed core
+PASS: entering the supply sector creates a heavily infested high-risk area
+PASS: crate physically descends under a visible parachute
+PASS: descending/guarded crate cannot open early
+PASS: landed drop starts its escort with a real boss
+PASS: drop leader has elite durability above an ordinary early infected
+PASS: neither automatic nor manual transfer bypasses the escort lock
+PASS: escort materialization caps at twelve active guards
+PASS: escort deaths are counted once without advancing the ordinary sector population
+PASS: supply sector supports retreat and procedural re-entry
+PASS: defeated supply guards do not respawn on a sector reroll
+PASS: re-entry starts at an undefeated guard index rather than regenerating the boss
+PASS: crate unlocks only when all required escort guards are defeated
+PASS: unlocked airdrop still requires three seconds of solo gathering
+PASS: finished airdrop gathering transfers one capped stack and preserves its remainder
+PASS: supply event becomes collected exactly once when all contents are recovered
+PASS: airdrop resources also require transport back to the core
+PASS: returning preserves the existing fortress after supply recovery
+PASS: v6 checkpoint validates ten defense types and full supply state
+PASS: checkpoint restores supply clock/progress and spent construction quota
+PASS: checkpoint reconstructs the new heavy wall through the fortress factory
+PASS: v5 migration supplies a clean ten-minute clock without mutating the old save
+PASS: invalid escort indices reject the whole save
+PASS: invalid new defense index is rejected
+PASS: live map displays supply status without pausing the siege clock
+PASS: scrollable construction catalog covers all ten defense types
+PASS: next ten-minute interval replaces the previous supply with a new random event
+PASS: invalid supply timer is rejected
+PASS: duplicate escort deaths cannot unlock a drop
+FORTRESS RESULT: 100 checks, 0 failures

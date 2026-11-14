@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pistol"
+title = "Pistola"
+color = Color(0.86, 0.95, 0.69, 1)
+values = {
+"damage": 22.0,
+"interval": 0.3,
+"range": 26.0,
+"capacity": 12,
+"reload": 1.15,
+"pellets": 1,
+"spread": 0.014
+}

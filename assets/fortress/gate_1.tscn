@@ -1,0 +1,94 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_te4sk"]
+albedo_color = Color(0.34901962, 0.2901961, 0.23137255, 1)
+metallic = 0.02
+roughness = 0.93
+
+[sub_resource type="BoxMesh" id="BoxMesh_brocx"]
+size = Vector3(0.32, 2.1, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hwpme"]
+size = Vector3(0.32, 2.1, 0.65)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2wgu3"]
+albedo_color = Color(0.6431373, 0.48235294, 0.32156864, 1)
+metallic = 0.02
+roughness = 0.93
+
+[sub_resource type="BoxMesh" id="BoxMesh_njlcg"]
+size = Vector3(2.65, 0.42, 0.42)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6dmam"]
+size = Vector3(2.65, 0.42, 0.42)
+
+[sub_resource type="BoxMesh" id="BoxMesh_8fjpr"]
+size = Vector3(2.65, 0.42, 0.42)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7hgwm"]
+size = Vector3(2.65, 0.42, 0.42)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hnlt3"]
+albedo_color = Color(0.34901962, 0.2901961, 0.23137255, 1)
+metallic = 0.72
+roughness = 0.37
+
+[sub_resource type="BoxMesh" id="BoxMesh_5ivig"]
+size = Vector3(0.13, 2.205, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_puv1u"]
+size = Vector3(0.13, 2.205, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_h2mch"]
+size = Vector3(3.1, 0.25, 0.8)
+
+[node name="gate_N1" type="Node3D" unique_id=392534018]
+metadata/tier = 1
+metadata/material = "Madeira / sucata"
+
+[node name="@MeshInstance3D@101" type="MeshInstance3D" parent="." unique_id=60266846]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.35, 1.05, 0)
+material_override = SubResource("StandardMaterial3D_te4sk")
+mesh = SubResource("BoxMesh_brocx")
+
+[node name="@MeshInstance3D@102" type="MeshInstance3D" parent="." unique_id=706382795]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, 1.05, 0)
+material_override = SubResource("StandardMaterial3D_te4sk")
+mesh = SubResource("BoxMesh_hwpme")
+
+[node name="Door" type="Node3D" parent="." unique_id=1824690004]
+
+[node name="@MeshInstance3D@104" type="MeshInstance3D" parent="Door" unique_id=1117825312]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("StandardMaterial3D_2wgu3")
+mesh = SubResource("BoxMesh_njlcg")
+
+[node name="@MeshInstance3D@105" type="MeshInstance3D" parent="Door" unique_id=1246137750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+material_override = SubResource("StandardMaterial3D_2wgu3")
+mesh = SubResource("BoxMesh_6dmam")
+
+[node name="@MeshInstance3D@106" type="MeshInstance3D" parent="Door" unique_id=483552380]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = SubResource("StandardMaterial3D_2wgu3")
+mesh = SubResource("BoxMesh_8fjpr")
+
+[node name="@MeshInstance3D@107" type="MeshInstance3D" parent="Door" unique_id=1272618179]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5999999, 0)
+material_override = SubResource("StandardMaterial3D_2wgu3")
+mesh = SubResource("BoxMesh_7hgwm")
+
+[node name="@MeshInstance3D@108" type="MeshInstance3D" parent="Door" unique_id=1776873552]
+transform = Transform3D(0.7825475, 0.62259096, 0, -0.62259096, 0.7825475, 0, 0, 0, 1, 0, 1.05, -0.39)
+material_override = SubResource("StandardMaterial3D_hnlt3")
+mesh = SubResource("BoxMesh_5ivig")
+
+[node name="@MeshInstance3D@109" type="MeshInstance3D" parent="Door" unique_id=1467401169]
+transform = Transform3D(0.7825475, -0.62259096, 0, 0.62259096, 0.7825475, 0, 0, 0, 1, 0, 1.05, -0.39)
+material_override = SubResource("StandardMaterial3D_hnlt3")
+mesh = SubResource("BoxMesh_puv1u")
+
+[node name="@MeshInstance3D@103" type="MeshInstance3D" parent="." unique_id=1077588036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1999998, 0)
+material_override = SubResource("StandardMaterial3D_te4sk")
+mesh = SubResource("BoxMesh_h2mch")

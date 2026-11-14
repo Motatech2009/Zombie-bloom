@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+[sub_resource type="StandardMaterial3D" id="wood"]
+albedo_color = Color(0.64,0.39,0.20,1)
+roughness = 0.95
+[sub_resource type="StandardMaterial3D" id="grip"]
+albedo_color = Color(0.78,0.84,0.72,1)
+roughness = 1.0
+[sub_resource type="CylinderMesh" id="barrel"]
+top_radius = 0.095
+bottom_radius = 0.04
+height = 1.1
+radial_segments = 8
+[sub_resource type="CylinderMesh" id="handle"]
+top_radius = 0.04
+bottom_radius = 0.04
+height = 0.32
+radial_segments = 8
+[node name="Bat" type="Node3D"]
+[node name="Barrel" type="MeshInstance3D" parent="."]
+position = Vector3(0,0,-0.59)
+rotation = Vector3(-1.5708,0,0)
+mesh = SubResource("barrel")
+material_override = SubResource("wood")
+[node name="Grip" type="MeshInstance3D" parent="."]
+position = Vector3(0,0,0.12)
+rotation = Vector3(-1.5708,0,0)
+mesh = SubResource("handle")
+material_override = SubResource("grip")

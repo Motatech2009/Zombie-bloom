@@ -1,0 +1,242 @@
+extends Node3D
+var canvas: CanvasLayer
+var root: Control
+var content: VBoxContainer
+var sun: DirectionalLight3D
+var camera: Camera3D
+var actors: Array[Node3D] = []
+var clock: float = 0
+
+func _ready() -> void:
+	var music := MusicDirector.new(); add_child(music)
+	MobilePlatform.configure(get_tree().root)
+	get_tree().paused = false
+	Controls.setup()
+	ClayStyle.prewarm()
+	GameSettings.load_settings()
+	MobilePlatform.configure(get_tree().root)
+	sun = VisualFactory.lighting(self)
+	sun.shadow_enabled = GameSettings.use_shadows()
+	add_child(Arena.new())
+	var display := Node3D.new()
+	add_child(display)
+	display.position = Vector3(2, 0, 1)
+	VisualFactory.cylinder(display, 2, .5, Vector3(0, .25, 0), Color("243f43"))
+	VisualFactory.box(display, Vector3(2.6, 1.8, 2.6), Vector3(0, 1.3, 0), Color("49615b"))
+	VisualFactory.cylinder(display, .5, 1, Vector3(0, 2.6, 0), UI.LIME, true)
+	VisualFactory.ring(display, 1.7, Vector3(0, 2.0, 0), UI.LIME)
+	for i in range(8):
+		var parent := Node3D.new()
+		add_child(parent)
+		parent.position = Vector3(cos(i * .8) * 8 + 2, 0, sin(i * .8) * 9)
+		parent.rotation.y = -i * .8 + PI * .5
+		actors.append(VisualFactory.human(parent, Color("627653"), false))
+	camera = Camera3D.new()
+	add_child(camera)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 23
+	camera.position = Vector3(22, 26, 23)
+	camera.look_at(Vector3(-3, 0, 1))
+	canvas = CanvasLayer.new()
+	add_child(canvas)
+	root = Control.new()
+	canvas.add_child(root)
+	UI.fill(root)
+	root.theme = UI.theme()
+	var dim := ColorRect.new()
+	root.add_child(dim)
+	UI.fill(dim)
+	dim.color = Color(.018, .045, .06, .35)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var left := PanelContainer.new()
+	root.add_child(left)
+	left.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	left.offset_right = 610
+	if MobilePlatform.enabled():
+		left.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		left.offset_left = 8; left.offset_right = -8; left.offset_top = 8; left.offset_bottom = -8
+	left.add_theme_stylebox_override("panel", UI.style(Color(.025, .07, .09, .94), Color("263c41"), 0))
+	var margin := MarginContainer.new()
+	left.add_child(margin)
+	margin.add_theme_constant_override("margin_left", 28 if MobilePlatform.enabled() else 58)
+	margin.add_theme_constant_override("margin_right", 28 if MobilePlatform.enabled() else 58)
+	margin.add_theme_constant_override("margin_top", 14 if MobilePlatform.enabled() else 38)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	var menu_scroll := ScrollContainer.new()
+	margin.add_child(menu_scroll)
+	menu_scroll.scroll_deadzone = 12
+	menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content = UI.vbox(menu_scroll,7)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	show_main()
+	var footer := UI.label(root, "GODOT 4.6   /   SOLO + COOPERATIVO", 13, Color("c1d2c5"))
+	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	footer.position += Vector2(-440, -35)
+	if "--smoke-menu" in OS.get_cmdline_user_args():
+		get_tree().create_timer(1).timeout.connect(func(): get_tree().quit())
+
+func clear_content() -> void:
+	if content.get_parent() is ScrollContainer: content.get_parent().scroll_vertical = 0
+	for child in content.get_children():
+		content.remove_child(child)
+		child.queue_free()
+
+func show_main() -> void:
+	clear_content()
+	UI.label(content, "MOTA TECH   /   PROJETO 001", 13, UI.LIME)
+	UI.spacer(content, 12)
+	UI.label(content, "ZOMBIE BLOOM" if MobilePlatform.enabled() else "ZOMBIE",36 if MobilePlatform.enabled() else 50)
+	var bloom := UI.label(content, "BLOOM.", 62, UI.LIME)
+	bloom.add_theme_constant_override("outline_size", 0)
+	if MobilePlatform.enabled(): bloom.hide()
+	UI.label(content, "O mundo acabou.\nSeu refúgio ainda resiste.", 24)
+	UI.spacer(content, 4)
+	var description := UI.label(content, "Construa sua fortaleza e resista ao cerco.\nSetores imprevisíveis. Cercos automáticos.", 17, UI.MUTED)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.spacer(content, 6)
+	UI.button(content,"CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
+	UI.button(content,"DEFESA INFINITA / ∞",func(): choose_mode("endless"))
+	if FileAccess.file_exists("user://zombie_bloom_campaign_v6.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v5.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v4.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v3.json") or FileAccess.file_exists("user://zombie_bloom_campaign_v2.json") or FileAccess.file_exists("user://zombie_bloom_arena_campaign.json"):
+		UI.button(content,"CONTINUAR CAMPANHA",func(): resume_mode("campaign"))
+	if FileAccess.file_exists("user://zombie_bloom_endless_v6.json") or FileAccess.file_exists("user://zombie_bloom_endless_v5.json") or FileAccess.file_exists("user://zombie_bloom_endless_v4.json") or FileAccess.file_exists("user://zombie_bloom_endless_v3.json") or FileAccess.file_exists("user://zombie_bloom_endless_v2.json"):
+		UI.button(content,"CONTINUAR INFINITO",func(): resume_mode("endless"))
+	UI.button(content,"JOGAR COM AMIGOS",show_multiplayer)
+	UI.button(content,"PERFIL / LOGIN / RANKINGS",show_account)
+	UI.button(content, "COMO JOGAR", show_help)
+	UI.button(content, "CONFIGURAÇÕES", show_settings)
+	UI.button(content, "SAIR", func(): get_tree().quit())
+	UI.spacer(content, 4)
+	UI.label(content, "PC + ANDROID 0.15   ·   ÚLTIMO REFÚGIO", 12, UI.MUTED)
+
+func resume_mode(mode: String) -> void:
+	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
+	continue_campaign()
+
+func choose_mode(mode: String) -> void:
+	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
+	start_game()
+
+func start_game() -> void:
+	var campaign = load("res://scripts/campaign/campaign_world.gd")
+	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v6.json") or FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v5.json") or FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v4.json"):
+		clear_content()
+		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
+		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
+Quer começar outro refúgio?",20,UI.MUTED)
+		UI.button(content,"COMEÇAR NOVO REFÚGIO",begin_campaign,true)
+		UI.button(content,"CONTINUAR O SALVO",continue_campaign)
+		UI.button(content,"VOLTAR",show_main)
+	else:
+		begin_campaign()
+
+func begin_campaign() -> void:
+	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
+	get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+
+func continue_campaign() -> void:
+	load("res://scripts/campaign/campaign_world.gd").resume_requested = true
+	get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+
+func show_help() -> void:
+	clear_content()
+	UI.label(content,"DEFENDA. EXPLORE. CONSTRUA.",27,UI.LIME)
+	var help := UI.label(content,"WASD mover · SHIFT correr · Mouse mirar\nESPAÇO rolamento · recarga de 5 segundos\nClique usar / disparar · R recarregar · 1–9 barra\nB construir · Q girar · 1–9 / 0 peças na prévia\nSegure E abrir caixas / depositar · E atravessar\nG melhorar · X desmontar · F portão\nV armeiro · C granada · H atalhos\nM mapa · I / TAB bolsa e depósito\nF5 salvar · F9 restaurar · ESC pausa\n\nAs hordas começam pelo relógio, com um chefe\nem cada rodada, mesmo quando você está longe.\nSua base continua lutando e pode ser destruída.\n\nUse E nas saídas Norte, Leste, Sul ou Oeste.\nCada entrada gera outro cenário e loot.\nHá setores tranquilos e outros infestados.\nDrops de infectados: coleta automática.\nCaixas exigem tempo. Airdrop a cada 10 minutos.\n\nO Núcleo é fixo em (0,0). M mostra seu caminho.\nDefesas limitadas por cerco. Bolsa: 18 espaços.\nCampanha: 20 cercos. Infinito: sem rodada final.",17,UI.MUTED)
+	if MobilePlatform.enabled(): help.text = "Toque na metade esquerda: analógico flutuante para mover. Empurre até a borda para correr.\nToque no zumbi: escolhe o alvo. Segure ATIRAR para disparar. Toque no chão para cancelar.\nA trava pausa atrás de paredes ou fora de alcance e termina quando o alvo morre.\nSEGURE ATIRAR: escolhe um alvo visível e alcançável. Solte para parar.\nGranada e kit: um uso por toque no botão. Toque no cenário para apontar a granada.\nModo leve: menos detalhes e efeitos, com contador de FPS.\nROLAR: esquiva com recarga de 5 segundos.\nRECARREGAR: usa munição da mochila.\nCOLETAR: segure nas caixas, no Núcleo ou para ajudar um aliado. Nas saídas, toque para atravessar.\nBOLSA: organize os 18 espaços. As setas da barra alcançam os nove espaços rápidos.\nAÇÕES: mapa, construção, vendedor, melhorias e portões.\nConstrução: escolha a defesa, toque no chão, gire e confirme COLOCAR.\n\nPara jogar com PC: o computador cria a sala e o Android entra com o mesmo IP e porta UDP. Atualizem ambos para a mesma versão.\n\nHordas começam pelo relógio. Áreas e loot ficam preservados por três minutos; sair e voltar antes não renova.\nSolo: coleta e depósito levam 40% menos tempo. Chefes têm mais vida e suprimentos extras.\nTransporte os recursos ao Núcleo, limpe casas e mantenha as defesas."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(content,"VOLTAR",show_main)
+
+func show_settings() -> void:
+	clear_content()
+	UI.label(content, "CONFIGURAÇÕES", 35)
+	UI.spacer(content, 28)
+	UI.settings(content, func(): MobilePlatform.configure(get_tree().root); ClayStyle.refresh_tree(self); sun.shadow_enabled = GameSettings.use_shadows())
+	UI.spacer(content, 12)
+	UI.button(content, "VOLTAR", show_main)
+
+func _process(delta: float) -> void:
+	clock += delta
+	for i in range(actors.size()):
+		VisualFactory.animate_human(actors[i], clock + i, .25, 0, false)
+
+func show_multiplayer() -> void:
+	clear_content()
+	UI.label(content,"COOPERATIVO / ATÉ 4",28,UI.LIME)
+	UI.label(content,"Conexão direta. Exploração por quadrantes independentes.
+2 jogadores = x2; 3 = x4; 4 = x8 infectados.",17,UI.MUTED)
+	var name_field := LineEdit.new()
+	name_field.placeholder_text = "Seu nome"
+	name_field.text = Account.nickname
+	name_field.max_length = 16
+	content.add_child(name_field)
+	var address := LineEdit.new()
+	address.placeholder_text = "IP, IP:porta ou endereço da rede virtual"
+	address.text = "127.0.0.1"
+	content.add_child(address)
+	var port := SpinBox.new()
+	port.min_value = 1024
+	port.max_value = 65535
+	port.value = 24567
+	content.add_child(port)
+	var mode_picker := OptionButton.new()
+	mode_picker.add_item("Defesa infinita")
+	mode_picker.add_item("Campanha de 20 cercos")
+	content.add_child(mode_picker)
+	var resume_check := CheckButton.new()
+	resume_check.text = "Continuar o refúgio salvo deste modo"
+	content.add_child(resume_check)
+	var internet_check := CheckButton.new()
+	internet_check.text = "Tentar abrir a porta no roteador (UPnP / internet)"
+	content.add_child(internet_check)
+	UI.label(content,"Em casas diferentes: use IP público com porta aberta ou o IP do Tailscale. Veja CONEXÃO no menu da sala.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var status := UI.label(content,"LAN: use o IP local. Internet: o anfitrião precisa receber UDP na porta escolhida.",15,UI.MUTED)
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var coop := get_node("/root/Coop")
+	var on_status := func(message: String):
+		if is_instance_valid(status): status.text = message
+	if not coop.status_changed.is_connected(on_status): coop.status_changed.connect(on_status)
+	UI.button(content,"CRIAR SALA",func():
+		load("res://scripts/campaign/campaign_world.gd").next_mode = "endless" if mode_picker.selected==0 else "campaign"
+		load("res://scripts/campaign/campaign_world.gd").resume_requested = resume_check.button_pressed
+		coop.nickname = name_field.text.strip_edges().left(16)
+		if coop.host_session(int(port.value))==OK:
+			if internet_check.button_pressed: coop.internet.enable(int(port.value))
+			get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+	,true)
+	UI.button(content,"ENTRAR NO IP",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text))
+	UI.button(content,"CANCELAR / VOLTAR",func(): coop.close_session(); show_main())
+
+func _notification(what: int) -> void:
+	if MobilePlatform.enabled() and what==NOTIFICATION_WM_GO_BACK_REQUEST and is_instance_valid(content): show_main()
+
+func show_account() -> void:
+	clear_content()
+	UI.label(content,"PERFIL E RANKINGS",28,UI.LIME)
+	var name_field := LineEdit.new(); name_field.text = Account.nickname; name_field.max_length = 16; content.add_child(name_field)
+	UI.button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
+	var email := LineEdit.new(); email.placeholder_text = "E-mail privado"; content.add_child(email)
+	var password := LineEdit.new(); password.placeholder_text = "Senha (mínimo 8 caracteres)"; password.secret = true; content.add_child(password)
+	UI.button(content,"ENTRAR",func():
+		var value := password.text; password.clear(); Account.authenticate(email.text,value))
+	UI.button(content,"CRIAR CONTA",func():
+		var value := password.text; password.clear(); Account.authenticate(email.text,value,true))
+	UI.button(content,"SAIR DA CONTA",func(): Account.logout())
+	UI.button(content,"ENVIAR CÓDIGO DE RECUPERAÇÃO",func(): Account.recover(email.text))
+	var code := LineEdit.new(); code.placeholder_text = "Código de recuperação do e-mail"; content.add_child(code)
+	UI.button(content,"TROCAR SENHA COM CÓDIGO",func():
+		var value := password.text; password.clear(); Account.reset_password(email.text,code.text,value))
+	var status_label := UI.label(content,Account.status,16,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var mode := OptionButton.new(); mode.add_item("Campanha"); mode.add_item("Infinito"); content.add_child(mode)
+	var metric := OptionButton.new(); metric.add_item("Abates"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); content.add_child(metric)
+	var page := SpinBox.new(); page.min_value = 1; page.max_value = 1000; content.add_child(page)
+	UI.button(content,"CONSULTAR RANKING",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected],["campaign","endless"][mode.selected],(int(page.value)-1)*25))
+	var results := UI.label(content,"Ranking competitivo pendente de serviço de partidas verificadas. Login não valida pontuações.",16,UI.MUTED); results.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var refresh := func():
+		if not is_instance_valid(status_label): return
+		status_label.text = Account.status
+		results.text = ""
+		for row in Account.rows: results.text += "%s · %s · %s\n" % [row.get("position",""),row.get("nickname",""),row.get("score",0)]
+		if results.text.is_empty(): results.text = "Sem resultados verificados disponíveis. Offline e saves continuam disponíveis."
+	Account.changed.connect(refresh)
+	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
+	UI.label(content,"Senha e sessão ficam apenas na memória. Entre novamente ao abrir o jogo. O apelido local não vincula saves à conta.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(content,"VOLTAR / JOGAR OFFLINE",show_main)

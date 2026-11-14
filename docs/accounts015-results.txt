@@ -1,0 +1,29 @@
+0.15.0 local validation, Godot 4.6.3
+Latest individual runs supersede earlier batch results.
+('tests/run_tests.gd', 0, ['RESULT: 85 checks, 0 failures'])
+('tests/campaign_tests.gd', 0, ['CAMPAIGN RESULT: 127 checks, 0 failures'])
+('tests/defense_tests.gd', 0, ['DEFENSE RESULT: 55 checks, 0 failures'])
+('tests/sectors_tests.gd', 0, ['SECTORS RESULT: 75 checks, 0 failures'])
+('tests/survival_tests.gd', 0, ['SURVIVAL RESULT: 80 checks, 0 failures'])
+('tests/arsenal_tests.gd', 0, ['ARSENAL RESULT: 95 checks, 0 failures'])
+('tests/fortress_tests.gd', 0, ['FORTRESS RESULT: 100 checks, 0 failures'])
+('tests/roll_tests.gd', 0, ['ROLL RESULT: 33 checks, 0 failures'])
+('tests/clay_tests.gd', 0, ['CLAY RESULT: 35 checks, 0 failures'])
+('tests/internet_tests.gd', 0, ['INTERNET RESULT: 31 checks, 0 failures'])
+('tests/mobile_tests.gd', 0, ['MOBILE RESULT: 48 checks, 0 failures'])
+('tests/mobile_targeting_tests.gd', 0, ['TARGETING RESULT: 35 checks, 0 failures'])
+('tests/mobile_performance_tests.gd', 0, ['MOBILE PERFORMANCE RESULT: 26 checks, 0 failures'])
+('tests/progression_tests.gd', 0, ['PROGRESSION RESULT: 43 checks, 0 failures'])
+('tests/mobile_experience_tests.gd', 0, ['MOBILE EXPERIENCE RESULT: 30 checks, 0 failures'])
+('tests/frontier_features_tests.gd', 0, ['FRONTIER FEATURES RESULT: 31 checks, 0 failures'])
+ONLINE PREPARATION RESULT: 95 checks, 0 failures
+ACCOUNT RESULT: 14 checks, 0 failures
+COOP HOST RESULT: 35 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures
+COOP CLIENT RESULT: 28 checks, 0 failures
+MOTION HOST RESULT: 3 checks, 0 failures
+MOTION CLIENT RESULT: 6 checks, 0 failures
+SPLIT HOST RESULT: 8 checks, 0 failures
+SPLIT CLIENT RESULT: 6 checks, 0 failures
+SPLIT CLIENT RESULT: 6 checks, 0 failures

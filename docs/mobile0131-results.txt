@@ -1,0 +1,28 @@
+Zombie Bloom 0.13.1 — local validation
+
+run_tests RESULT: 85 checks, 0 failures
+campaign_tests CAMPAIGN RESULT: 127 checks, 0 failures
+defense_tests DEFENSE RESULT: 55 checks, 0 failures
+sectors_tests SECTORS RESULT: 75 checks, 0 failures
+survival_tests SURVIVAL RESULT: 80 checks, 0 failures
+arsenal_tests ARSENAL RESULT: 93 checks, 0 failures
+fortress_tests FORTRESS RESULT: 100 checks, 0 failures
+roll_tests ROLL RESULT: 33 checks, 0 failures
+clay_tests CLAY RESULT: 35 checks, 0 failures
+internet_tests INTERNET RESULT: 31 checks, 0 failures
+mobile_tests MOBILE RESULT: 48 checks, 0 failures
+mobile_targeting_tests TARGETING RESULT: 35 checks, 0 failures
+mobile_performance_tests MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
+progression_tests PROGRESSION RESULT: 43 checks, 0 failures
+mobile_experience_tests MOBILE EXPERIENCE RESULT: 28 checks, 0 failures
+
+host exit 0
+COOP HOST RESULT: 35 checks, 0 failures
+client1 exit 0
+COOP CLIENT RESULT: 25 checks, 0 failures
+client2 exit 0
+COOP CLIENT RESULT: 25 checks, 0 failures
+client3 exit 0
+COOP CLIENT RESULT: 28 checks, 0 failures
+
+Total: 1007 checks, 0 failures.
