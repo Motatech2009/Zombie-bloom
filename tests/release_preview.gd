@@ -13,6 +13,7 @@ func run() -> void:
 	else:
 		scene = load("res://scenes/main/MainMenu.tscn").instantiate(); root.add_child(scene); current_scene = scene
 		if "--account" in args: scene.show_account()
+		if "--ranks" in args: scene.show_rankings()
 	GameSettings.fullscreen = false; root.mode = Window.MODE_WINDOWED
 	root.size = Vector2i(1152,648) if MobilePlatform.enabled() else Vector2i(1280,800)
 	await create_timer(1.0).timeout
@@ -20,6 +21,7 @@ func run() -> void:
 	var file := "mobile" if MobilePlatform.enabled() else "desktop"
 	if "--shop" in args: file += "-shop"
 	if "--account" in args: file += "-account"
+	if "--ranks" in args: file += "-ranks"
 	var error := root.get_texture().get_image().save_png("res://builds/"+file+"-1.0.png")
 	print("PREVIEW: ",file," error=",error)
 	scene.queue_free()

@@ -209,7 +209,7 @@ func fetch_ranking(metric: String,_mode: String = "all",_offset: int = 0) -> voi
 		for entry in reply.data:
 			if not entry is Dictionary or not entry.has("document"): continue
 			var values := decode_fields(entry.document.get("fields",{}))
-			rows.append({"position":rows.size()+1,"nickname":values.get("nickname","Sobrevivente"),"score":values.get(metric,0)})
+			rows.append({"position":rows.size()+1,"nickname":values.get("nickname","Sobrevivente"),"score":values.get(metric,0),"kills":values.get("kills",0)})
 		rank_cache[metric] = {"at":now,"rows":rows.duplicate(true)}; status = "Top 25 · "+{"kills":"abates","hordes":"hordas vencidas","scrap":"sucata coletada"}[metric]
 	else: status = "Ranking indisponível. Tente novamente mais tarde."
 	busy = false; changed.emit()

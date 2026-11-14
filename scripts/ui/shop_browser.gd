@@ -22,6 +22,7 @@ func show_in(owner: Node) -> void:
 	UI.label(brand,"BENTO",32,UI.LIME)
 	UI.label(brand,"ARMAS, MUNIÇÃO E MAIS UMA CHANCE.",12,UI.MUTED)
 	balance = UI.label(header,"",20,Color("edcf95"))
+	UI.button(box,"OFICINA / MELHORAR ARMA EQUIPADA",hud.show_weapon_workshop)
 	var nav := UI.hbox(box,8)
 	for i in range(3):
 		var index := i

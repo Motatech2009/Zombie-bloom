@@ -90,10 +90,11 @@ func layout_menu() -> void:
 	menu_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	menu_panel.offset_left = 20 if mobile else 42
 	menu_panel.offset_right = menu_panel.offset_left+width
-	menu_panel.offset_top = 18 if mobile else 42
+	menu_panel.offset_top = 12 if mobile else 42
 	menu_panel.offset_bottom = -44 if mobile else -52
 	for edge in ["left","right"]: menu_margin.add_theme_constant_override("margin_"+edge,18 if mobile else 28)
-	for edge in ["top","bottom"]: menu_margin.add_theme_constant_override("margin_"+edge,14 if mobile else 22)
+	for edge in ["top","bottom"]: menu_margin.add_theme_constant_override("margin_"+edge,10 if mobile else 22)
+	if is_instance_valid(content): content.add_theme_constant_override("separation",5 if home and mobile else 7)
 
 func menu_button(parent: Node,title: String,callback: Callable,primary: bool = false) -> Button:
 	var button := UI.button(parent,title,callback,primary)
@@ -110,14 +111,16 @@ func menu_button(parent: Node,title: String,callback: Callable,primary: bool = f
 func show_main() -> void:
 	clear_content(); home = true; layout_menu()
 	UI.label(content,"MOTA TECH  /  SOBREVIVÊNCIA COOPERATIVA",10,UI.MUTED)
-	UI.label(content,"ZOMBIE",31 if MobilePlatform.enabled() else 45)
-	UI.label(content,"BLOOM.",38 if MobilePlatform.enabled() else 56,UI.LIME)
+	UI.label(content,"ZOMBIE",26 if MobilePlatform.enabled() else 45)
+	UI.label(content,"BLOOM.",32 if MobilePlatform.enabled() else 56,UI.LIME)
 	if not MobilePlatform.enabled():
 		UI.label(content,"O mundo acabou. Seu refúgio ainda resiste.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.spacer(content,4)
 	menu_button(content,"JOGAR",show_play,true)
 	menu_button(content,"JOGAR COM AMIGOS",show_multiplayer)
-	menu_button(content,"MINHA CONTA E RANKINGS",show_account)
+	menu_button(content,"MEU ELO / CLASSIFICAÇÃO",show_rankings)
+	var progress := UI.label(content,RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates.",12,UI.LIME)
+	progress.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	menu_button(content,"CONFIGURAÇÕES",show_settings)
 	var secondary := UI.hbox(content,8)
 	menu_button(secondary,"COMO JOGAR",show_help).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -272,19 +275,42 @@ func show_account() -> void:
 
 func show_rankings() -> void:
 	clear_content()
-	menu_button(content,"‹ MINHA CONTA",show_account)
-	UI.label(content,"RANKINGS / TOP 25",27,UI.LIME)
-	UI.label(content,"Abates, vitórias e recursos de todas as suas partidas.",15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"‹ VOLTAR AO MENU",show_main)
+	UI.label(content,"MURAL DOS SOBREVIVENTES",23,UI.LIME)
+	var kills := int(Account.local_summary.get("kills",0))
+	var personal := UI.hbox(content,16)
+	var badge := RankBadge.new(); badge.level = RankProgress.tier(kills); personal.add_child(badge)
+	var info := UI.vbox(personal,4); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(info,Account.nickname if Account.signed_in() else "CONVIDADO",19)
+	UI.label(info,RankProgress.summary(kills),13,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var bar := UI.meter(info); bar.max_value = RankProgress.next_goal(kills); bar.value = kills
+	menu_button(content,"MINHA CONTA / ENTRAR",show_account)
+	UI.label(content,"SEU ELO CRESCE COM ABATES · A POSIÇÃO COMPARA JOGADORES REAIS",11,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.custom_minimum_size.y = 44; content.add_child(metric)
-	var consult := menu_button(content,"CONSULTAR RANKING",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected]),true)
-	var status_label := UI.label(content,Account.status,14,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var results := UI.label(content,"Escolha uma categoria e consulte a classificação.",16); results.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	menu_button(content,"VOLTAR",show_account)
+	var consult := menu_button(content,"CONSULTAR CLASSIFICAÇÃO",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected]),true)
+	var status_label := UI.label(content,Account.status,13,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var results := UI.vbox(content,8)
+	UI.label(results,"Consulte para ver jogadores reais. Nenhum perfil fictício é adicionado.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var refresh := func():
 		if not is_instance_valid(status_label): return
 		consult.disabled = Account.busy; status_label.text = Account.status
-		results.text = ""
-		for row in Account.rows: results.text += "%02d   %s   ·   %d\n" % [row.position,row.nickname,row.score]
-		if results.text.is_empty(): results.text = "Nenhum resultado disponível nesta consulta."
+		for child in results.get_children(): results.remove_child(child); child.queue_free()
+		if Account.rows.is_empty(): UI.label(results,"Ainda não há resultados nesta consulta.",15,UI.MUTED)
+		for row in Account.rows:
+			var card := UI.panel(results)
+			card.add_theme_stylebox_override("panel",UI.style(Color("203c3b"),Color("7d9170") if int(row.position)<=3 else Color("3c5654"),14))
+			var line := UI.hbox(card,10)
+			UI.label(line,"#%02d" % row.position,20,UI.LIME)
+			var emblem := RankBadge.new(); emblem.level = RankProgress.tier(int(row.get("kills",0))); emblem.custom_minimum_size = Vector2(48,54); line.add_child(emblem)
+			var player_info := UI.vbox(line,2); player_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			UI.label(player_info,str(row.nickname),17).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			UI.label(player_info,RankProgress.TITLES[emblem.level],12,UI.MUTED)
+			UI.label(line,str(row.score),19,UI.LIME)
 	Account.changed.connect(refresh)
 	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
+	UI.label(content,"ELOS POR ABATES",16,UI.LIME)
+	var gallery := GridContainer.new(); gallery.columns = 5; content.add_child(gallery)
+	for i in range(10):
+		var column := UI.vbox(gallery,2); column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var icon := RankBadge.new(); icon.level = i+1; icon.custom_minimum_size = Vector2(65,68); column.add_child(icon)
+		UI.label(column,str(RankProgress.THRESHOLDS[i]),12,UI.MUTED)

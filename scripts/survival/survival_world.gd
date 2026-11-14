@@ -279,6 +279,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 			if data.get("direction") is int: result = step_sector(data.direction)
 		"buy":
 			if data.get("weapon") is int: result = buy_weapon(data.weapon)
+		"tune": result = tune_weapon()
 		"service":
 			if data.get("id") is String: result = shop_service(data.id)
 		"swap":
@@ -419,7 +420,10 @@ func enemy_defeated(enemy: Node3D) -> void:
 		regions.run_in(coord_at(enemy.global_position),func(): enemy_defeated(enemy)); return
 	if enemy.get_meta("recorded_death",false): return
 	enemy.set_meta("recorded_death",true)
-	records.credit(record_identity(int(enemy.get_meta("killer_peer",0))),"kills",1)
+	var killer := int(enemy.get_meta("killer_peer",0))
+	if killer==0:
+		for peer in avatars: records.credit(record_identity(peer),"kills",1)
+	else: records.credit(record_identity(killer),"kills",1)
 	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
 		enemy.set_meta("boss_rewarded",true)
 		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
@@ -746,9 +750,11 @@ func choose_team_upgrade(index: int) -> bool:
 	return result
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
+	return {"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
 
 func valid_profile(data: Variant) -> bool:
+	if data is Dictionary and data.has("tuning"):
+		if not data.tuning is Array or data.tuning.size()!=9 or not data.tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
 	for value in data.ammo:
 		if not bounded(value,0,100000): return false
@@ -757,6 +763,7 @@ func valid_profile(data: Variant) -> bool:
 	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
 
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
+	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
 	actor.bag.restore(data.bag)
 	actor.weapons.ammo.assign(data.ammo)
 	actor.weapons.damage_multiplier = data.gun[0]
@@ -793,6 +800,7 @@ func snapshot() -> Dictionary:
 	data.account_run_id = account_run_id
 	data.airdrops = airdrops.dump()
 	data.sector_memory = sector_memory.duplicate(true)
+	data.weapon_tuning = player.weapons.tuning.duplicate()
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
 	data.built = built_this_round
@@ -805,6 +813,8 @@ func snapshot() -> Dictionary:
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("weapon_tuning"):
+		if not data.weapon_tuning is Array or data.weapon_tuning.size()!=9 or not data.weapon_tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if data is Dictionary and data.has("records") and not RunRecords.valid(data.records): return false
 	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
 	if not AirdropDirector.valid(data.get("airdrops")): return false
@@ -872,6 +882,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	records.restore(data.get("records",{}))
 	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
 	account_baseline = true
+	player.weapons.tuning.assign(data.get("weapon_tuning",[0,0,0,0,0,0,0,0,0]))
 	player.bag.restore(data.bag)
 	player.weapons.sync_hand()
 	depot_items = data.depot_items.duplicate()
@@ -1015,7 +1026,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
-		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"cast":enemy.windup})
+		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup})
 	var structures: Array = []
 	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
@@ -1152,6 +1163,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		enemy.health.maximum = state.max
 		enemy.replica_motion = float(state.get("motion",0))
 		enemy.windup = float(state.get("cast",0))
+		enemy.melee_left = float(state.get("melee",0)); enemy.recoil = float(state.get("recoil",0)); enemy.rush_left = float(state.get("rush",0))
 		enemy.health.current = state.hp
 		enemy.spec.title = state.title
 		enemy.label.hide()
@@ -1435,3 +1447,13 @@ func _exit_tree() -> void:
 	Account.persist()
 	Account.flush_progress()
 	super._exit_tree()
+
+func tune_weapon() -> bool:
+	if is_client or not local_mobile_context().get("shop",false): return false
+	var index: int = player.weapons.hand_weapon
+	if index<0 or player.weapons.tuning[index]>=3: return false
+	var tier: int = player.weapons.tuning[index]
+	if not pay({"scrap":[80,180,360][tier],"parts":[2,5,10][tier]}): return false
+	player.weapons.tuning[index] += 1
+	notify("OFICINA · "+Arsenal.WEAPONS[index].title+" melhorada. Dano, cadência, capacidade e recarga aprimorados.")
+	return true

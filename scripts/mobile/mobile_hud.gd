@@ -199,6 +199,7 @@ func show_browser(kind: String) -> void:
 	var box := open_modal(kind,880)
 	UI.label(box,"BENTO" if kind=="shop" else "CONSTRUÇÃO",24,UI.LIME)
 	browser_status = UI.label(box,"",14,UI.MUTED)
+	if kind=="shop": UI.button(box,"OFICINA / MELHORAR ARMA",show_weapon_workshop)
 	var tabs := UI.hbox(box,8); browser_tabs.clear()
 	var titles: Array = ["ARMAS","MUNIÇÃO","SUPRIMENTOS"] if kind=="shop" else ["TODAS","MUROS","TORRES","ARMADILHAS"]
 	for i in range(titles.size()):

@@ -1,3 +1,5 @@
+> Atualização de elos/combate: veja [RANK_COMBAT_1_0.md](RANK_COMBAT_1_0.md).
+
 > **Branch de desenvolvimento 1.0:** Firebase, rankings por conta e revisão de menu/loja. Configuração pública do Firebase `zombiebloom` incluída; ativação de serviços/regras reais ainda precisa de validação. Veja [RELEASE_1_0.md](RELEASE_1_0.md). A documentação 0.15 abaixo descreve a base histórica; seu adaptador Supabase foi substituído nesta branch.
 
 # Atualização 0.15.0

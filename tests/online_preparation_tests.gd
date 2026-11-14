@@ -45,7 +45,7 @@ func run() -> void:
 	check(w.records.totals.host.kills==1,"duplicate death credits one authored kill")
 	var defense = w.make_enemy(0,Vector3(4,0,10),false,-1); defense.set_physics_process(false)
 	w.enemy_defeated(defense)
-	check(w.records.totals.team_defenses.kills==1 and w.records.totals.host.kills==1,"team defenses never falsely credit host")
+	check(w.records.totals.host.kills==2,"team defense kills count toward the surviving team accounts")
 	w.record_victory(10); w.record_victory(10)
 	check(w.records.totals.host.hordes==9,"repeated wave event is idempotent per participant")
 	var saved: Dictionary = w.snapshot(); check(w.valid_snapshot(saved),"records serialize in v6 without replacing saves")

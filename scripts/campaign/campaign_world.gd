@@ -93,6 +93,8 @@ func create_vendor() -> void:
 	var stand := StaticBody3D.new()
 	base_root.add_child(stand)
 	stand.position = vendor_pos
+	stand.add_to_group("vendor_obstacles")
+	base_arena.mark_solid(vendor_pos,Vector2(4,4))
 	stand.collision_layer = 1
 	VisualFactory.collider(stand,Vector3(2.6,1.4,1.6),Vector3(0,.7,0))
 	VisualFactory.box(stand,Vector3(2.6,1,1.6),Vector3(0,.5,0),Color("596b62"))

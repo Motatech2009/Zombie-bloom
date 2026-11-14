@@ -430,3 +430,22 @@ func show_run_records() -> void:
 		var row: Dictionary = world.records.totals[identity]
 		UI.label(box,"%s: %d abates · %d hordas · %d sucata" % [identity,row.kills,row.hordes,row.scrap],16)
 	UI.button(box,"FECHAR",close_modal)
+
+func show_weapon_workshop() -> void:
+	close_modal()
+	var box := open_modal("workshop",650)
+	UI.label(box,"OFICINA DO BENTO",26,UI.LIME)
+	var index: int = world.player.weapons.hand_weapon
+	if index<0:
+		UI.label(box,"Equipe uma arma de fogo para aprimorá-la.",17)
+	else:
+		var tier: int = world.player.weapons.tuning[index]
+		UI.label(box,Arsenal.WEAPONS[index].title+" · "+["Original","Reforçada","Especialista","Obra-prima"][tier],21)
+		UI.label(box,"Cada nível: +15% dano, +8% cadência, +10% capacidade e recarga 8% mais rápida.
+A melhoria pertence a esta arma e fica salva neste refúgio.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if tier<3:
+			var cost := {"scrap":[80,180,360][tier],"parts":[2,5,10][tier]}
+			var buy := UI.button(box,"MELHORAR · "+CampaignData.cost_text(cost),func(): world.send_action("tune",{}); close_modal())
+			buy.disabled = not world.can_pay(cost) or not world.local_mobile_context().get("shop",false)
+		else: UI.label(box,"MELHORIA MÁXIMA",18,UI.LIME)
+	UI.button(box,"FECHAR",close_modal)

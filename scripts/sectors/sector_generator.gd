@@ -65,11 +65,14 @@ static func generate(seed_value: int,coord: Vector2i,visit: int,wave: int) -> Di
 	return {"seed":seed_value,"coord":coord,"visit":visit,"risk":risk,"biome":biome,"count":count,"blocks":blocks,"spawns":spawns,"caches":positions,"reward":loot,"rare":rare,"rare_pos":rare_pos,"roster":roster}
 
 static func boss_spec(number: int) -> Resource:
-	var flavors := [8,3,5,7,6]
-	var names := ["Carrasco Alfa","Carapaça Alfa","Arqui-corrosivo","Matriarca Alada","Predador Alfa"]
+	var flavors := [8,5,3,7,6]
+	var names := ["Quebra-Muros","Caldeirão","Matriarca de Argila","Tempestade Alada","Predador Alfa"]
 	var index := maxi(0,number-1)%flavors.size()
 	var result: Resource = CampaignData.enemy_spec(flavors[index]).duplicate(true)
 	result.title = names[index]
+	if index==0: result.id = "mauler"
+	if index==1: result.id = "mortar"
+	if index==2: result.id = "broodmother"
 	var stage := maxi(1,number)
 	result.values.health = 650.0+110*stage+8.0*stage*stage
 	result.values.damage = maxf(18,float(result.values.damage))
