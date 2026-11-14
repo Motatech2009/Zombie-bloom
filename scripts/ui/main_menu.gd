@@ -121,6 +121,10 @@ func show_main() -> void:
 	menu_button(content,"MEU ELO / CLASSIFICAÇÃO",show_rankings)
 	var progress := UI.label(content,RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates.",12,UI.LIME)
 	progress.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var refresh_progress := func():
+		if is_instance_valid(progress): progress.text = RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates."
+	Account.changed.connect(refresh_progress)
+	progress.tree_exiting.connect(func(): Account.changed.disconnect(refresh_progress))
 	menu_button(content,"CONFIGURAÇÕES",show_settings)
 	var secondary := UI.hbox(content,8)
 	menu_button(secondary,"COMO JOGAR",show_help).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -281,8 +285,8 @@ func show_rankings() -> void:
 	var personal := UI.hbox(content,16)
 	var badge := RankBadge.new(); badge.level = RankProgress.tier(kills); personal.add_child(badge)
 	var info := UI.vbox(personal,4); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UI.label(info,Account.nickname if Account.signed_in() else "CONVIDADO",19)
-	UI.label(info,RankProgress.summary(kills),13,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var personal_name := UI.label(info,Account.nickname if Account.signed_in() else "CONVIDADO",19)
+	var personal_progress := UI.label(info,RankProgress.summary(kills),13,UI.MUTED); personal_progress.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var bar := UI.meter(info); bar.max_value = RankProgress.next_goal(kills); bar.value = kills
 	menu_button(content,"MINHA CONTA / ENTRAR",show_account)
 	UI.label(content,"SEU ELO CRESCE COM ABATES · A POSIÇÃO COMPARA JOGADORES REAIS",11,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -294,6 +298,9 @@ func show_rankings() -> void:
 	var refresh := func():
 		if not is_instance_valid(status_label): return
 		consult.disabled = Account.busy; status_label.text = Account.status
+		var updated_kills := int(Account.local_summary.get("kills",0))
+		badge.level = RankProgress.tier(updated_kills); personal_name.text = Account.nickname if Account.signed_in() else "CONVIDADO"
+		personal_progress.text = RankProgress.summary(updated_kills); bar.max_value = RankProgress.next_goal(updated_kills); bar.value = updated_kills
 		for child in results.get_children(): results.remove_child(child); child.queue_free()
 		if Account.rows.is_empty(): UI.label(results,"Ainda não há resultados nesta consulta.",15,UI.MUTED)
 		for row in Account.rows:
