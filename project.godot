@@ -13,7 +13,7 @@ config_version=5
 config/name="Zombie Bloom"
 config/icon="res://assets/mobile/app_icon.svg"
 config/description="Sobrevivência solo e cooperativa: mochila, coleta, construção e cercos progressivos."
-config/version="0.13.1"
+config/version="0.13.2"
 run/main_scene="res://scenes/main/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 

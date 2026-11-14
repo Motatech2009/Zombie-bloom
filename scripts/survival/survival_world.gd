@@ -149,9 +149,6 @@ func local_input(actor: Node3D) -> Dictionary:
 
 func _process(delta: float) -> void:
 	if is_client:
-		var target: Vector3 = sector_offset(sector_coord)+(player.position-sector_offset(sector_coord))*.82
-		camera.position = camera.position.lerp(target+camera_offset,1-exp(-delta*5))
-		camera.look_at(target)
 		for actor in avatars.values():
 			if actor!=player or not prediction.enabled():
 				actor.position = SnapshotTrack.position_at(actor,Time.get_ticks_msec()*.001)
@@ -163,6 +160,7 @@ func _process(delta: float) -> void:
 			actor.recoil = move_toward(actor.recoil,0,delta*2)
 			actor.weapons.reload_left = maxf(0,actor.weapons.reload_left-delta)
 			if not actor.health.dead: actor.animate_pose(actor.replica_motion)
+		update_client_camera(delta)
 		for enemy in client_enemies.values():
 			enemy.position = SnapshotTrack.position_at(enemy,Time.get_ticks_msec()*.001)
 			enemy.rig.rotation.y = lerp_angle(enemy.rig.rotation.y,float(enemy.get_meta("target_rotation",enemy.rig.rotation.y)),1-exp(-delta*18))
@@ -1024,9 +1022,10 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			add_child(actor)
 			avatars[id] = actor
 		var actor: Node3D = avatars[id]
-		if actor.position.distance_to(state.p)>15: actor.position = state.p
 		actor.target_position = state.p
-		SnapshotTrack.push(actor,state.p,Time.get_ticks_msec()*.001)
+		if actor!=player or not prediction.enabled():
+			if actor.position.distance_to(state.p)>15: actor.position = state.p
+			SnapshotTrack.push(actor,state.p,Time.get_ticks_msec()*.001)
 		if actor!=player or not prediction.enabled(): actor.aim = state.aim
 		actor.health.maximum = state.max
 		actor.health.current = state.hp
@@ -1269,6 +1268,16 @@ func local_position(actor: Node3D) -> Vector3:
 
 func _physics_process(_delta: float) -> void:
 	if is_client: prediction.tick()
+
+func update_client_camera(delta: float) -> void:
+	# Follow the same displayed position as the local model, not a corrected collider.
+	var displayed: Vector3 = player.position+player.presentation_offset
+	var origin := sector_offset(sector_coord)
+	var target: Vector3 = origin+(displayed-origin)*.82
+	var focus: Vector3 = (camera.position-camera_offset).lerp(target,1-exp(-delta*5))
+	camera.position = focus+camera_offset
+	# Smooth translation and gaze together; packet corrections must not tilt the world.
+	camera.look_at(focus)
 
 func allow_enemy_think(enemy: Node3D) -> bool:
 	var tick := Engine.get_physics_frames()

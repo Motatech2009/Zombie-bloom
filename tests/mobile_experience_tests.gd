@@ -82,7 +82,20 @@ func run() -> void:
 	incoming.players[0].roll = 0.0; incoming.players[0].roll_cd = 0.0; incoming.profile.roll_cd = 0.0
 	w.apply_net_state(incoming,1)
 	check(a.roll_left>0 and a.roll_cooldown>4.9,"an incoming pre-roll snapshot preserves local roll animation and recharge until physics reconciliation")
+	var collider_before: Vector3 = a.position
+	incoming.players[0].p = collider_before+Vector3(18,0,0)
+	w.apply_net_state(incoming,1)
+	check(a.position==collider_before,"even a large incoming snapshot cannot teleport the predicted collider outside physics")
 	w.prediction.pending_state.clear()
+	var camera_before: Vector3 = w.camera.position
+	w.update_client_camera(.016)
+	var expected_camera: Vector3 = w.camera.position
+	var expected_basis: Basis = w.camera.basis
+	w.camera.position = camera_before
+	a.position += Vector3.RIGHT; a.presentation_offset -= Vector3.RIGHT
+	w.update_client_camera(.016)
+	check(w.camera.position.distance_to(expected_camera)<.0001 and w.camera.basis.is_equal_approx(expected_basis),"a collider correction preserving the displayed player position cannot shake or tilt the camera")
+	a.position = collider_before; a.presentation_offset += Vector3.RIGHT
 	# Predicted weapon feedback is cosmetic until a server snapshot accepts ammunition and damage.
 	a.stop_roll(); a.roll_cooldown = 0; w.prediction.history.clear(); w.prediction.visual_shots.clear(); w.prediction.fire_left = 0
 	a.bag.selected = 0; a.weapons.sync_hand(); a.weapons.ammo[0] = 12

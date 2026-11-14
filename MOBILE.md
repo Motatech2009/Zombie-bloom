@@ -1,6 +1,8 @@
 # Zombie Bloom 0.13 — PC + Android
 
-**Atualização 0.13.1:** [ações, vendedor, mira e tela cheia](MOBILE_0131.md). [Base da 0.13: qualidade e rede](MOBILE_013.md).
+**Atualização 0.13.2:** [correção dos recuos do convidado ao andar](NETWORK_0132.md).
+
+**Na 0.13.1:** [ações, vendedor, mira e tela cheia](MOBILE_0131.md). [Base da 0.13: qualidade e rede](MOBILE_013.md).
 
 O Android usa a mesma simulação, itens, casas, fortaleza, horda e protocolo ENet do PC. A sala aceita até quatro jogadores, misturando computador e celular. Recomenda-se hospedar no PC para ele manter a simulação e os saves, enquanto o Android joga como convidado. Celular pode hospedar em rede compatível, mas deve permanecer aberto e em primeiro plano.
 
@@ -55,7 +57,7 @@ Interface em paisagem 960×540, com proporção mantida e faixas quando necessá
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 1007 verificações, incluindo 48 de entrada/UI móvel, 35 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 1018 verificações, incluindo 48 de entrada/UI móvel, 35 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 

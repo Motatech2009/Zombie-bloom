@@ -1,3 +1,11 @@
+# Validação 0.13.2 — movimento do convidado
+
+1018 verificações locais: 896 nas 15 suítes, 113 no cooperativo com quatro processos e 9 no teste de movimento com dois processos reais. [Resultados](docs/network0132-results.txt). [Reprodução e correção](NETWORK_0132.md).
+
+O convidado a 30 FPS é observado durante caminhada contínua e parada. O teste confere throttle de banda, recuos, correções grandes, proximidade visual da previsão, estabilidade da orientação da câmera e distância aceita pelo anfitrião. A suíte de experiência móvel passa a 30 verificações, incluindo câmera durante reconciliação e posição local protegida contra escrita fora da física. Não houve teste físico em Android nem medição de rede entre casas.
+
+## Histórico da validação 0.13.1
+
 # Validação 0.13.1 — ações, catálogos, mira e proporção da tela
 
 1007 verificações locais aprovadas: 15 suítes com 894 verificações e quatro processos ENet com 113. [Resultados](docs/mobile0131-results.txt).

@@ -43,6 +43,9 @@ func host_session(port: int = 24567) -> Error:
 	peer = ENetMultiplayerPeer.new()
 	var result := peer.create_server(port,3,5)
 	if result!=OK: peer = null; status_changed.emit("Não foi possível abrir a porta UDP."); return result
+	# Godot 4.6.3 passes max_channels as incoming bandwidth in create_server().
+	# Reset the native host before connecting clients, or ENet drops most inputs.
+	peer.host.bandwidth_limit(0,0)
 	multiplayer.multiplayer_peer = peer
 	server_port = port
 	mode = "host"
