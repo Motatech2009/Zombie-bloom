@@ -23,7 +23,7 @@ var area_index: int = -1
 var areas: Array = []
 var stock := {"wood":12,"parts":4}
 var core_tier: int = 1
-var vendor_pos := Vector3(-6,0,5)
+var vendor_pos := Vector3(-15,0,5)
 var exit_pos := Vector3(0,0,24)
 var vendor_rig: Node3D
 var shop_clock: float = 0

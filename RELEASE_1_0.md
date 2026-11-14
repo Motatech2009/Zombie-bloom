@@ -9,6 +9,7 @@ Esta branch mantém a jogabilidade da 0.15 e implementa as decisões da 1.0 com 
 - Autoria de abates e coleta individual usa as estatísticas que o jogo já possui. Mortes por defesas de equipe ficam nas estatísticas da equipe, sem somar falsamente para o host.
 - Não existe serviço adicional para verificar anfitriões nesta etapa. É um ranking comunitário: clientes modificados podem falsificar seus próprios totais.
 - Menu inicial mantém o cenário original, com botões compactos na lateral e versão lida de `project.godot` no canto inferior direito.
+- Bento reposicionado mais à esquerda do Núcleo: de `(-6,0,5)` para `(-15,0,5)`, cerca de 16 m do centro.
 - Loja do PC com categorias, ícones, descrição, atributos, preço e compra explícita. Arma já possuída, espaço insuficiente e falta de sucata bloqueiam a compra.
 - Mantidos da 0.15: preparação de 10/10/8/6/5/3 minutos (por próxima horda) e trilha original mais sombria, com drones dissonantes, graves e percussão de combate.
 - Controles mobile, previsão de movimento e suavização de câmera preservados.
