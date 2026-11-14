@@ -1,3 +1,13 @@
+# Validação 0.13.1 — ações, catálogos, mira e proporção da tela
+
+1007 verificações locais aprovadas: 15 suítes com 894 verificações e quatro processos ENet com 113. [Resultados](docs/mobile0131-results.txt).
+
+48 verificações móveis incluem disponibilidade contextual dos comandos, coleta demorada, depósito, melhoria e custo, vendedor, compra de arma e munição, limite de construção, encerramento por horda e interface em tela mais larga. As 35 verificações de mira incluem aquisição e tiro real contra infectado com pai deslocado em setor de exploração. As 28 verificações de experiência móvel preservam qualidade ao vivo, previsão, reconciliação e feedback imediato.
+
+Inspeção visual do catálogo de construção, do vendedor e do HUD. Guardar materiais foi verificado com toque prolongado, seguido da atualização do estoque e ocultação do botão. O cliente de rede de toque roda em Linux; não é um Android físico. Tela cheia Windows, modo imersivo Android, recortes e FPS ainda exigem verificação nos dispositivos finais.
+
+## Histórico da validação 0.13
+
 # Validação 0.13 — controles, materiais e resposta de rede
 
 985 verificações locais aprovadas: 15 suítes com 872 verificações e quatro processos ENet com 113. Importação Godot 4.6.3 sem erros. [Resultados](docs/mobile013-results.txt).

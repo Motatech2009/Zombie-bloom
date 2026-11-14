@@ -1,6 +1,6 @@
 # Zombie Bloom 0.13 — PC + Android
 
-**Atualização 0.13:** [regras atuais de controles, qualidade ao vivo e resposta de rede](MOBILE_013.md).
+**Atualização 0.13.1:** [ações, vendedor, mira e tela cheia](MOBILE_0131.md). [Base da 0.13: qualidade e rede](MOBILE_013.md).
 
 O Android usa a mesma simulação, itens, casas, fortaleza, horda e protocolo ENet do PC. A sala aceita até quatro jogadores, misturando computador e celular. Recomenda-se hospedar no PC para ele manter a simulação e os saves, enquanto o Android joga como convidado. Celular pode hospedar em rede compatível, mas deve permanecer aberto e em primeiro plano.
 
@@ -32,11 +32,15 @@ Em redes diferentes, o PC precisa ser alcançável: encaminhamento UDP/UPnP com 
 | LANÇAR GRANADA / USAR KIT | Usa uma unidade do item selecionado por toque; toque no cenário antes para apontar a granada |
 | ROLAR | Esquiva com recarga de cinco segundos, validada pelo anfitrião |
 | RECARGA | Recarregar a arma com munição da mochila |
-| Segurar COLETAR | Abrir caixas, guardar materiais no Núcleo, reparar ou reanimar aliado conforme o contexto |
-| COLETAR junto à saída | Solicitar travessia do grupo para o setor adjacente |
+| Segurar COLETAR / GUARDAR | Abrir caixas ou transferir materiais ao Núcleo; aparece só quando existe essa ação |
+| MELHORAR | Perto de construção com nível disponível; mostra o custo antes de confirmar |
+| VENDEDOR | Perto do Bento, entre hordas; armas, munição e suprimentos |
+| REPARAR / REANIMAR / PORTÃO | Botões separados, somente junto ao alvo correspondente |
+| VIAJAR junto à saída | Solicitar travessia do grupo para o setor adjacente |
 | BOLSA | Organizar os 18 espaços; tocar dois espaços para trocar; guardar/descartar seleção ou abrir depósito |
 | Setas da barra | Alternar entre os três páginas de até quatro espaços |
-| AÇÕES | Mapa, construção, vendedor, melhorias, portões, desmonte e save do anfitrião |
+| CONSTRUIR | Catálogo direto; somente no Núcleo (0,0), sem horda ativa |
+| MAPA | Rotas e setores |
 | Ⅱ / Voltar do Android | Abrir pausa ou fechar o painel atual; cooperativo continua ativo |
 
 O alvo recebe um marcador verde quando há tiro e âmbar quando está protegido ou fora de alcance. A seleção por toque termina ao morrer, sair da tela, trocar de item, entrar em construção, começar coleta ou abrir um painel. Segurando ATIRAR, o botão pode escolher outro inimigo vivo após a morte do anterior; soltá-lo encerra o ataque. O anfitrião confere vida, alcance, cobertura e revisão do setor antes de cada tiro, inclusive quando um comando chega atrasado. Sem segurar ATIRAR, não procura outro alvo sozinho. O lança-foguetes dá um disparo por toque; granadas e kits continuam manuais. A precisão e dispersão das armas continuam valendo.
@@ -51,7 +55,7 @@ Interface em paisagem 960×540, com proporção mantida e faixas quando necessá
 
 A vida, mochila, saques, base e quantidade de infectados são compartilhados com a mesma regra dos PCs: x2, x4 ou x8 conforme entram dois, três ou quatro jogadores. O mapa é do anfitrião, e o grupo continua viajando junto. Trocar de aplicativo pode interromper a conexão conforme o Android; mantenha o jogo em primeiro plano durante o teste.
 
-Validação automatizada: 985 verificações, incluindo 28 de entrada/UI móvel, 33 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
+Validação automatizada: 1007 verificações, incluindo 48 de entrada/UI móvel, 35 de mira por alvo e 26 de desempenho/controle assistido, 43 de progressão e quatro processos ENet reais com um cliente usando a interface de toque, sem substituir o frame de entrada desse cliente por input fictício. Esse cliente ainda roda em Linux no teste de rede; não é um telefone Android real. O CI exporta o APK, verifica assinatura, manifest e bibliotecas ARM, além da compilação Windows. Não houve instalação em aparelho físico, medição de FPS em telefone ou teste entre duas casas.
 
 O keystore de desenvolvimento intencionalmente público em `.ci/android-development-key.b64` é apenas de teste e não deve assinar uma publicação na loja. Ela existe para preservar a identidade das atualizações desse protótipo. Publicação Play Store requer assinatura privada própria, AAB e validação específica; isso não foi realizado.
 

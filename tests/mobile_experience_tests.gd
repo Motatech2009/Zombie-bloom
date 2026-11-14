@@ -52,8 +52,8 @@ func run() -> void:
 	var close: Button
 	for b in w.hud.modal.find_children("*","Button",true,false):
 		if b.text=="FECHAR": close = b
-	check(close!=null and close.get_global_rect().position.y<66 and close.get_global_rect().end.x<=960,"menu close stays outside the scroll content and inside the screen")
-	check(w.hud.belt.get_global_rect().end.x<=960 and w.hud.belt.get_global_rect().end.y<=540,"compact hotbar fits within the mobile viewport")
+	check(close!=null and close.get_global_rect().position.y<66 and close.get_global_rect().end.x<=c.size.x,"menu close stays outside the scroll content and inside the screen")
+	check(w.hud.belt.get_global_rect().end.x<=c.size.x and w.hud.belt.get_global_rect().end.y<=c.size.y,"compact hotbar fits within the mobile viewport")
 	w.hud.close_modal(); c.reset_fingers(); a.position = Vector3(0,0,16); a.velocity = Vector3.ZERO
 	e.queue_free(); await frames()
 	# Withhold all authoritative snapshots for 200 ms, then acknowledge half of the movement.

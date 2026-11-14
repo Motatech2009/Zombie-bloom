@@ -25,6 +25,7 @@ var remote_sector_times: Dictionary = {}
 var restoring_boss_stage: int = 0
 var client_scene_ready: bool = false
 var remote_interaction_hint: String = ""
+var remote_mobile_context: Dictionary = {}
 var prediction := ClientPrediction.new()
 var ai_frame: int = -1
 var ai_budget: int = 0
@@ -962,7 +963,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":scene_revision,"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion()).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice if notice_left>0 else "","dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not is_client or int(data.rev)!=last_scene_revision: return
@@ -971,6 +972,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		player.peer_id = own_id
 		avatars[own_id] = player
 	remote_interaction_hint = data.get("interaction","")
+	remote_mobile_context = data.get("mobile_context",{}).duplicate(true)
 	phase = data.phase
 	game_mode = data.mode
 	waves.wave = int(data.wave)
@@ -1235,6 +1237,32 @@ func interaction_hint(actor: Node3D) -> String:
 		for structure in get_tree().get_nodes_in_group("buildings"):
 			if not structure.health.dead and structure.health.current<structure.health.maximum and actor.position.distance_to(structure.global_position)<2.8: return "REPARAR"
 	return ""
+
+func mobile_context(actor: Node3D) -> Dictionary:
+	if actor.health.dead or phase=="ended": return {}
+	var preparing := sector_coord==Vector2i.ZERO and area_index==-1 and phase=="prep" and not waves.running
+	var collect := ""
+	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): collect = "GUARDAR"
+	elif nearest_source(actor)!=null: collect = "COLETAR"
+	var nearest: Node3D
+	var distance := 4.5
+	var gate := false
+	for structure in get_tree().get_nodes_in_group("buildings"):
+		if structure.is_queued_for_deletion() or structure.health.dead: continue
+		var d: float = actor.position.distance_to(structure.global_position)
+		if d<distance: nearest = structure; distance = d
+		if structure.spec.id=="gate" and d<4: gate = true
+	var upgrade := {}
+	if preparing and nearest!=null:
+		var tier: int = core_tier if nearest==core else nearest.tier
+		if tier<(4 if nearest==core else 3):
+			upgrade = {"title":nearest.spec.title,"tier":tier,"cost":{"scrap":75*tier,"wood":10*tier,"parts":5*tier} if nearest==core else nearest.upgrade_cost()}
+	var hint := interaction_hint(actor)
+	return {"build":preparing,"collect":collect,"upgrade":upgrade,"shop":preparing and actor.position.distance_to(vendor_pos)<=5,"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
+
+func local_mobile_context() -> Dictionary:
+	if is_client: return remote_mobile_context if client_scene_ready else {}
+	return mobile_context(player)
 
 func local_position(actor: Node3D) -> Vector3:
 	return actor.position-sector_offset(sector_coord)

@@ -129,6 +129,18 @@ func run() -> void:
 	var hud_point: Vector2 = world.hud.hotbar[0].get_global_rect().get_center()
 	touch(controls,9,hud_point)
 	check(not controls.fingers.has(9) and controls.locked_target==null,"hotbar touches remain GUI input and never select world targets underneath")
+	dog.queue_free(); await frames()
+	var translated := Node3D.new(); world.add_child(translated); translated.position = Vector3(120,0,-120)
+	world.field_root = translated; world.sector_coord = Vector2i(1,-1); world.area_index = 0; world.phase = "expedition"; world.descriptor = SectorGenerator.generate(123,world.sector_coord,1,1)
+	var field_enemy: Node3D = world.make_enemy(0,Vector3(4,0,4),true,20)
+	field_enemy.set_physics_process(false); field_enemy.health.setup(1000)
+	actor.position = translated.position+Vector3(0,0,8); actor.bag.selected = 0; actor.weapons.sync_hand()
+	world.camera.position = actor.position+world.camera_offset; world.camera.look_at(actor.position)
+	await frames(); controls.reset_fingers(); touch(controls,9,controls.buttons.fire.get_center())
+	check(controls.locked_target==field_enemy and controls.frame().fire,"assisted targeting acquires a nearby zombie under a translated exploration-sector parent")
+	before = actor.weapons.ammo[0]; actor.weapons.cooldown = 0; actor._physics_process(.016)
+	check(field_enemy.health.current<1000 and actor.weapons.ammo[0]==before-1,"exploration-sector aiming uses the same world-space hit direction as refuge aiming")
+	controls.reset_fingers()
 	world.queue_free(); await create_timer(.2).timeout
 	MobilePlatform.force_touch = false
 	print("TARGETING RESULT: %d checks, %d failures" % [checks,failures])

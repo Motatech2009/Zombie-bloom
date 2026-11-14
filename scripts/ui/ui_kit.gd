@@ -117,6 +117,12 @@ static func settings(parent: Node, on_change: Callable) -> void:
 	parent.add_child(check)
 	check.toggled.connect(func(value: bool): GameSettings.shadows = value; GameSettings.save_settings(); on_change.call())
 	label(parent, "Desative sombras para reduzir o custo gráfico.", 14, MUTED)
+	if not MobilePlatform.enabled():
+		var screen := CheckButton.new()
+		screen.text = "Tela cheia / F11"
+		screen.button_pressed = GameSettings.fullscreen
+		parent.add_child(screen)
+		screen.toggled.connect(func(value: bool): GameSettings.fullscreen = value; GameSettings.save_settings(); GameSettings.apply_display(parent.get_tree().root))
 	if MobilePlatform.enabled():
 		var lean := CheckButton.new()
 		lean.text = "Modo leve / celular"
