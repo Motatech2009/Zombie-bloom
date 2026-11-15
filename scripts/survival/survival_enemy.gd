@@ -58,6 +58,11 @@ func _physics_process(delta: float) -> void:
 	snare_left = maxf(0,snare_left-delta)
 	stun_left = maxf(0,stun_left-delta)
 	if stun_left>0: velocity = Vector3.ZERO; return
+	if is_boss and not enraged and health.current<health.maximum*.4:
+		enraged = true
+		spec.values.speed *= 1.25
+		spec.values.damage *= 1.3
+		world.notify("FÚRIA · "+spec.title+" acelerou e aumentou o dano.")
 	if rush_left>0:
 		rush_left -= delta
 		velocity = rush_direction*16*(.55 if snare_left>0 else 1.0)
@@ -70,14 +75,10 @@ func _physics_process(delta: float) -> void:
 			var body = get_slide_collision(i).get_collider()
 			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies") and not rush_hits.has(body.get_instance_id()):
 				rush_hits[body.get_instance_id()] = true
-				body.take_damage(float(spec.values.damage)*1.5)
+				body.take_damage(float(spec.values.damage)*(3.0 if spec.id=="mauler" and body.is_in_group("campaign_structure") and body.spec.id in ["wall","barricade","bastion"] else 1.5))
 		if blocked: rush_left = 0
 		return
-	if is_boss and not enraged and health.current<health.maximum*.4:
-		enraged = true
-		spec.values.speed *= 1.25
-		spec.values.damage *= 1.3
-		world.notify("FÚRIA · "+spec.title+" acelerou e aumentou o dano.")
+
 	if windup>0:
 		windup -= delta
 		velocity = Vector3.ZERO
@@ -92,16 +93,7 @@ func _physics_process(delta: float) -> void:
 			elif enemy_kind==14: world.emp_blast(cast_point)
 			elif enemy_kind==10:
 				for i in range(2): world.spawn_minion(self,6,i)
-			elif is_boss:
-				if spec.id=="broodmother":
-					if summon_casts<3:
-						summon_casts += 1
-						for i in range(2): world.spawn_minion(self,6,i)
-					shield_left = 2
-				elif spec.id=="mortar":
-					world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,22+world.waves.wave,3.2,1.25)
-				elif global_position.distance_to(cast_point)<=5.5:
-					world.hostile_blast(global_position,4.2,24+world.waves.wave*1.5)
+			elif is_boss: boss_cast()
 			return
 		return
 	ability_left -= delta
@@ -109,10 +101,10 @@ func _physics_process(delta: float) -> void:
 		choose_target()
 		if not is_instance_valid(target) or target==self: return
 		var cast_distance := global_position.distance_to(target.global_position)
-		if (enemy_kind in [12,13] and cast_distance>13) or (is_boss and spec.id not in ["mortar","broodmother"] and cast_distance>5) or (is_boss and spec.id=="mortar" and (cast_distance>23 or cast_distance<7 or not line_of_sight())):
+		if (enemy_kind in [12,13] and cast_distance>13) or (is_boss and spec.id not in ["mortar","broodmother"] and cast_distance>18) or (is_boss and spec.id=="mortar" and (cast_distance>23 or cast_distance<7 or not line_of_sight())):
 			normal_step(delta)
 			return
-		cast_point = global_position if enemy_kind==14 or (is_boss and spec.id not in ["mortar"]) else target.global_position
+		cast_point = global_position if enemy_kind==14 else target.global_position
 		windup = 1.1
 		ability_left = 8 if is_boss else 9 if enemy_kind in [12,13,14] else 12
 		warning = VisualFactory.ring(world.effects,warning_radius(),cast_point+Vector3(0,.12,0),warning_color())
@@ -130,7 +122,7 @@ func choose_target() -> void:
 	if world.regions.enabled():
 		var coord: Vector2i = world.coord_at(global_position)
 		target = world.core if not field_enemy else self
-		var nearest := 1000.0 if field_enemy else 18.0 if spec.id in ["hound","runner"] else 11.0
+		var nearest := (1000.0 if field_enemy else 18.0 if spec.id in ["hound","runner"] else 11.0)*(1.5 if world.v15.day.night() else 1.0)
 		for survivor in world.avatars.values():
 			if survivor.health.dead or survivor.region_coord!=coord: continue
 			var d := global_position.distance_to(survivor.global_position)
@@ -138,7 +130,7 @@ func choose_target() -> void:
 		return
 	super.choose_target()
 	if not field_enemy and world.area_index!=-1: return
-	var closest := 18.0 if spec.id in ["hound","runner"] else 11.0
+	var closest: float = (18.0 if spec.id in ["hound","runner"] else 11.0)*(1.5 if world.v15.day.night() else 1.0)
 	for survivor in world.avatars.values():
 		if survivor.health.dead: continue
 		var distance := global_position.distance_to(survivor.global_position)
@@ -302,3 +294,6 @@ func visible_near_camera() -> bool:
 	if not MobilePlatform.enabled(): return true
 	var point := global_position+Vector3.UP
 	return not world.camera.is_position_behind(point) and Rect2(Vector2.ZERO,world.get_viewport().get_visible_rect().size).grow(120).has_point(world.camera.unproject_position(point))
+
+func boss_cast() -> void:
+	world.hostile_blast(global_position,4.2,24+world.waves.wave*1.5)

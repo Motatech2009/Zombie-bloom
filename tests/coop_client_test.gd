@@ -54,6 +54,7 @@ func run() -> void:
 	MobilePlatform.force_touch = touch_peer
 	var link := root.get_node("Coop")
 	link.identity = tag.pad_zeros(32)
+	Director15.selected_class = "scout" if tag=="2" else "shooter" if tag=="3" else "engineer"
 	check(link.join_session("127.0.0.1",24577,"Amigo "+tag)==OK,"client starts a real ENet connection")
 	var deadline := Time.get_ticks_msec()+16000
 	while (not is_instance_valid(link.world) or link.received_snapshots<5) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

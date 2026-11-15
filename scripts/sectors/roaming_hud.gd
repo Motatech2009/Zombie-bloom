@@ -70,6 +70,9 @@ func show_routes() -> void:
 			var chosen := coord
 			var button := UI.button(grid,text,func(): select_sector(chosen))
 			button.set_meta("coord",coord)
+			if world.has_method("repair_for15"):
+				var event: Dictionary = world.v15.event_for_sector(coord)
+				if event.get("type","")=="nest": button.modulate = Color("c794ee"); button.text += " / NINHO"
 			button.custom_minimum_size = Vector2(68,48)
 			button.add_theme_font_size_override("font_size",12)
 			button.add_theme_stylebox_override("normal",UI.style(Color("375750") if coord==world.sector_coord else Color("384849") if known else Color("182d33"),UI.LIME if coord==Vector2i.ZERO else Color("354b4e"),6))

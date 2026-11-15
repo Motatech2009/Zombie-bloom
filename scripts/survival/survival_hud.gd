@@ -8,6 +8,9 @@ var gather_bar: ProgressBar
 var gather_label: Label
 var depot_buttons: Dictionary = {}
 var choice_cooldown: float = 0
+var systems15_button: Button
+var alert15_label: Label
+var day15_label: Label
 
 var held_icon: TextureRect
 var wood_count: Label
@@ -152,6 +155,20 @@ func create_bottom() -> void:
 		text.add_theme_constant_override("outline_size",3)
 
 func _process(delta: float) -> void:
+	if systems15_button==null:
+		var overlay := Control.new(); overlay.set_script(load("res://scripts/release15/core_alert15.gd")); overlay.world = world; root.add_child(overlay)
+		systems15_button = UI.button(root,"BASE" if MobilePlatform.enabled() else "REFÚGIO",show_systems15)
+		systems15_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT); systems15_button.offset_left = -195; systems15_button.offset_right = -14; systems15_button.offset_top = -195; systems15_button.offset_bottom = -151
+		alert15_label = UI.label(root,"",14,Color("ffa276")); alert15_label.position = Vector2(20,180)
+		day15_label = UI.label(root,"",12,UI.LIME); day15_label.position = Vector2(20,155)
+	day15_label.text = ("NOITE VERMELHA" if world.v15.day.blood and world.v15.day.night() else "NOITE" if world.v15.day.night() else "DIA")+" · %02d:%02d" % [int(fposmod(world.v15.day.clock,900))/60,int(world.v15.day.clock)%60]
+	alert15_label.text = "⚠ NÚCLEO SOB ATAQUE · (0,0) "+world.return_hint() if world.v15.alert_left>0 else ""
+	alert15_label.modulate.a = .65+.35*sin(Time.get_ticks_msec()*.008)
+	systems15_button.visible = mode.is_empty() and world.phase!="ended"; day15_label.visible = mode.is_empty(); alert15_label.visible = mode.is_empty()
+	if MobilePlatform.enabled():
+		systems15_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT); systems15_button.offset_left = 253; systems15_button.offset_right = 348; systems15_button.offset_top = 15; systems15_button.offset_bottom = 62
+		day15_label.position = Vector2(365,112); alert15_label.position = Vector2(255,137)
+		alert15_label.add_theme_font_size_override("font_size",11)
 	if mode=="shop" and desktop_shop!=null: desktop_shop.refresh()
 	choice_cooldown = maxf(0,choice_cooldown-delta)
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
@@ -183,7 +200,7 @@ func _process(delta: float) -> void:
 	if gather_bar.visible:
 		gather_bar.max_value = actor.gather_duration
 		gather_bar.value = actor.gather_progress
-		gather_label.text = "SEGURE E · "+{"loot":"coletando para a bolsa","deposit":"guardando no Núcleo","revive":"reanimando aliado","repair":"reparando defesa"}.get(actor.gather_kind,"coletando")
+		gather_label.text = "SEGURE E · "+{"build":"construindo (dano cancela)","upgrade":"melhorando defesa","extract":"retornando ao Núcleo","loot":"coletando para a bolsa","deposit":"guardando no Núcleo","revive":"reanimando aliado","repair":"reparando defesa"}.get(actor.gather_kind,"coletando")
 	airdrop_text.text = airdrop_summary()
 	if mode=="routes":
 		var stamp := str(world.airdrops.serial)+str(world.airdrops.state.get("collected",true))
@@ -213,7 +230,7 @@ func show_inventory() -> void:
 	grid.add_theme_constant_override("v_separation",5)
 	left.add_child(grid)
 	inventory_buttons.clear()
-	for i in range(18):
+	for i in range(world.player.bag.slots.size()):
 		var index := i
 		var button := ItemSlot.new()
 		button.key_number = index+1
@@ -287,6 +304,7 @@ func show_upgrade() -> void:
 		UI.button(box,offers[i].title+" · "+offers[i].text,func(): world.send_action("choice",{"index":index}); choice_cooldown = .5; close_modal())
 
 func show_result() -> void:
+	if world.won and world.game_mode=="campaign": world.v15.unlock_campaign()
 	var box := open_modal("result",760)
 	UI.label(box,"REFÚGIO DEFENDIDO" if world.won else "O GRUPO CAIU",34,UI.LIME)
 	UI.label(box,world.ending_reason,19,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -449,3 +467,15 @@ A melhoria pertence a esta arma e fica salva neste refúgio.",16,UI.MUTED).autow
 			buy.disabled = not world.can_pay(cost) or not world.local_mobile_context().get("shop",false)
 		else: UI.label(box,"MELHORIA MÁXIMA",18,UI.LIME)
 	UI.button(box,"FECHAR",close_modal)
+
+func show_systems15() -> void:
+	if not mode.is_empty(): return
+	var box := open_modal("systems15",700)
+	UI.label(box,"REFÚGIO E EXPLORAÇÃO",24,UI.LIME)
+	UI.label(box,"Classe: "+{"engineer":"Engenheiro","scout":"Batedor","shooter":"Atirador"}.get(world.player.specialization,"Engenheiro")+" · obras interrompidas por dano ou movimento.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(box,"FUNDIR DUAS TORRES IDÊNTICAS PRÓXIMAS",func(): world.send_action("fuse",{}); close_modal())
+	UI.button(box,"RECICLAR ARMA SELECIONADA / 20 MADEIRA",func(): world.send_action("recycle",{}); close_modal())
+	UI.button(box,"BENTO: SINALIZADOR / 140 SUCATA + 6 COMPONENTES",func(): world.send_action("beacon",{}); close_modal())
+	UI.button(box,"USAR EXTRAÇÃO / 4 s",func(): world.send_action("extract",{}); close_modal())
+	UI.label(box,"Eventos: segure COLETAR/E junto ao comboio ou sobrevivente. Ninhos roxos podem ser destruídos a tiros.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(box,"VOLTAR",close_modal,true)

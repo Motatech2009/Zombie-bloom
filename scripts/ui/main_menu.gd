@@ -11,6 +11,11 @@ var menu_margin: MarginContainer
 var home := true
 
 func _ready() -> void:
+	var loadout := ConfigFile.new()
+	if loadout.load("user://loadout15.cfg")==OK:
+		var chosen: String = str(loadout.get_value("loadout","class","engineer"))
+		Director15.selected_class = chosen if chosen in ["engineer","scout","shooter"] else "engineer"
+		Director15.selected_cosmetic = clampi(int(loadout.get_value("loadout","cosmetic",0)),0,10)
 	var music := MusicDirector.new(); add_child(music)
 	MobilePlatform.configure(get_tree().root)
 	get_tree().paused = false
@@ -125,6 +130,7 @@ func show_main() -> void:
 		if is_instance_valid(progress): progress.text = RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates."
 	Account.changed.connect(refresh_progress)
 	progress.tree_exiting.connect(func(): Account.changed.disconnect(refresh_progress))
+	menu_button(content,"PERFIL DE COMBATE",func(): show_loadout15("",false))
 	menu_button(content,"CONFIGURAÇÕES",show_settings)
 	var secondary := UI.hbox(content,8)
 	menu_button(secondary,"COMO JOGAR",show_help).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -151,7 +157,7 @@ func resume_mode(mode: String) -> void:
 
 func choose_mode(mode: String) -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode
-	start_game()
+	show_loadout15(mode,true)
 
 func start_game() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
@@ -290,8 +296,8 @@ func show_rankings() -> void:
 	var bar := UI.meter(info); bar.max_value = RankProgress.next_goal(kills); bar.value = kills
 	menu_button(content,"MINHA CONTA / ENTRAR",show_account)
 	UI.label(content,"SEU ELO CRESCE COM ABATES · A POSIÇÃO COMPARA JOGADORES REAIS",11,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.custom_minimum_size.y = 44; content.add_child(metric)
-	var consult := menu_button(content,"CONSULTAR CLASSIFICAÇÃO",func(): Account.fetch_ranking(["kills","hordes","scrap"][metric.selected]),true)
+	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.add_item("Pontos de desafios"); metric.custom_minimum_size.y = 44; content.add_child(metric)
+	var consult := menu_button(content,"CONSULTAR CLASSIFICAÇÃO",func(): Account.fetch_ranking(["kills","hordes","scrap","points"][metric.selected]),true)
 	var status_label := UI.label(content,Account.status,13,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var results := UI.vbox(content,8)
 	UI.label(results,"Consulte para ver jogadores reais. Nenhum perfil fictício é adicionado.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -321,3 +327,34 @@ func show_rankings() -> void:
 		var column := UI.vbox(gallery,2); column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var icon := RankBadge.new(); icon.level = i+1; icon.custom_minimum_size = Vector2(65,68); column.add_child(icon)
 		UI.label(column,str(RankProgress.THRESHOLDS[i]),12,UI.MUTED)
+
+func show_loadout15(_mode: String,new_game: bool) -> void:
+	clear_content()
+	UI.label(content,"PREPARE SEU SOBREVIVENTE",22,UI.LIME)
+	var classes := OptionButton.new(); classes.add_item("Engenheiro"); classes.add_item("Batedor"); classes.add_item("Atirador"); content.add_child(classes); classes.custom_minimum_size.y = 44
+	classes.select(["engineer","scout","shooter"].find(Director15.selected_class))
+	var description := UI.label(content,"",13,UI.MUTED); description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var update := func(index):
+		Director15.selected_class = ["engineer","scout","shooter"][index]
+		description.text = ["+1 cota por preparação; reparos custam 15% menos sucata.","+10% velocidade fora de combate; mochila com 20 espaços.","Pistola Reforçada inicial; recarga 15% mais rápida."][index]
+	classes.item_selected.connect(update); update.call(classes.selected)
+	UI.label(content,"ACESSÓRIO POR ELO",12,UI.LIME)
+	var cosmetics := OptionButton.new(); cosmetics.add_item("Sem acessório")
+	var unlocked := RankProgress.tier(int(Account.local_summary.get("kills",0)))
+	for i in range(1,unlocked+1): cosmetics.add_item(RankProgress.TITLES[i]+" / argila")
+	cosmetics.select(mini(unlocked,Director15.selected_cosmetic)); cosmetics.custom_minimum_size.y = 44; content.add_child(cosmetics)
+	cosmetics.item_selected.connect(func(index): Director15.selected_cosmetic = index)
+	var meta := Director15.new()
+	if meta.campaign_completed():
+		UI.label(content,"DESAFIOS · bônus só em pontos, abates reais preservados",12,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		for entry in [["darkness","Escuridão Total"],["no_vendor","Sem Vendedor"],["double_hordes","Hordas Dobradas"]]:
+			var id: String = entry[0]; var check := CheckBox.new(); check.text = entry[1]; check.button_pressed = id in Director15.selected_mutators; content.add_child(check)
+			check.toggled.connect(func(on):
+				if on and id not in Director15.selected_mutators: Director15.selected_mutators.append(id)
+				elif not on: Director15.selected_mutators.erase(id))
+	else: UI.label(content,"Complete a campanha de 20 hordas para liberar desafios.",12,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"INICIAR" if new_game else "SALVAR ESCOLHAS",func():
+		var cfg := ConfigFile.new(); cfg.set_value("loadout","class",Director15.selected_class); cfg.set_value("loadout","cosmetic",Director15.selected_cosmetic); cfg.save("user://loadout15.cfg")
+		if new_game: start_game()
+		else: show_main(),true)
+	menu_button(content,"VOLTAR",show_play if new_game else show_main)

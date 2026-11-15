@@ -1,11 +1,13 @@
 class_name ItemBag
 extends RefCounted
 const SIZE := 18
-const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells","bat"]
-const TITLES = {"bat":"Taco de beisebol","pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
-const SHORT = {"bat":"TACO","pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
+const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells","bat","beacon"]
+const TITLES = {"beacon":"Sinalizador de extração","bat":"Taco de beisebol","pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
+const SHORT = {"beacon":"EXTR","bat":"TACO","pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
 const WEAPON_IDS = ["pistol","shotgun","rifle","smg","launcher","revolver","sniper","lmg","tesla"]
 const AMMO_IDS = ["light","shell","rifle_ammo","light","rocket","heavy","rifle_ammo","rifle_ammo","cells"]
+var cargo_level := 0
+var capacity_slots := 18
 var slots: Array = []
 var selected: int = 0
 
@@ -24,7 +26,15 @@ static func stack(id: String) -> int:
 		"rocket": return 3
 		"grenade": return 4
 		"medkit": return 3
+		"beacon": return 2
 	return 0
+
+func stack_limit(id: String) -> int:
+	return ceili(stack(id)*(1+cargo_level/12.0)) if id in ["scrap","wood","parts","light","shell","rifle_ammo","heavy","cells","rocket"] else stack(id)
+
+func resize_bag(size: int) -> void:
+	capacity_slots = clampi(size,18,20)
+	while slots.size()<capacity_slots: slots.append({"id":"","qty":0})
 
 func count(id: String) -> int:
 	var result := 0
@@ -40,13 +50,13 @@ func add(id: String,quantity: int) -> int:
 	var remaining := quantity
 	for slot in slots:
 		if slot.id==id:
-			var take := mini(stack(id)-int(slot.qty),remaining)
+			var take := mini(stack_limit(id)-int(slot.qty),remaining)
 			slot.qty += take
 			remaining -= take
 	for slot in slots:
 		if remaining==0: break
 		if slot.qty==0:
-			var take := mini(stack(id),remaining)
+			var take := mini(stack_limit(id),remaining)
 			slot.id = id
 			slot.qty = take
 			remaining -= take
@@ -65,7 +75,7 @@ func remove(id: String,quantity: int) -> bool:
 	return true
 
 func swap(a: int,b: int) -> bool:
-	if a<0 or b<0 or a>=SIZE or b>=SIZE: return false
+	if a<0 or b<0 or a>=slots.size() or b>=slots.size(): return false
 	var temp: Dictionary = slots[a]
 	slots[a] = slots[b]
 	slots[b] = temp
@@ -78,10 +88,10 @@ func free_slots() -> int:
 	return slots.filter(func(s): return s.qty==0).size()
 
 func dump() -> Dictionary:
-	return {"slots":slots.duplicate(true),"selected":selected}
+	return {"slots":slots.duplicate(true),"selected":selected,"cargo":cargo_level}
 
 static func valid(data: Variant) -> bool:
-	if not data is Dictionary or not data.get("slots") is Array or data.slots.size()!=SIZE: return false
+	if not data is Dictionary or not data.get("slots") is Array or data.slots.size() not in [18,20]: return false
 	var select = data.get("selected")
 	if not (select is int or select is float) or select<0 or select>8 or int(select)!=select: return false
 	var weapons := {}
@@ -91,7 +101,9 @@ static func valid(data: Variant) -> bool:
 		if not (qty is int or qty is float) or not is_finite(float(qty)) or int(qty)!=qty or qty<0: return false
 		if qty==0:
 			if slot.id!="": return false
-		elif slot.id not in IDS or qty>stack(slot.id): return false
+		elif slot.id not in IDS or qty>ceili(stack(slot.id)*(1+int(data.get("cargo",0))/12.0 if slot.id in ["scrap","wood","parts","light","shell","rifle_ammo","heavy","cells","rocket"] else 1)):
+			return false
+		if not SectorMemory.number(data.get("cargo",0),0,12,true): return false
 		if slot.id in WEAPON_IDS:
 			if weapons.has(slot.id): return false
 			weapons[slot.id] = true
@@ -102,4 +114,5 @@ func restore(data: Dictionary) -> bool:
 	slots = data.slots.duplicate(true)
 	for slot in slots: slot.qty = int(slot.qty)
 	selected = int(data.selected)
+	cargo_level = int(data.get("cargo",0)); capacity_slots = slots.size()
 	return true

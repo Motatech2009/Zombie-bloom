@@ -9,7 +9,7 @@ title = "Pistola"
 color = Color(0.86, 0.95, 0.69, 1)
 values = {
 "damage": 22.0,
-"interval": 0.3,
+"interval": 0.22,
 "range": 26.0,
 "capacity": 12,
 "reload": 1.15,

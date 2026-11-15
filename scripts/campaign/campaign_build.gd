@@ -34,7 +34,7 @@ func set_active(value: bool) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not active: return
-	for i in range(piece_specs().size()):
+	for i in range(mini(10,piece_specs().size())):
 		if Input.is_action_just_pressed("slot_%d" % (i+1)): selected = i
 	if Input.is_action_just_pressed("rotate_piece"): angle = fmod(angle+PI/2,TAU)
 	var point: Vector3 = preview_point()

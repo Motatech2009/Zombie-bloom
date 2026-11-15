@@ -75,7 +75,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,16)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,17,Director15.selected_class,Director15.selected_cosmetic)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -151,15 +151,17 @@ func blast_event(point: Vector3,radius: float) -> void:
 	if mode=="host": _blast_visual.rpc(point,radius)
 
 @rpc("any_peer","call_remote","reliable",0)
-func _join_ready(token: String,name_text: String,protocol: int = 12) -> void:
+func _join_ready(token: String,name_text: String,protocol: int = 17,specialization: String = "engineer",cosmetic: int = 0) -> void:
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=16:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 1.0-dev."); return
+	if protocol!=17:
+		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 1.5."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return
 	if world.attach_peer(id,token,name_text):
+		if not world.profiles.has(token): world.v15.apply_class(world.avatars[id],specialization,true)
+		world.avatars[id].cosmetic = clampi(cosmetic,0,10); world.v15.decorate(world.avatars[id])
 		_receive_scene.rpc_id(id,world.net_scene(id))
 		scene_sent[id] = world.peer_revision(id)
 	else: _rejected.rpc_id(id,"Sala cheia, encerrada ou perfil já ativo.")

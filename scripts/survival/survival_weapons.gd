@@ -60,9 +60,13 @@ func shoot(direction: Vector3) -> bool:
 	if actor.bag.hand()=="bat": return swing(direction)
 	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
+	world.damage_origin15 = actor.global_position
+	world.critical15 = world.world_rng.randf()<.1
+	actor.combat_left = 6
+	var ammo_before: int = ammo[slot]
 	var original_damage := damage_multiplier
 	var original_rate := rate_multiplier
-	damage_multiplier *= 1+.15*tuning[slot]
+	damage_multiplier *= (1+.15*tuning[slot])*(1.5 if world.critical15 else 1.0)
 	rate_multiplier *= 1+.08*tuning[slot]
 	var result := false
 	if slot in [6,8]: result = special_shot(direction)
@@ -73,8 +77,9 @@ func shoot(direction: Vector3) -> bool:
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
+	if result and world.world_rng.randf()<.25*int(world.upgrades.levels.get("efficiency",0))/12.0: ammo[slot] = ammo_before
 	damage_multiplier = original_damage; rate_multiplier = original_rate
-	world.shot_owner = 0
+	world.shot_owner = 0; world.critical15 = false; world.damage_origin15 = Vector3.INF
 	return result
 
 func special_shot(direction: Vector3) -> bool:

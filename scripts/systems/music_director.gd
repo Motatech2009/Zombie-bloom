@@ -36,17 +36,18 @@ func note(midi: int,duration: float,kind: String,gain: float) -> void:
 
 func _process(delta: float) -> void:
 	combat = is_instance_valid(world) and world.waves.running
+	var red_night: bool = is_instance_valid(world) and "v15" in world and world.v15.day.night() and world.v15.day.blood
 	var quiet: float = .5 if is_instance_valid(world) and world.combat_paused() else 1.0
 	for voice in voices: voice.volume_db = linear_to_db(maxf(.0001,GameSettings.music_volume*float(voice.get_meta("gain",.1))*quiet))
 	clock -= delta
 	if clock>0: return
-	clock = .40 if combat else .85
+	clock = .30 if red_night else .40 if combat else .85
 	var root_note: int = ROOTS[(beat/8)%ROOTS.size()]
 	if beat%8==0:
 		note(root_note+12,3.8,"pad",.28); note(root_note+13,3.8,"pad",.065)
 	if beat%4==0: note(root_note,1.8,"bass",.24)
 	if beat%4==2: note(MELODY[(beat/4)%MELODY.size()],1.4,"pad",.10 if combat else .07)
-	if combat: note(36 if beat%4==0 else 48,.16,"drum",.22 if beat%2==0 else .09)
+	if combat or red_night: note(36 if beat%4==0 else 48,.16,"drum",.22 if beat%2==0 else .09)
 	beat = (beat+1)%64
 
 func _exit_tree() -> void:

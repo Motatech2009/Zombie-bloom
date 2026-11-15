@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Body"]
+albedo_color = Color(0.45,0.64,0.58,1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="Base"]
+top_radius = 0.23
+bottom_radius = 0.26
+height = 0.12
+
+[sub_resource type="CylinderMesh" id="Tower"]
+top_radius = 0.12
+bottom_radius = 0.16
+height = 0.36
+
+[sub_resource type="CylinderMesh" id="Antenna"]
+top_radius = 0.025
+bottom_radius = 0.025
+height = 0.25
+
+[node name="ExtractionBeacon" type="Node3D"]
+
+[node name="Base" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.06,0)
+mesh = SubResource("Base")
+material_override = SubResource("Body")
+
+[node name="Tower" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.27,0)
+mesh = SubResource("Tower")
+material_override = SubResource("Body")
+
+[node name="Antenna" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.57,0)
+mesh = SubResource("Antenna")
+material_override = SubResource("Body")

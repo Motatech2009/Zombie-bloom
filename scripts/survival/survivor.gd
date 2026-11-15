@@ -1,4 +1,9 @@
 extends "res://scripts/entities/player.gd"
+var specialization := "engineer"
+var cosmetic := 0
+var pinned_left := 0.0
+var pin_owner: Node3D
+var combat_left := 0.0
 var bag := ItemBag.new()
 var peer_id: int = 1
 var profile_id: String = "host"
@@ -46,6 +51,7 @@ func start_roll(direction: Vector3) -> bool:
 	if direction.length_squared()>1.01: return false
 	if direction.length_squared()<.01: direction = aim
 	if direction.length_squared()<.01: direction = Vector3.FORWARD
+	pinned_left = 0; pin_owner = null
 	roll_direction = direction.normalized()
 	roll_count += 1
 	roll_left = ROLL_DURATION
@@ -97,7 +103,7 @@ func _ready() -> void:
 		var tag := VisualFactory.health_label(self,2.4)
 		tag.text = display_name
 		tag.font_size = 20
-	health.damaged.connect(func(_amount: float): last_damage += 1; cancel_gather())
+	health.damaged.connect(func(_amount: float): last_damage += 1; combat_left = 6; cancel_gather())
 
 func read_input() -> Dictionary:
 	if peer_id!=1:
@@ -129,6 +135,7 @@ func _physics_process(delta: float) -> void:
 	if world.combat_paused(): velocity = Vector3.ZERO; net_input.clear(); input_queue.clear(); roll_intents.clear(); return
 	region_travel_left = maxf(0,region_travel_left-delta)
 	roll_cooldown = maxf(0,roll_cooldown-delta)
+	pinned_left = maxf(0,pinned_left-delta); combat_left = maxf(0,combat_left-delta)
 	if health.dead: return
 	var frame := read_input()
 	clock += delta
@@ -160,7 +167,7 @@ func _physics_process(delta: float) -> void:
 	if reload_pressed and not previous_reload: weapons.reload()
 	previous_reload = reload_pressed
 	if frame.get("interact",false): world.tick_gather(self,delta)
-	else: cancel_gather()
+	elif not world.channel15.jobs.has(peer_id): cancel_gather()
 	rig.visible = true
 
 func cancel_gather() -> void:
@@ -188,6 +195,8 @@ func simulate_motion(frame: Dictionary,delta: float) -> void:
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
 	var direction := movement_direction(input)
 	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
+	if specialization=="scout" and combat_left<=0: speed *= 1.1
+	if pinned_left>0: speed = 0
 	if gather_target!=null: speed *= .25
 	var rolling := roll_left>0
 	if rolling:

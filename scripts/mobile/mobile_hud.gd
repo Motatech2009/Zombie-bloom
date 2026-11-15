@@ -153,7 +153,7 @@ func show_inventory() -> void:
 	inventory_status = UI.label(box,"",14,UI.MUTED); inventory_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var grid := GridContainer.new(); grid.columns = 6; grid.add_theme_constant_override("h_separation",6); grid.add_theme_constant_override("v_separation",6)
 	box.add_child(grid); inventory_buttons.clear(); depot_buttons.clear()
-	for i in range(18):
+	for i in range(world.player.bag.slots.size()):
 		var index := i; var button := ItemSlot.new(); button.key_number = i+1
 		button.pressed.connect(func():
 			if inventory_selected<0: inventory_selected = index
@@ -199,7 +199,10 @@ func show_browser(kind: String) -> void:
 	var box := open_modal(kind,880)
 	UI.label(box,"BENTO" if kind=="shop" else "CONSTRUÇÃO",24,UI.LIME)
 	browser_status = UI.label(box,"",14,UI.MUTED)
-	if kind=="shop": UI.button(box,"OFICINA / MELHORAR ARMA",show_weapon_workshop)
+	if kind=="shop":
+		var actions15 := UI.hbox(box,8)
+		UI.button(actions15,"OFICINA",show_weapon_workshop).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.button(actions15,"EXTRAÇÃO / 140 SUC + 6 CMP",func(): world.send_action("beacon",{}); close_modal()).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var tabs := UI.hbox(box,8); browser_tabs.clear()
 	var titles: Array = ["ARMAS","MUNIÇÃO","SUPRIMENTOS"] if kind=="shop" else ["TODAS","MUROS","TORRES","ARMADILHAS"]
 	for i in range(titles.size()):

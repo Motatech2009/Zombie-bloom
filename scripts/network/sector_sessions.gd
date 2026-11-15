@@ -95,3 +95,10 @@ func travel(actor: Node3D,direction: int) -> bool:
 	world.private_notice(actor.peer_id,"NÚCLEO (0,0)" if next==Vector2i.ZERO else "SETOR (%d,%d) · Mapa mostra sua equipe e o caminho de volta" % [next.x,next.y])
 	world.airdrops.ensure_crate()
 	return true
+
+func extract_to_core(actor: Node3D) -> void:
+	initialize(); sessions[world.sector_coord] = capture()
+	actor.region_coord = Vector2i.ZERO; actor.region_revision += 1; actor.region_travel_left = 1
+	actor.position = Vector3(4,0,4); actor.velocity = Vector3.ZERO; actor.invulnerable = 1; actor.input_queue.clear(); actor.roll_intents.clear()
+	load_state(sessions[world.avatars[1].region_coord]); world.scene_revision = world.avatars[1].region_revision
+	if actor.peer_id==1: world.camera.position = actor.position+world.camera_offset; world.camera.look_at(actor.position)
