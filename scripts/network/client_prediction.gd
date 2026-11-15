@@ -33,6 +33,8 @@ func begin_roll(actor: Node3D,direction: Vector3) -> void:
 func simulate(frame: Dictionary) -> void:
 	var actor: Node3D = world.player
 	actor.roll_cooldown = maxf(0,actor.roll_cooldown-STEP)
+	actor.combat_left = 6 if frame.get("fire",false) else maxf(0,actor.combat_left-STEP)
+	actor.pinned_left = maxf(0,actor.pinned_left-STEP)
 	if frame.get("roll") is Vector3: begin_roll(actor,frame.roll)
 	actor.simulate_motion(frame,STEP)
 	var point: Vector3 = frame.get("aim",actor.aim)

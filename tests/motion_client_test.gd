@@ -8,6 +8,7 @@ func check(ok: bool,message: String) -> void:
 	else: failures += 1; push_error("FAIL: "+message)
 func run() -> void:
 	Engine.max_fps = 30
+	Director15.selected_class = "scout"
 	var link := root.get_node("Coop")
 	link.join_session("127.0.0.1",24581,"Movement 30 FPS")
 	var deadline := Time.get_ticks_msec()+12000

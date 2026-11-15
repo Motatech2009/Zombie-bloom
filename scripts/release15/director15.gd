@@ -47,6 +47,7 @@ func tick(delta: float) -> void:
 	day.tick(delta)
 	if "no_vendor" in mutators and is_instance_valid(world.vendor_rig):
 		world.vendor_rig.visible = false
+		for stand in world.get_tree().get_nodes_in_group("vendor_obstacles"): stand.collision_layer = 0
 		if is_instance_valid(world.vendor_tag): world.vendor_tag.visible = false
 	for i in range(transient.size()-1,-1,-1):
 		var entry: Dictionary = transient[i]; entry.left -= delta

@@ -29,5 +29,6 @@ func preview_point() -> Vector3:
 	return super.preview_point()
 
 func set_active(value: bool) -> void:
+	if not value and world.channel15.jobs.has(world.player.peer_id) and world.channel15.jobs[world.player.peer_id].kind=="build": world.channel15.cancel(world.player.peer_id)
 	super.set_active(value)
 	if active and MobilePlatform.enabled(): world.notify("Toque no chão para posicionar. Use GIRAR, COLOCAR ou CANCELAR.")

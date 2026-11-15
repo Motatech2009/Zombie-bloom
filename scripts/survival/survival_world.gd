@@ -1051,7 +1051,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"pin":actor.pinned_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"pin":actor.pinned_left,"combat":actor.combat_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
@@ -1141,7 +1141,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			avatars[id] = actor
 		var actor: Node3D = avatars[id]
 		actor.region_coord = state.get("region",sector_coord)
-		actor.specialization = str(state.get("class","engineer")); actor.pinned_left = float(state.get("pin",0))
+		actor.specialization = str(state.get("class","engineer")); actor.pinned_left = float(state.get("pin",0)); actor.combat_left = float(state.get("combat",0))
 		if actor.cosmetic!=int(state.get("cosmetic",0)):
 			actor.cosmetic = int(state.cosmetic); v15.decorate(actor)
 		actor.weapons.swing_left = maxf(actor.weapons.swing_left,float(state.get("swing",0)))
