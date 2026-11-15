@@ -427,6 +427,7 @@ func spawn_minion(parent: Node3D,kind: int,index: int) -> void:
 
 func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 	if is_client: return
+	damage *= v15.day.damage_factor()
 	effects.burst(point,Color("e79a65"),12)
 	if network!=null and network.mode=="host": network.blast_event(point,radius)
 	for body in get_tree().get_nodes_in_group("damageable"):
@@ -1273,7 +1274,7 @@ func frost_blast(point: Vector3) -> void:
 	for actor in avatars.values():
 		if not actor.health.dead and actor.position.distance_to(point)<4.5:
 			actor.slow_left = maxf(actor.slow_left,5)
-			actor.take_damage(8+waves.wave)
+			actor.take_damage((8+waves.wave)*v15.day.damage_factor())
 
 func emp_blast(point: Vector3) -> void:
 	effects.burst(point,Color("9aabf0"),14)

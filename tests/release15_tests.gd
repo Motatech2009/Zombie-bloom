@@ -31,6 +31,10 @@ func run() -> void:
 	check(is_equal_approx(a.spec.values.damage,damage),"repeated night updates never stack damage")
 	w.v15.day.clock = 1800; w.v15.day.blood = false; w.v15.day.apply_enemy(a)
 	check(is_equal_approx(a.health.maximum,maximum),"dawn removes night maximum health bonus")
+	w.v15.day.clock = 900; w.v15.day.blood = true; w.player.health.setup(100); w.player.invulnerable = 0
+	w.hostile_blast(w.player.global_position,2,10)
+	check(is_equal_approx(w.player.health.current,87),"red night also scales hostile area damage by thirty percent")
+	w.v15.day.clock = 1800; w.v15.day.blood = false
 	w.waves.wave = 5; check(w.upgrades.cap()==2,"waves 1-5 cap each ability at two")
 	w.waves.wave = 6; check(w.upgrades.cap()==7,"waves 6-10 cap each ability at seven")
 	w.waves.wave = 11; check(w.upgrades.cap()==12,"later waves cap abilities at twelve")

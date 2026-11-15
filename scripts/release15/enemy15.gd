@@ -38,7 +38,7 @@ func _physics_process(delta: float) -> void:
 		choose_target()
 		if is_instance_valid(target) and target.is_in_group("campaign_structure") and global_position.distance_to(target.global_position)<2:
 			growth += delta; target.disabled_left = maxf(target.disabled_left,.5)
-			target.take_damage(delta*2); rig.scale = Vector3.ONE*(.45+growth*.035)
+			target.take_damage(delta*2*world.v15.day.damage_factor()); rig.scale = Vector3.ONE*(.45+growth*.035)
 			if growth>=10:
 				enemy_kind = 2; spec = CampaignData.enemy_spec(2).duplicate(true); health.setup(float(spec.values.health)); refresh_quality(); world.v15.day.apply_enemy(self)
 			return
@@ -94,9 +94,9 @@ func boss_cast() -> void:
 			for actor in world.avatars.values():
 				var flat: Vector3 = (actor.global_position-global_position)*Vector3(1,0,1)
 				if flat.length()<7 and flat.normalized().dot(rush_direction)>.6:
-					actor.velocity += rush_direction*12; actor.move_and_collide(rush_direction*1.5); actor.take_damage(12+world.waves.wave)
+					actor.velocity += rush_direction*12; actor.move_and_collide(rush_direction*1.5); actor.take_damage((12+world.waves.wave)*world.v15.day.damage_factor())
 		"mortar":
-			var projectile: Node3D = world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,22+world.waves.wave,3.2,1.25)
+			var projectile: Node3D = world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,(22+world.waves.wave)*world.v15.day.damage_factor(),3.2,1.25)
 			if projectile!=null: projectile.set_meta("toxic15",true)
 		"broodmother":
 			if summon_casts<3:

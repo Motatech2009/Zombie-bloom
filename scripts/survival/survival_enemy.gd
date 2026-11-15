@@ -130,7 +130,7 @@ func choose_target() -> void:
 		return
 	super.choose_target()
 	if not field_enemy and world.area_index!=-1: return
-	var closest := 18.0 if spec.id in ["hound","runner"] else 11.0
+	var closest: float = (18.0 if spec.id in ["hound","runner"] else 11.0)*(1.5 if world.v15.day.night() else 1.0)
 	for survivor in world.avatars.values():
 		if survivor.health.dead: continue
 		var distance := global_position.distance_to(survivor.global_position)
