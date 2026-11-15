@@ -153,7 +153,7 @@ func show_inventory() -> void:
 	inventory_status = UI.label(box,"",14,UI.MUTED); inventory_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var grid := GridContainer.new(); grid.columns = 6; grid.add_theme_constant_override("h_separation",6); grid.add_theme_constant_override("v_separation",6)
 	box.add_child(grid); inventory_buttons.clear(); depot_buttons.clear()
-	for i in range(18):
+	for i in range(world.player.bag.slots.size()):
 		var index := i; var button := ItemSlot.new(); button.key_number = i+1
 		button.pressed.connect(func():
 			if inventory_selected<0: inventory_selected = index

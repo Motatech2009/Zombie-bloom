@@ -2,11 +2,14 @@ extends "res://scripts/sectors/roaming_waves.gd"
 
 func start() -> bool:
 	if not super.start(): return false
-	to_spawn = CampaignData.wave_count(wave)*world.team_multiplier()
+	to_spawn = CampaignData.wave_count(wave)*world.team_multiplier()*(2 if "double_hordes" in world.v15.mutators else 1)
 	return true
 
 func enemy_type(index: int) -> int:
 	if index==0: return 8
+	if wave>=5 and index%37==0: return 17
+	if wave>=7 and index%41==0: return 18
+	if wave>=9 and index%43==0: return 19
 	if wave>=6 and index%29==0: return 16
 	if wave>=3 and index%31==0: return 15
 	if wave>=12 and index%23==0: return 14
@@ -30,4 +33,4 @@ func complete() -> void:
 	if world.area_index==-1 and world.phase=="prep": world.save_checkpoint(false)
 
 func rescale() -> void:
-	if running: to_spawn = maxi(0,CampaignData.wave_count(wave)*world.team_multiplier()-spawned)
+	if running: to_spawn = maxi(0,CampaignData.wave_count(wave)*world.team_multiplier()*(2 if "double_hordes" in world.v15.mutators else 1)-spawned)

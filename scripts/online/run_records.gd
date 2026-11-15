@@ -4,9 +4,9 @@ extends RefCounted
 var totals: Dictionary = {}
 var victories: Dictionary = {}
 func credit(identity: String,metric: String,amount: int) -> void:
-	if identity.is_empty() or metric not in ["kills","hordes","scrap"] or amount<=0: return
-	if not totals.has(identity): totals[identity] = {"kills":0,"hordes":0,"scrap":0}
-	totals[identity][metric] += amount
+	if identity.is_empty() or metric not in ["kills","hordes","scrap","points"] or amount<=0: return
+	if not totals.has(identity): totals[identity] = {"kills":0,"hordes":0,"scrap":0,"points":0}
+	totals[identity][metric] = int(totals[identity].get(metric,0))+amount
 func victory(wave: int,identities: Array) -> void:
 	for identity in identities:
 		var event := "%d:%s" % [wave,identity]
@@ -20,7 +20,7 @@ static func valid(data: Variant) -> bool:
 	if data.totals.size()>1024 or data.victories.size()>100000: return false
 	for id in data.totals:
 		if not id is String or not data.totals[id] is Dictionary: return false
-		for metric in ["kills","hordes","scrap"]:
-			var value = data.totals[id].get(metric)
+		for metric in ["kills","hordes","scrap","points"]:
+			var value = data.totals[id].get(metric,0)
 			if not (value is int or value is float) or not is_finite(value) or value<0 or value>1e12 or value!=floor(value): return false
 	return true

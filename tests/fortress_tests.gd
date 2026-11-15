@@ -33,7 +33,7 @@ func first_mesh(node: Node) -> MeshInstance3D:
 		if found!=null: return found
 	return null
 func run() -> void:
-	check(FortressData.pieces().size()==10,"ten defenses keep original indices and add four distinct tools")
+	check(FortressData.pieces().size()==11,"eleven defenses preserve existing indices and add the recycler")
 	for piece in range(10):
 		for tier in range(1,4):
 			var id: String = FortressData.pieces()[piece].id
@@ -145,10 +145,13 @@ func run() -> void:
 	clear_enemies(); await frames()
 	world.built_this_round = 0; actor.position = Vector3(42,0,24)
 	check(world.perform_action(1,"build",{"pos":Vector3(42,0,20),"piece":7,"angle":0.0}),"authoritative build command accepts a new defense index above five")
+	world.channel15.tick(4)
 	check(world.built_this_round==1,"new defenses consume the existing shared placement quota")
 	actor.position = Vector3(0,0,3)
 	var core_before: Node3D = world.core.model.get_child(0)
-	check(world.improve_nearby() and world.core_tier==2 and world.core.model.get_child(0)!=core_before,"core upgrade replaces its complete fortified model")
+	check(world.improve_nearby(),"core improvement begins a channel")
+	world.channel15.tick(4)
+	check(world.core_tier==2 and world.core.model.get_child(0)!=core_before,"core upgrade replaces its complete fortified model")
 	world.airdrops.left = 600; world.airdrops.state = {}; world.airdrops.serial = 0
 	world.airdrops.tick(599)
 	check(world.airdrops.state.is_empty() and world.airdrops.left==1,"airdrop does not occur before ten minutes")

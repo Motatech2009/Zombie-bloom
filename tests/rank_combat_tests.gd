@@ -31,7 +31,7 @@ func run() -> void:
 	check(ranged.ranged_only() and not enemy.ranged_only(),"new infected have distinct ranged-only and melee roles")
 	w.restoring_boss_stage = 1; var boss = w.make_enemy(8,Vector3(0,0,-15),false,-1); w.restoring_boss_stage = 0; boss.set_physics_process(false)
 	boss.ability_left = 0; boss._physics_process(.01)
-	check(boss.windup==0,"melee boss cannot cast a slam on a distant player")
+	check(boss.windup>0,"siege boss telegraphs a charge toward a target within eighteen meters")
 	w.restoring_boss_stage = 3; var mother = w.make_enemy(8,Vector3(6,0,20),false,-1); w.restoring_boss_stage = 0; mother.set_physics_process(false)
 	mother.ability_left = 0; mother._physics_process(.01); mother._physics_process(1.2)
 	check(mother.summon_casts==1 and mother.shield_left>0,"Matriarch summons allies and gains temporary armor")

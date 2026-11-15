@@ -22,7 +22,7 @@ func run() -> void:
 	account.record_progress("active",{"kills":5,"hordes":1,"scrap":20})
 	check(account.paths.size()==2,"individual game events never make database requests")
 	await account.flush_progress()
-	check(account.server_totals=={"kills":5,"hordes":1,"scrap":20},"one batch writes all three counters")
+	check(account.server_totals=={"kills":5,"hordes":1,"scrap":20,"points":0},"one batch writes all three counters")
 	check(account.commits==1 and account.payloads[-1].writes.size()==2,"batch uses one private checkpoint and one public player write")
 	var requests: int = account.paths.size(); await account.flush_progress()
 	check(account.paths.size()==requests,"idle flush does not read or write Firebase")
@@ -36,7 +36,7 @@ func run() -> void:
 	check(account.server_totals.kills==8 and account.flush_clock<=120,"offline batch stays pending with bounded retry delay")
 	account.transport_failure = false; account.writes_during_request = {"kills":11,"hordes":2,"scrap":35}
 	await account.flush_progress(); await account.flush_progress()
-	check(account.server_totals=={"kills":11,"hordes":2,"scrap":35},"progress earned during an in-flight request is preserved")
+	check(account.server_totals=={"kills":11,"hordes":2,"scrap":35,"points":0},"progress earned during an in-flight request is preserved")
 	var ledger_copy := ProgressLedger.new(); ledger_copy.restore(account.ledger.dump())
 	ledger_copy.observe("active",{"kills":3,"hordes":1,"scrap":10}); ledger_copy.observe("active",{"kills":11,"hordes":2,"scrap":35})
 	check(ledger_copy.totals==account.ledger.totals,"loading and replaying an older checkpoint does not duplicate account stats")

@@ -1,14 +1,14 @@
 class_name ProgressLedger
 extends RefCounted
 ## Device-local cumulative counters; checkpoints may rewind, credited progress does not.
-const METRICS := ["kills","hordes","scrap"]
+const METRICS := ["kills","hordes","scrap","points"]
 var device := ""
-var totals := {"kills":0,"hordes":0,"scrap":0}
+var totals := {"kills":0,"hordes":0,"scrap":0,"points":0}
 var runs: Dictionary = {}
 
 func observe(run: String, values: Dictionary, baseline: bool = false) -> bool:
 	if run.is_empty(): return false
-	var previous: Dictionary = runs.get(run,{"kills":0,"hordes":0,"scrap":0})
+	var previous: Dictionary = runs.get(run,{"kills":0,"hordes":0,"scrap":0,"points":0})
 	var changed := false
 	for metric in METRICS:
 		var value := maxi(0,int(values.get(metric,0)))

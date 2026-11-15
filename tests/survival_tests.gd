@@ -130,6 +130,7 @@ func run() -> void:
 	before = world.resources.scrap
 	check(not world.shop_service("light") and world.resources.scrap==before,"full-bag shop purchase is atomic")
 	actor.bag.restore(old_bag)
+	Director15.selected_class = "shooter"; world.v15.apply_class(actor,"shooter")
 	check(world.build_quota()==6,"first preparation permits six placed defenses for the whole team")
 	var builder: Node3D = world.builder
 	builder.set_active(true); builder.selected = 4; builder.set_physics_process(false)
@@ -137,7 +138,8 @@ func run() -> void:
 		builder.location = Vector3(20+i%3*5,0,20+i/3*5)
 		actor.position = builder.location+Vector3(0,0,3)
 		await frames()
-		check(builder.place()!=null,"valid placement consumes quota %d" % (i+1))
+		builder.place(); world.channel15.tick(4)
+		check(world.built_this_round==i+1,"valid placement consumes quota %d" % (i+1))
 	before = world.resources.scrap
 	builder.location = Vector3(35,0,25); actor.position = Vector3(35,0,29)
 	check(builder.place()==null and world.built_this_round==6 and world.resources.scrap==before,"seventh placement is blocked without spending resources")
@@ -224,7 +226,7 @@ func run() -> void:
 	for key in ["bag","depot_items","profiles","loose","built"]: previous.erase(key)
 	var migrated = world.migrate_snapshot(previous)
 	check(world.valid_snapshot(migrated) and migrated.format==6 and previous.format==3,"v3 saves migrate to bags without mutating the source")
-	var corrupt: Dictionary = snap.duplicate(true); corrupt.built = 13
+	var corrupt: Dictionary = snap.duplicate(true); corrupt.built = 14
 	check(not world.valid_snapshot(corrupt),"corrupt construction budget is rejected")
 	corrupt = snap.duplicate(true); corrupt.bag.slots[0].qty = 9999
 	check(not world.valid_snapshot(corrupt),"corrupt bag rejects the whole checkpoint")

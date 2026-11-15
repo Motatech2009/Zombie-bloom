@@ -1,4 +1,9 @@
 extends "res://scripts/sectors/roaming_world.gd"
+var damage_origin15 := Vector3.INF
+var explosive15 := false
+var critical15 := false
+var v15 := Director15.new()
+var channel15 := Channel15.new()
 var is_client: bool = false
 var network: Node
 var avatars: Dictionary = {}
@@ -110,6 +115,7 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("bat",1)
 
 func _ready() -> void:
+	upgrades.free(); upgrades = Progression15.new(); channel15.world = self; v15.world = self; v15.day.world = self
 	account_run_id = Crypto.new().generate_random_bytes(16).hex_encode()
 	account_identity = Account.user_id
 	regions.world = self
@@ -126,6 +132,7 @@ func _ready() -> void:
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
+	v15.initialize(self)
 	if MobilePlatform.enabled():
 		MobilePlatform.configure(get_tree().root)
 		camera.size = 27
@@ -144,7 +151,7 @@ func _ready() -> void:
 
 func party_count() -> int: return maxi(1,avatars.size())
 func team_multiplier() -> int: return 1 << (mini(4,party_count())-1)
-func build_quota() -> int: return mini(12,6+waves.wave/3)
+func build_quota() -> int: return mini(12,6+waves.wave/3)+(1 if player!=null and player.specialization=="engineer" else 0)
 func connected_game() -> bool: return network!=null and network.mode in ["host","client"]
 
 func select_hotbar(index: int) -> void:
@@ -166,6 +173,9 @@ func local_input(actor: Node3D) -> Dictionary:
 	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":pending_slot if is_client and pending_slot>=0 else actor.bag.selected}
 
 func _process(delta: float) -> void:
+	if not combat_paused():
+		v15.tick(delta)
+		if not is_client: channel15.tick(delta)
 	account_clock -= delta
 	if account_clock<=0:
 		account_clock = 1
@@ -280,6 +290,10 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 		"buy":
 			if data.get("weapon") is int: result = buy_weapon(data.weapon)
 		"tune": result = tune_weapon()
+		"fuse": result = v15.fuse(actor)
+		"recycle": result = v15.recycle(actor)
+		"beacon": result = v15.buy_beacon(actor)
+		"extract": result = v15.start_extract(actor)
 		"service":
 			if data.get("id") is String: result = shop_service(data.id)
 		"swap":
@@ -307,7 +321,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 				builder.location = Vector3(snappedf(pos.x,1),0,snappedf(pos.z,1))
 				builder.selected = piece
 				builder.angle = fposmod(snappedf(float(angle),PI/2),TAU)
-				result = builder.place()!=null
+				result = channel15.start(actor,"build",null,{"pos":builder.location,"piece":builder.selected,"angle":builder.angle})
 				builder.active = previous.active
 				builder.location = previous.location
 				builder.selected = previous.selected
@@ -332,6 +346,7 @@ func step_sector(direction: int) -> bool:
 	var traveled := super.step_sector(direction)
 	checkpoint_enabled = save_enabled
 	if not traveled: return false
+	for actor in avatars.values(): actor.region_coord = sector_coord
 	var entry := player.position
 	var i := 0
 	for actor in avatars.values():
@@ -341,6 +356,7 @@ func step_sector(direction: int) -> bool:
 		i += 1
 	if area_index!=-1: scale_field_population()
 	airdrops.ensure_crate()
+
 	scene_revision += 1
 	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
 	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
@@ -373,7 +389,7 @@ func next_id() -> int:
 
 func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	var enemy := CharacterBody3D.new()
-	enemy.set_script(load("res://scripts/survival/survival_enemy.gd"))
+	enemy.set_script(load("res://scripts/release15/enemy15.gd"))
 	enemy.enemy_kind = kind
 	enemy.net_id = next_id()
 	if kind==8:
@@ -395,6 +411,7 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 		enemy.health.setup(enemy.health.maximum*1.3)
 		enemy.spec.values.damage *= 1.15
 	if not field: enemy.add_to_group("wave_enemies")
+	v15.day.apply_enemy(enemy)
 	if kind==8: enemy.add_to_group("boss_enemies")
 	return enemy
 
@@ -404,11 +421,14 @@ func spawn_minion(parent: Node3D,kind: int,index: int) -> void:
 	if get_tree().get_nodes_in_group("enemies").size()>=72: return
 	var root_node: Node3D = field_root if parent.field_enemy else base_root
 	var pos: Vector3 = parent.global_position-root_node.global_position+Vector3(1.5+index,0,1)
-	make_enemy(kind,pos,parent.field_enemy,-1)
+	var child := make_enemy(kind,pos,parent.field_enemy,-1)
+	parent.set_meta("summon_token",str(parent.get_meta("summon_token",parent.net_id)))
+	child.set_meta("summoner",parent.net_id); child.set_meta("summoner_token",parent.get_meta("summon_token"))
 
 func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 	if is_client: return
 	effects.burst(point,Color("e79a65"),12)
+	if network!=null and network.mode=="host": network.blast_event(point,radius)
 	for body in get_tree().get_nodes_in_group("damageable"):
 		if body.is_in_group("enemies") or body.health.dead: continue
 		var offset: Vector3 = body.global_position-point
@@ -422,8 +442,10 @@ func enemy_defeated(enemy: Node3D) -> void:
 	enemy.set_meta("recorded_death",true)
 	var killer := int(enemy.get_meta("killer_peer",0))
 	if killer==0:
-		for peer in avatars: records.credit(record_identity(peer),"kills",1)
-	else: records.credit(record_identity(killer),"kills",1)
+		for peer in avatars:
+			records.credit(record_identity(peer),"kills",1); records.credit(record_identity(peer),"points",v15.score_multiplier())
+	else:
+		records.credit(record_identity(killer),"kills",1); records.credit(record_identity(killer),"points",v15.score_multiplier())
 	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
 		enemy.set_meta("boss_rewarded",true)
 		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
@@ -536,6 +558,7 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 		regions.run_in(actor.region_coord,func(): tick_gather(actor,delta)); return
 	if actor.roll_left>0: actor.cancel_gather(); return
 	if is_client: return
+	if actor.gather_target==null and v15.interact_event(actor): return
 	if actor.gather_target==null:
 		for other in avatars.values():
 			if other!=actor and other.health.dead and actor.position.distance_to(other.position)<2.8 and actor.bag.count("medkit")>0:
@@ -565,6 +588,8 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			if enemy.global_position.distance_to(target.global_position)<4.5: actor.cancel_gather(); return
 	var duration := collect_seconds(actor.gather_kind,actor.gather_base_duration)
+	if actor.gather_kind=="loot": duration /= 1+.5*int(upgrades.levels.get("gather",0))/12.0
+	if actor.gather_kind=="repair": duration *= 1-.4*int(upgrades.levels.get("engineering",0))/12.0
 	if not is_equal_approx(duration,actor.gather_duration):
 		actor.gather_progress = actor.gather_progress/maxf(.01,actor.gather_duration)*duration
 		actor.gather_duration = duration
@@ -573,7 +598,7 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 	var kind: String = actor.gather_kind
 	actor.cancel_gather()
 	if kind=="deposit": deposit_materials(actor)
-	elif kind=="repair": target.repair()
+	elif kind=="repair": repair_for15(actor,target)
 	elif kind=="revive":
 		if target.health.dead and actor.bag.remove("medkit",1): target.revive()
 	else: transfer_source(actor,target)
@@ -647,7 +672,7 @@ func withdraw(actor: Node3D,id: String,quantity: int) -> bool:
 	return true
 
 func store_slot(actor: Node3D,index: int) -> bool:
-	if index<0 or index>=ItemBag.SIZE or area_index!=-1 or actor.position.distance_to(core.position)>4: return false
+	if index<0 or index>=actor.bag.slots.size() or area_index!=-1 or actor.position.distance_to(core.position)>4: return false
 	var item: Dictionary = actor.bag.slots[index].duplicate()
 	if item.qty<=0: return false
 	if item.id in ["scrap","wood","parts"]: credit(item.id,item.qty)
@@ -663,7 +688,7 @@ func store_slot(actor: Node3D,index: int) -> bool:
 	return true
 
 func drop_slot(actor: Node3D,index: int) -> bool:
-	if index<0 or index>=ItemBag.SIZE: return false
+	if index<0 or index>=actor.bag.slots.size(): return false
 	var item: Dictionary = actor.bag.slots[index].duplicate()
 	if item.qty<=0: return false
 	var loaded := 0
@@ -677,6 +702,7 @@ func drop_slot(actor: Node3D,index: int) -> bool:
 	return true
 
 func buy_weapon(index: int) -> bool:
+	if "no_vendor" in v15.mutators: return false
 	if index<1 or index>=Arsenal.WEAPONS.size() or area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
 	var id: String = ItemBag.WEAPON_IDS[index]
 	var copy := ItemBag.new()
@@ -689,6 +715,7 @@ func buy_weapon(index: int) -> bool:
 	return true
 
 func shop_service(id: String) -> bool:
+	if "no_vendor" in v15.mutators: return false
 	if area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
 	var packs: Dictionary = Arsenal.PACKS
 	if not packs.has(id): return false
@@ -714,6 +741,7 @@ func throw_for(actor: Node3D) -> bool:
 	return true
 
 func explode_from(point: Vector3,radius: float,power: float,owner: int) -> void:
+	explosive15 = true
 	var saved: CharacterBody3D = player
 	if avatars.has(owner): player = avatars[owner]
 	shot_owner = owner
@@ -721,6 +749,8 @@ func explode_from(point: Vector3,radius: float,power: float,owner: int) -> void:
 	shot_owner = 0
 	player = saved
 	if network!=null and network.mode=="host": network.blast_event(point,radius)
+
+	explosive15 = false
 
 func survivor_down(actor: Node3D) -> void:
 	for id in ["scrap","wood","parts"]:
@@ -734,25 +764,13 @@ func survivor_down(actor: Node3D) -> void:
 	finish(false,"Todos os sobreviventes caíram.")
 
 func choose_team_upgrade(index: int) -> bool:
-	var host: Node3D = avatars[1]
-	var saved: CharacterBody3D = player
-	player = host
-	var hp_before: float = host.health.maximum
-	var result: bool = upgrades.choose(index)
-	if result:
-		for actor in avatars.values():
-			if actor==host: continue
-			for key in ["damage_multiplier","rate_multiplier","capacity_multiplier","reload_multiplier","level"]: actor.weapons.set(key,host.weapons.get(key))
-			actor.speed_multiplier = host.speed_multiplier
-			actor.health.maximum += host.health.maximum-hp_before
-			actor.health.heal(host.health.maximum-hp_before)
-	player = saved
-	return result
+	return upgrades.choose(index)
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
+	return {"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
 
 func valid_profile(data: Variant) -> bool:
+	if data is Dictionary and (data.get("class","engineer") not in ["engineer","scout","shooter"] or not bounded(data.get("cosmetic",0),0,10)): return false
 	if data is Dictionary and data.has("tuning"):
 		if not data.tuning is Array or data.tuning.size()!=9 or not data.tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
@@ -763,6 +781,8 @@ func valid_profile(data: Variant) -> bool:
 	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
 
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
+	actor.specialization = str(data.get("class","engineer")); actor.cosmetic = int(data.get("cosmetic",0))
+	v15.decorate(actor)
 	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
 	actor.bag.restore(data.bag)
 	actor.weapons.ammo.assign(data.ammo)
@@ -794,6 +814,7 @@ func snapshot() -> Dictionary:
 	rockets = player.bag.count("rocket")
 	var data := super.snapshot()
 	data.format = 6
+	data.systems15 = v15.dump()
 	data.horde_interval = HORDE_INTERVAL
 	data.preparation_policy = 2
 	data.records = records.dump()
@@ -810,13 +831,17 @@ func snapshot() -> Dictionary:
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
 		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false)),"origin":bool(loot.get_meta("world_origin",false))})
 	player = saved_player
+	for entry in data.structures:
+		for structure in get_tree().get_nodes_in_group("campaign_structure"):
+			if structure.position.distance_to(Vector3(entry.pos[0],0,entry.pos[1]))<.1: entry.fused = bool(structure.get_meta("fused",false))
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("systems15") and not Director15.valid(data.systems15): return false
 	if data is Dictionary and data.has("weapon_tuning"):
 		if not data.weapon_tuning is Array or data.weapon_tuning.size()!=9 or not data.weapon_tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if data is Dictionary and data.has("records") and not RunRecords.valid(data.records): return false
-	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,12) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
+	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,13) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
 	if not AirdropDirector.valid(data.get("airdrops")): return false
 	if not bounded(data.get("elapsed"),0,1000000000) or not SectorMemory.valid(data.get("sector_memory",{}),float(data.elapsed)): return false
 	for id in data.depot_items:
@@ -879,6 +904,10 @@ func apply_snapshot(data: Dictionary) -> void:
 		data = data.duplicate(true)
 		data.horde_left = minf(float(data.horde_left),preparation_seconds(int(data.get("wave",0))+1))
 	super.apply_snapshot(data)
+	if data.has("systems15"): v15.restore(data.systems15)
+	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
+	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
+	for actor in avatars.values(): upgrades.apply_actor(actor)
 	records.restore(data.get("records",{}))
 	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
 	account_baseline = true
@@ -911,6 +940,11 @@ func apply_snapshot(data: Dictionary) -> void:
 	for item in data.loose:
 		var loot := spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto),bool(item.get("origin",false)))
 		if loot!=null and item.get("boss",false): mark_boss_drop(loot)
+	for entry in data.structures:
+		if entry.get("fused",false):
+			for structure in get_tree().get_nodes_in_group("campaign_structure"):
+				if structure.position.distance_to(Vector3(entry.pos[0],0,entry.pos[1]))<.1:
+					structure.set_meta("fused",true); structure.spec.values.interval *= .55
 	scene_revision += 1
 	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
 
@@ -959,13 +993,7 @@ func attach_peer(peer: int,identity: String,nickname: String) -> bool:
 	add_child(actor)
 	if profiles.has(identity): restore_profile(actor,profiles[identity])
 	else:
-		actor.weapons.damage_multiplier = avatars[1].weapons.damage_multiplier
-		actor.weapons.rate_multiplier = avatars[1].weapons.rate_multiplier
-		actor.weapons.capacity_multiplier = avatars[1].weapons.capacity_multiplier
-		actor.weapons.reload_multiplier = avatars[1].weapons.reload_multiplier
-		actor.weapons.level = avatars[1].weapons.level
-		actor.speed_multiplier = avatars[1].speed_multiplier
-		actor.health.setup(avatars[1].health.maximum)
+		v15.apply_class(actor,Director15.selected_class,true)
 		actor.weapons.sync_hand()
 	actor.invulnerable = 3
 	waves.rescale()
@@ -1022,7 +1050,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"pin":actor.pinned_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
@@ -1045,9 +1073,11 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"visuals15":v15.visuals() if include_bulk else [],"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
+	if data.has("systems15"): v15.restore(data.systems15)
+	if data.get("_bulk",true) and data.has("visuals15"): v15.apply_visuals(data.visuals15)
 	if not data.get("run_totals",{}).is_empty():
 		records.totals = data.run_totals.duplicate(true)
 		account_run_id = str(data.get("account_run_id",account_run_id))
@@ -1110,6 +1140,9 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			avatars[id] = actor
 		var actor: Node3D = avatars[id]
 		actor.region_coord = state.get("region",sector_coord)
+		actor.specialization = str(state.get("class","engineer")); actor.pinned_left = float(state.get("pin",0))
+		if actor.cosmetic!=int(state.get("cosmetic",0)):
+			actor.cosmetic = int(state.cosmetic); v15.decorate(actor)
 		actor.weapons.swing_left = maxf(actor.weapons.swing_left,float(state.get("swing",0)))
 		actor.target_position = state.p
 		if actor!=player or not prediction.enabled():
@@ -1165,6 +1198,8 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		enemy.windup = float(state.get("cast",0))
 		enemy.melee_left = float(state.get("melee",0)); enemy.recoil = float(state.get("recoil",0)); enemy.rush_left = float(state.get("rush",0))
 		enemy.health.current = state.hp
+		if enemy.spec.id!=str(state.get("spec",enemy.spec.id)):
+			enemy.spec.id = state.spec; enemy.refresh_quality()
 		enemy.spec.title = state.title
 		enemy.label.hide()
 	for id in client_enemies.keys():
@@ -1283,6 +1318,7 @@ func defense_shell(from: Vector3,to: Vector3,power: float,radius: float) -> Node
 
 func defense_blast(point: Vector3,radius: float,power: float) -> void:
 	if is_client: return
+	explosive15 = true
 	effects.burst(point,Color("e8b675"),16)
 	if network!=null and network.mode=="host": network.blast_event(point,radius)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -1291,11 +1327,13 @@ func defense_blast(point: Vector3,radius: float,power: float) -> void:
 		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(point+Vector3.UP*.25,target,1|8))
 		if hit.is_empty(): enemy.take_damage(power)
 
+	explosive15 = false
+
 func prepare_sector_descriptor(data: Dictionary) -> Dictionary:
 	return HouseLayout.populate(airdrops.decorate(data),waves.wave)
 
 func valid_fortification(entry: Variant) -> bool:
-	if not entry is Dictionary: return false
+	if not entry is Dictionary or (entry.has("fused") and not entry.fused is bool): return false
 	for key in ["piece","tier","hp","pos","angle","open","invested"]:
 		if not entry.has(key): return false
 	if not bounded(entry.piece,0,FortressData.pieces().size()-1) or int(entry.piece)!=entry.piece or not bounded(entry.tier,1,3) or int(entry.tier)!=entry.tier or not point_valid(entry.pos) or not bounded(entry.angle,0,TAU) or not entry.open is bool or not entry.invested is Dictionary: return false
@@ -1317,6 +1355,7 @@ func apply_mobile_quality() -> void:
 	MobilePlatform.apply_quality(self)
 
 func interaction_hint(actor: Node3D) -> String:
+	if v15.event_interactable(actor): return "COLETAR"
 	for i in range(4):
 		if local_position(actor).distance_to(SectorGenerator.EXITS[i])<3.7: return "VIAJAR"
 	for other in avatars.values():
@@ -1332,7 +1371,7 @@ func mobile_context(actor: Node3D) -> Dictionary:
 	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return mobile_context(actor))
 	if actor.health.dead or phase=="ended": return {}
 	var preparing := sector_coord==Vector2i.ZERO and area_index==-1 and phase=="prep" and not waves.running
-	var collect := ""
+	var collect := "COLETAR" if v15.event_interactable(actor) else ""
 	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): collect = "GUARDAR"
 	elif nearest_source(actor)!=null: collect = "COLETAR"
 	var nearest: Node3D
@@ -1349,7 +1388,7 @@ func mobile_context(actor: Node3D) -> Dictionary:
 		if tier<(4 if nearest==core else 3):
 			upgrade = {"title":nearest.spec.title,"tier":tier,"cost":{"scrap":75*tier,"wood":10*tier,"parts":5*tier} if nearest==core else nearest.upgrade_cost()}
 	var hint := interaction_hint(actor)
-	return {"build":preparing,"collect":collect,"upgrade":upgrade,"shop":preparing and actor.position.distance_to(vendor_pos)<=5,"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
+	return {"build":preparing,"collect":collect,"upgrade":upgrade,"shop":preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5,"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
 
 func local_mobile_context() -> Dictionary:
 	if is_client: return remote_mobile_context if client_scene_ready else {}
@@ -1457,3 +1496,24 @@ func tune_weapon() -> bool:
 	player.weapons.tuning[index] += 1
 	notify("OFICINA · "+Arsenal.WEAPONS[index].title+" melhorada. Dano, cadência, capacidade e recarga aprimorados.")
 	return true
+
+func improve_nearby() -> bool:
+	if not base_preparing(): return false
+	var target := nearest_structure()
+	return target!=null and channel15.start(player,"upgrade",target,{"tier":core_tier if target==core else target.tier})
+
+func commit_upgrade() -> bool: return super.improve_nearby()
+
+func extract_solo15(actor: Node3D) -> void:
+	if field_root!=null:
+		remember_sector(); clear_region_hazards(SectorGenerator.key(sector_coord)); remove_child(field_root); field_root.queue_free(); field_root = null
+	caches.clear(); claimed.clear(); descriptor.clear(); field_queue.clear(); sector_coord = Vector2i.ZERO; actor.region_coord = Vector2i.ZERO
+	area_index = -1; arena = base_arena; phase = "combat" if waves.running else "prep"; add_exits_again_for_base()
+	actor.position = Vector3(4,0,4); actor.velocity = Vector3.ZERO; actor.invulnerable = 1
+	camera.position = actor.position+camera_offset; camera.look_at(actor.position); scene_revision += 1
+
+func repair_for15(actor: Node3D,target: Node3D) -> bool:
+	if not base_preparing() or target.health.dead or target.health.current>=target.health.maximum: return false
+	var price := ceili(float(target.spec.values.repair_cost)*(.85 if actor.specialization=="engineer" else 1.0))
+	if not resources.spend(price): return false
+	target.health.heal(float(target.spec.values.repair_amount)); return true

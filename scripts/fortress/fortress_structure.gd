@@ -21,13 +21,15 @@ func refresh_tier() -> void:
 	spec.values.damage = (68.0 if spec.id=="cannon" else 24.0 if spec.id=="shock" else 15.0)*(1+.45*(tier-1))
 	spec.values.interval = (2.4 if spec.id=="cannon" else 1.5 if spec.id=="shock" else .65)/(1+.18*(tier-1))
 	spec.values.range = (22.0 if spec.id=="cannon" else 11.0 if spec.id=="shock" else 15.0)+tier-1
+	if get_meta("fused",false): spec.values.interval *= .55
 	refresh_visual()
 
 func refresh_visual() -> void:
 	if visual_tier==tier: return
 	visual_tier = tier
 	for child in model.get_children(): model.remove_child(child); child.queue_free()
-	var visual: Node3D = load("res://assets/fortress/"+spec.id+"_"+str(tier)+".tscn").instantiate()
+	var path = "res://assets/fortress/"+spec.id+"_"+str(tier)+".tscn"
+	var visual: Node3D = load(path if ResourceLoader.exists(path) else "res://assets/fortress/station_"+str(tier)+".tscn").instantiate()
 	visual.name = "Visual"; model.add_child(visual)
 	ClayStyle.apply_tree(visual)
 	head = visual.get_node_or_null("Head")
@@ -85,7 +87,9 @@ func fire_turret() -> void:
 		for i in range(mini(3 if spec.id=="shock" else 1,candidates.size())):
 			var enemy: Node3D = candidates[i]
 			var target_point: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
+			world.damage_origin15 = global_position
 			enemy.take_damage(float(spec.values.damage)*pow(.8,i))
+			world.damage_origin15 = Vector3.INF
 			if spec.id=="shock": enemy.stun_left = maxf(enemy.stun_left,.35)
 			world.shot_visual(origin,target_point,Color("79d4e5"))
 	cooldown = float(spec.values.interval)

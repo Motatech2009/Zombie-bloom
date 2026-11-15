@@ -10,7 +10,14 @@ func place() -> Node3D:
 	if world.is_client:
 		world.send_action("build",{"pos":location,"angle":angle,"piece":selected})
 		return null
+	if world.channel15.start(world.player,"build",null,{"pos":location,"piece":selected,"angle":angle}): world.notify("Construindo · permaneça próximo até concluir.")
+	return null
+
+func commit_channel(data: Dictionary) -> Node3D:
+	var previous := [active,location,selected,angle]
+	active = true; location = data.pos; selected = int(data.piece); angle = float(data.angle)
 	var result := super.place()
+	active = previous[0]; location = previous[1]; selected = previous[2]; angle = previous[3]
 	if result!=null: world.built_this_round += 1
 	return result
 

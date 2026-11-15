@@ -22,7 +22,7 @@ func request_json(path: String,_method: int,payload: Dictionary = {},_form: bool
 	if path.ends_with(":commit") and payload.get("writes",[]).size()==2:
 		commits += 1
 		sync_document = {"fields":payload.writes[0].update.fields.duplicate(true),"updateTime":"revision-"+str(commits)}
-		for entry in payload.writes[1].updateTransforms: server_totals[entry.fieldPath] += int(entry.increment.integerValue)
+		for entry in payload.writes[1].updateTransforms: server_totals[entry.fieldPath] = int(server_totals.get(entry.fieldPath,0))+int(entry.increment.integerValue)
 		if lose_commit_response:
 			lose_commit_response = false; return {"ok":false,"code":0,"data":{}}
 		return {"ok":true,"code":200,"data":{}}

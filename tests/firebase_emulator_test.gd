@@ -15,9 +15,10 @@ func run() -> void:
 	check(a.signed_in(),"real HTTP signup against Auth emulator")
 	if not a.signed_in(): quit(1); return
 	var first_uid: String = a.user_id
-	a.record_progress("run",{"kills":7,"hordes":2,"scrap":45}); await a.flush_progress()
+	a.record_progress("run",{"kills":7,"hordes":2,"scrap":45,"points":21}); await a.flush_progress()
 	var profile: Dictionary = await a.request_json(a.documents_url()+"/players/"+a.user_id,HTTPClient.METHOD_GET)
 	check(profile.ok and a.decode_fields(profile.data.get("fields",{})).get("kills",0)==7,"Firestore commit accepts owner counters under deployed rules")
+	check(a.decode_fields(profile.data.get("fields",{})).get("points",0)==21,"challenge points persist separately from seven real kills")
 	await a.flush_progress()
 	profile = await a.request_json(a.documents_url()+"/players/"+a.user_id,HTTPClient.METHOD_GET)
 	check(a.decode_fields(profile.data.get("fields",{})).get("kills",0)==7,"repeated flush leaves real Firestore counters unchanged")

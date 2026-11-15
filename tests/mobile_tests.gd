@@ -61,7 +61,7 @@ func run() -> void:
 	check(world.local_input(actor).move==Vector2.ZERO and not world.local_input(actor).fire,"modal panels cannot drive movement or fire underneath")
 	world.hud.close_modal()
 	world.hud.show_build_catalog(); await frames()
-	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==10,"mobile construction catalog exposes all ten defenses in a scrollable item list")
+	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==11,"mobile construction catalog exposes all ten defenses in a scrollable item list")
 	world.hud.close_modal()
 	actor.position = Vector3(0,0,8); actor.set_physics_process(false)
 	world.resources.scrap = 1000; world.stock = {"wood":100,"parts":100}
@@ -73,6 +73,8 @@ func run() -> void:
 	check(is_equal_approx(world.builder.angle,PI/2),"touch rotate turns the preview by ninety degrees")
 	var quota: int = world.built_this_round
 	controls.trigger("place")
+	check(world.built_this_round==quota,"touch construction waits for channel completion")
+	world.channel15.tick(3)
 	check(world.built_this_round==quota+1,"touch placement goes through normal quota, collision and payment validation")
 	controls.trigger("cancel"); controls.layout_controls()
 	check(not world.builder.active and not controls.buttons.has("place"),"touch cancel restores the combat controls")
@@ -119,7 +121,7 @@ func run() -> void:
 	var old_tier: int = defense.tier
 	touch(controls,6,controls.buttons.upgrade.get_center()); await frames()
 	check(world.hud.mode=="structure" and world.hud.upgrade_info.text.contains(defense.spec.title),"improvement opens the nearby structure and its actual material cost")
-	world.hud.upgrade_buy.pressed.emit(); check(defense.tier==old_tier+1,"confirming the touch improvement spends materials and upgrades the actual defense")
+	world.hud.upgrade_buy.pressed.emit(); world.channel15.tick(4); check(defense.tier==old_tier+1,"confirming the touch improvement spends materials and upgrades the actual defense")
 	defense.tier = 3; defense.refresh_tier(); controls._process(.2)
 	check(not controls.buttons.has("upgrade"),"a maximum-tier defense no longer offers improvement")
 	actor.position = world.vendor_pos+Vector3(0,0,2); controls._process(.2)

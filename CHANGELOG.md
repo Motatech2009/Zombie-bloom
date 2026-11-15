@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0-rc.1 — 2026-11-15
+
+- Construção e aprimoramento com canalização cancelável, classes iniciais e upgrades limitados por horda.
+- Dia/noite de 30 minutos, Noite Vermelha, trilha de alerta e aviso de ataque ao Núcleo.
+- Sete bosses com habilidades próprias, três novos infectados e estilhaços de argila.
+- Comboio, ninho e escolta nos setores; reciclagem, fusão de torres e sinalizador de extração.
+- Cosméticos por elo; desafios após vitória; pontos de desafios separados de abates reais no Firestore.
+- Protocolo cooperativo 17, persistência dos novos sistemas e revisão de interface PC/Android.
+- Candidata: exige regras atualizadas do Firestore para o novo campo points antes da promoção final.
+
+
 ## 1.0.0-dev.3 — 2026-11-14
 
 - Login lembrado ao fechar e reabrir o jogo, sem armazenar senha ou ID token.
