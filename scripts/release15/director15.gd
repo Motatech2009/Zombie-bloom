@@ -45,7 +45,9 @@ func tick(delta: float) -> void:
 	alert_left = maxf(0,alert_left-delta); alert_clock = maxf(0,alert_clock-delta)
 	if world.is_client: day.apply_light(); return
 	day.tick(delta)
-	if "no_vendor" in mutators and is_instance_valid(world.vendor_rig): world.vendor_rig.visible = false
+	if "no_vendor" in mutators and is_instance_valid(world.vendor_rig):
+		world.vendor_rig.visible = false
+		if is_instance_valid(world.vendor_tag): world.vendor_tag.visible = false
 	for i in range(transient.size()-1,-1,-1):
 		var entry: Dictionary = transient[i]; entry.left -= delta
 		if entry.left<=0 or not is_instance_valid(entry.node):
@@ -82,16 +84,19 @@ func recycle(actor: Node3D) -> bool:
 	if station==null: return false
 	var slot: Dictionary = actor.bag.slots[actor.bag.selected]
 	if slot.id in ItemBag.WEAPON_IDS and slot.id!="pistol":
-		if actor.bag.remove(slot.id,1): world.credit("parts",5); actor.weapons.sync_hand(); return true
+		if actor.bag.remove(slot.id,1):
+			actor.weapons.ammo[ItemBag.WEAPON_IDS.find(slot.id)] = 0
+			world.credit("parts",5); actor.weapons.sync_hand(); return true
 	if actor.bag.remove("wood",20): world.credit("parts",2); return true
 	world.notify("Reciclagem: arma selecionada → 5 componentes; ou 20 madeira → 2 componentes."); return false
 func buy_beacon(actor: Node3D) -> bool:
 	if not world.base_preparing() or actor.position.distance_to(world.vendor_pos)>4 or "no_vendor" in mutators: return false
 	# Rare stock: one per preparation, shared by the team.
 	var key = "beacon_"+str(world.waves.wave)
-	if event_states.has(key) or actor.bag.free_slots()<=0 or not world.can_pay({"scrap":140,"parts":6}): return false
+	var copy := ItemBag.new(); copy.restore(actor.bag.dump())
+	if event_states.has(key) or copy.add("beacon",1)!=1 or not world.can_pay({"scrap":140,"parts":6}): return false
 	if not world.pay({"scrap":140,"parts":6}): return false
-	actor.bag.add("beacon",1); event_states[key] = true; return true
+	actor.bag.restore(copy.dump()); event_states[key] = true; return true
 func extract(actor: Node3D) -> bool:
 	if actor.region_coord==Vector2i.ZERO or not actor.bag.remove("beacon",1): return false
 	if world.regions.enabled(): world.regions.extract_to_core(actor)

@@ -1,3 +1,9 @@
+# Candidata Zombie Bloom 1.5
+
+A branch `feat/1.5-systems` contém a candidata 1.5.0-rc.1. Escopo, parâmetros, testes e pendências estão em [RELEASE_1_5.md](RELEASE_1_5.md). A 1.0 continua preservada na branch de release anterior.
+
+Antes de promover esta candidata: publicar as regras de `backend/firebase/firestore.rules` no Firebase `zombiebloom`, que acrescentam o contador `points`. Abates reais, hordas e sucata permanecem separados da pontuação de desafios. Sem essa publicação, os novos lotes serão recusados pelas regras anteriores.
+
 > Atualização de elos/combate: veja [RANK_COMBAT_1_0.md](RANK_COMBAT_1_0.md).
 
 > **Branch de desenvolvimento 1.0:** Firebase, rankings por conta e revisão de menu/loja. Configuração pública do Firebase `zombiebloom` incluída; ativação de serviços/regras reais ainda precisa de validação. Veja [RELEASE_1_0.md](RELEASE_1_0.md). A documentação 0.15 abaixo descreve a base histórica; seu adaptador Supabase foi substituído nesta branch.

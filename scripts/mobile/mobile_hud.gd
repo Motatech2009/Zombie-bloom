@@ -199,7 +199,10 @@ func show_browser(kind: String) -> void:
 	var box := open_modal(kind,880)
 	UI.label(box,"BENTO" if kind=="shop" else "CONSTRUÇÃO",24,UI.LIME)
 	browser_status = UI.label(box,"",14,UI.MUTED)
-	if kind=="shop": UI.button(box,"OFICINA / MELHORAR ARMA",show_weapon_workshop)
+	if kind=="shop":
+		var actions15 := UI.hbox(box,8)
+		UI.button(actions15,"OFICINA",show_weapon_workshop).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.button(actions15,"EXTRAÇÃO / 140 SUC + 6 CMP",func(): world.send_action("beacon",{}); close_modal()).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var tabs := UI.hbox(box,8); browser_tabs.clear()
 	var titles: Array = ["ARMAS","MUNIÇÃO","SUPRIMENTOS"] if kind=="shop" else ["TODAS","MUROS","TORRES","ARMADILHAS"]
 	for i in range(titles.size()):

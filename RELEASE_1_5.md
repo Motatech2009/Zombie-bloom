@@ -34,8 +34,8 @@ Fonte: `ideias para o jogo.txt`, recebido em 15/11/2026. Esta lista é cumulativ
 - [x] G1 Saves antigos migrados, estado novo validado e persistido.
 - [x] G2 Host autoritativo, réplicas de habilidades/eventos/classes e novo protocolo.
 - [x] G3 UI PC/mobile revisada, controles existentes preservados.
-- [ ] G4 Suítes locais, coop e Firebase emuladores aprovadas.
-- [ ] G5 Windows e Android exportados e APK verificado.
+- [x] G4 Suítes locais, coop e Firebase emuladores aprovadas.
+- [x] G5 Windows e Android exportados e APK verificado.
 
 ## Decisões de implementação
 
@@ -58,6 +58,8 @@ Fonte: `ideias para o jogo.txt`, recebido em 15/11/2026. Esta lista é cumulativ
 
 ## Validação e promoção
 
-As suítes locais e os testes cooperativos de quatro jogadores, previsão de movimento e setores separados passaram na candidata. Capturas reais de PC/mobile foram inspecionadas; o botão de base foi reposicionado para preservar os controles de tiro. CI/exportações e emulador ainda precisam ser confirmados nesta revisão.
+As suítes locais e os testes cooperativos de quatro jogadores, previsão de movimento e setores separados passaram na candidata. Capturas reais de PC/mobile foram inspecionadas; o botão de base foi reposicionado para preservar os controles de tiro. CI, emuladores de Auth/Firestore, exportação Windows e APK Android assinado passaram na revisão 51fb0b9 (run 43676082162). Cada novo ajuste passa novamente por esses mesmos gates. A publicação das regras reais permanece bloqueante para a promoção final.
 
 **Bloqueio de produção:** o Firestore precisa aceitar o campo `points` nos documentos públicos e privados de checkpoint. Publicar `backend/firebase/firestore.rules` no projeto `zombiebloom` antes de distribuir a 1.5 como final. Credenciais administrativas não fazem parte do jogo e não foram solicitadas nem gravadas no repositório. A validação em emulador não substitui a publicação das regras reais.
+
+- [ ] PROMOÇÃO FINAL: regras novas publicadas no Firebase real e fluxo autenticado conferido no aparelho do jogador. Não declarar 1.5 final antes disso.
