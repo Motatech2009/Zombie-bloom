@@ -13,11 +13,13 @@ const ROOTS := [38,37,41,36]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Dedicated/headless processes have no listener and must not synthesize audio.
+	if DisplayServer.get_name()=="headless": set_process(false); return
 	for i in range(10):
 		var voice := AudioStreamPlayer.new(); add_child(voice); voices.append(voice)
 
 func note(midi: int,duration: float,kind: String,gain: float) -> void:
-	if GameSettings.music_volume<=0 or voices.is_empty(): return
+	if DisplayServer.get_name()=="headless" or GameSettings.music_volume<=0 or voices.is_empty(): return
 	var key := "%d:%.2f:%s" % [midi,duration,kind]
 	if not cache.has(key):
 		var count := int(16000*duration); var bytes := PackedByteArray(); bytes.resize(count*2)

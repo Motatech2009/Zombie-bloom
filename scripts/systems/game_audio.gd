@@ -12,7 +12,7 @@ func _ready() -> void:
 		voices.append(voice)
 
 func play_tone(frequency: int, duration: float, gain: float) -> void:
-	if voices.is_empty() or GameSettings.volume == 0:
+	if DisplayServer.get_name()=="headless" or voices.is_empty() or GameSettings.volume == 0:
 		return
 	var key := str(frequency) + ":" + str(duration)
 	if not cache.has(key):

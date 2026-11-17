@@ -14,3 +14,5 @@ Ambiente local: Windows, Godot oficial 4.6.3; render OpenGL/RX 7600.
 - Corrigido o tratamento de exceção de autenticação no handler HTTP (StringString -> String).
 - Coroa exclusiva tem representação provisória; modelos Blender definitivos ficam para a etapa de arte escolhida pelo criador.
 - Não há publicação administrativa no Firebase real, promoção para versão final, merge ou substituição de downloads de produção.
+
+Correção do CI: processos headless não sintetizam nem reproduzem a trilha/cues. Evita recursos AudioStreamPlaybackWAV pendentes no encerramento de testes longos; clientes gráficos mantêm áudio. Progressão (43) e adições (33) passaram novamente sem aviso.
