@@ -1,0 +1,26 @@
+[
+  {
+    "source": "res://art_source/tripo16/incoming/TORRE ELETRICA.glb",
+    "sha256": "f6eb41160d558d96866b82102a91db6294339b90374e29c20f82979f2106e17a",
+    "output": "res://art_source/tripo16/prepared/shock.glb",
+    "budget": 16000
+  },
+  {
+    "source": "res://art_source/tripo16/incoming/torreta elevada.glb",
+    "sha256": "b376a5c702a6e9789be866e65b843c954f579f2bb52d471b3b9a80c5e4dada27",
+    "output": "res://art_source/tripo16/prepared/raised_turret.glb",
+    "budget": 16000
+  },
+  {
+    "source": "res://art_source/tripo16/incoming/cannon_original.glb",
+    "sha256": "9f961f0897cd644d9683f265ba19c0e8abe2197852c09b0c803c546c5db098ec",
+    "output": "res://art_source/tripo16/prepared/cannon.glb",
+    "budget": 16000
+  },
+  {
+    "source": "res://art_source/tripo16/incoming/Nucleo vercao 1.glb",
+    "sha256": "176fafebaab118745a79094c424098c3b61186e61552c0ed383a0d26724e01f5",
+    "output": "res://art_source/tripo16/prepared/core.glb",
+    "budget": 16000
+  }
+]

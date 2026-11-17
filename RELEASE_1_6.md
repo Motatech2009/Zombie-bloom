@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.5**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.6**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -158,3 +158,12 @@ Código f6d90c7514dac9217e3b8c5be3a242bfaab2851d: [CI integral aprovado](https:/
 | Android | [Baixar APK em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44155874484/artifacts/14361486821) | d4e823e2e19083ccceb092f701390c76e4180e43c131171f66eeaf02dfd67b00 |
 
 Os artefatos exigem login GitHub. Hashes recalculados após download. Evidências detalhadas e limites da abertura Windows em [resultados RC5](docs/release16-spark-results.txt). Android físico permanece pendente. Publicar as [regras](backend/firebase/firestore.rules) pelo console e conferir a conta real para ativar a economia; sem dependência do deploy de Functions na configuração atual.
+
+
+## RC6 — modelos enviados pelo criador
+
+- Canhão, Tesla e torreta elevada: N1–N3; Núcleo: N1–N4; peças separadas e otimizadas.
+- 19 cosméticos 3D no catálogo existente, incluindo o troféu do Titã; encaixes no personagem e atlas compartilhado. Mochilas continuam apenas visuais.
+- Base fixa, articulação e disparos pelas bocas reais; elevada respeita barricadas e muralhas. Correção de inicialização de material no modo leve sem texturas pré-aquecidas.
+- Defesas usam atlas 1K com mipmaps/compressão VRAM; cosméticos usam um atlas 2K compartilhado.
+- Candidata RC6/APK1606/protocolo21; regras Firebase reais continuam pendentes. Pacotes RC5 descritos nas evidências anteriores não contêm estes modelos. A validação completa RC6 será registrada em `docs/release16-models-results.txt`.

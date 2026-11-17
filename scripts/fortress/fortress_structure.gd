@@ -30,8 +30,6 @@ func refresh_visual() -> void:
 	visual_tier = tier
 	var previous_aim := aim_pose()
 	for child in model.get_children(): model.remove_child(child); child.queue_free()
-	if spec.id=="raised_turret":
-		build_raised_visual(); return
 	var path = "res://assets/fortress/"+spec.id+"_"+str(tier)+".tscn"
 	var visual: Node3D = load(path if ResourceLoader.exists(path) else "res://assets/fortress/station_"+str(tier)+".tscn").instantiate()
 	visual.name = "Visual"; model.add_child(visual)
@@ -86,7 +84,11 @@ func apply_aim_pose(pose: Vector2) -> void:
 
 func aim_at(point: Vector3) -> void:
 	var direction: Vector3 = head.get_parent().global_basis.inverse()*(point-head.global_position)
-	apply_aim_pose(Vector2(atan2(-direction.x,-direction.z),atan2(direction.y,Vector2(direction.x,direction.z).length())))
+	head.rotation.y = atan2(-direction.x,-direction.z)
+	var pitch := head.get_node_or_null("Pitch")
+	if pitch!=null:
+		var local: Vector3 = head.to_local(point)-pitch.position
+		pitch.rotation.x = atan2(local.y,-local.z)
 
 func muzzle_origin() -> Vector3:
 	if is_instance_valid(head):
@@ -99,7 +101,7 @@ func muzzle_origin() -> Vector3:
 func fire_turret() -> void:
 	if disabled_left>0 or health.dead: return
 	var candidates: Array[Node3D] = []
-	var origin := global_position+Vector3.UP*FortressData.muzzle_height(spec.id)
+	var origin: Vector3 = head.global_position if is_instance_valid(head) else global_position+Vector3.UP*FortressData.muzzle_height(spec.id)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var point: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
 		if point.distance_to(origin)>float(spec.values.range): continue
@@ -109,13 +111,12 @@ func fire_turret() -> void:
 	candidates.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
 	var point: Vector3 = candidates[0].global_position+Vector3(0,candidates[0].aim_height,0)
 	aim_at(point)
-	if spec.id=="turret":
-		var actual_origin := muzzle_origin()
-		var muzzle_ray := PhysicsRayQueryParameters3D.create(actual_origin,point,1|4|8,[get_rid()])
-		muzzle_ray.hit_from_inside = true
-		var muzzle_hit := get_world_3d().direct_space_state.intersect_ray(muzzle_ray)
-		if muzzle_hit.is_empty() or muzzle_hit.collider!=candidates[0]: cooldown = .15; return
-		origin = actual_origin
+	var actual_origin := muzzle_origin()
+	var muzzle_ray := PhysicsRayQueryParameters3D.create(actual_origin,point,1|4|8,[get_rid()])
+	muzzle_ray.hit_from_inside = true
+	var muzzle_hit := get_world_3d().direct_space_state.intersect_ray(muzzle_ray)
+	if muzzle_hit.is_empty() or muzzle_hit.collider!=candidates[0]: cooldown = .15; return
+	origin = actual_origin
 	if spec.id=="cannon":
 		if world.defense_shell(origin,point,float(spec.values.damage),3.8)==null: cooldown = .25; return
 	else:
@@ -139,17 +140,3 @@ func toggle() -> bool:
 	opened = not opened; collision_layer = 0 if opened else 8
 	set_open_visual()
 	return true
-
-func build_raised_visual() -> void:
-	var color: Color = spec.color.lightened(.08*(tier-1))
-	for x in [-.8,.8]:
-		for z in [-.8,.8]:
-			VisualFactory.box(model,Vector3(.22,3.2,.22),Vector3(x,1.6,z),Color("54675d"))
-			VisualFactory.box(model,Vector3(.48,.12,.48),Vector3(x,.06,z),color)
-	for y in [.8,1.8,2.8]: VisualFactory.box(model,Vector3(1.8,.14,.18),Vector3(0,y,.8),color)
-	VisualFactory.box(model,Vector3(2.1,.22,2.1),Vector3(0,3.14,0),color)
-	head = Node3D.new(); head.position.y = 3.6; model.add_child(head)
-	VisualFactory.box(head,Vector3(.9,.45,.8),Vector3.ZERO,color)
-	VisualFactory.box(head,Vector3(.18,.18,1.3),Vector3(0,0,-.7),Color("263a3a"))
-	for i in range(tier): VisualFactory.box(head,Vector3(.1,.12,.24),Vector3(-.3+i*.2,.28,0),Color("d4f889"))
-	ClayStyle.apply_tree(model)

@@ -38,12 +38,31 @@ func run() -> void:
 			scene.builder.active = true; scene.builder.selected = FortressData.pieces().size()-1; scene.builder.location = Vector3(10,0,0); scene.builder.set_physics_process(false)
 			scene.set_process(false); scene.camera.size = 24; scene.camera.position = Vector3(28,23,22); scene.camera.look_at(Vector3(10,0,-1))
 			scene.truce16.left = 600; scene.truce16.pending = true
-		if view=="turret-models":
+		if view in ["turret-models","cannon-models","tesla-models","raised-models"]:
+			var selected_piece: int = {"turret-models":1,"cannon-models":8,"tesla-models":9,"raised-models":11}[view]
 			for tier in range(1,4):
-				var piece := StaticBody3D.new(); piece.set_script(load("res://scripts/fortress/fortress_structure.gd")); piece.world = scene; piece.piece_index = 1; piece.tier = tier; piece.position = Vector3(5+tier*5,0,16); piece.rotation.y = tier*.5; scene.base_root.add_child(piece); piece.set_physics_process(false)
-				piece.aim_at(piece.global_position+Vector3(0,1.45,-20)); piece.label.visible = true; piece.label.text = "TORRETA · NV. "+str(tier)
+				var piece := StaticBody3D.new(); piece.set_script(load("res://scripts/fortress/fortress_structure.gd")); piece.world = scene; piece.piece_index = selected_piece; piece.tier = tier; piece.position = Vector3(5+tier*5,0,16); piece.rotation.y = tier*.5; scene.base_root.add_child(piece); piece.set_physics_process(false)
+				piece.aim_at(piece.global_position+Vector3(0,1.45,-20)); piece.label.visible = true; piece.label.text = str(FortressData.pieces()[selected_piece].title)+" · NV. "+str(tier)
 			scene.player.position = Vector3(14,0,19); scene.player.set_physics_process(false)
-			scene.set_process(false); scene.camera.size = 12; scene.camera.position = Vector3(27,16,32); scene.camera.look_at(Vector3(15,.6,16))
+			scene.set_process(false); scene.camera.size = 13; scene.camera.position = Vector3(27,16,32); scene.camera.look_at(Vector3(15,.6,16))
+		if view=="core-models":
+			for tier in range(1,5):
+				var model: Node3D = load("res://assets/fortress/core_"+str(tier)+".tscn").instantiate(); model.position = Vector3(3+tier*5,0,16); scene.base_root.add_child(model)
+				var label := VisualFactory.health_label(model,3.5); label.text = "NÚCLEO · NV. "+str(tier); label.font_size = 24
+			scene.player.position = Vector3(0,0,8); scene.player.set_physics_process(false); scene.set_process(false); scene.camera.size = 18; scene.camera.position = Vector3(29,19,33); scene.camera.look_at(Vector3(15,.6,16))
+		if view=="cosmetic-models":
+			var outfits := [
+				{"head":"COS-ENG-01","outfit":"COS-ENG-03","backpack":"COS-ENG-05"},
+				{"head":"COS-ENG-02","outfit":"COS-ENG-04","backpack":"COS-ENG-05"},
+				{"head":"COS-BAT-01","outfit":"COS-BAT-03","backpack":"COS-BAT-05"},
+				{"head":"COS-BAT-02","outfit":"COS-BAT-04","backpack":"COS-BAT-05"},
+				{"head":"COS-ATI-01","outfit":"COS-ATI-03","backpack":"COS-ATI-05"},
+				{"head":"COS-ATI-02","outfit":"COS-ATI-04","backpack":"COS-ATI-05"},
+				{"head":"COS-UNI-01","outfit":"COS-UNI-02","backpack":"COS-UNI-03"},
+				{"head":"COS-TITAN-01"}]
+			for i in range(outfits.size()):
+				var rig := VisualFactory.human(scene.base_root,Color("56777d"),true); rig.position = Vector3(7+(i%4)*4,0,13+(i/4)*5); Cosmetics16.decorate(rig,outfits[i])
+			scene.player.position = Vector3(0,0,8); scene.player.set_physics_process(false); scene.set_process(false); scene.camera.size = 15; scene.camera.position = Vector3(28,17,33); scene.camera.look_at(Vector3(13,.8,16))
 		if view=="diversion":
 			scene.player.bag.add("decoy16",1); scene.hud.show_inventory()
 			scene.spawn_loot(Vector3(3,0,1),{"decoy16":1})

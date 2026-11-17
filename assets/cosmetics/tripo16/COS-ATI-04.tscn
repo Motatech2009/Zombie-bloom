@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/cosmetics/tripo16/COS-ATI-04.res" id="1_djb5e"]
+
+[ext_resource type="Material" path="res://assets/cosmetics/tripo16/material.tres" id="material"]
+
+[node name="COS-ATI-04" type="Node3D" unique_id=1159892197]
+metadata/cosmetic_id = "COS-ATI-04"
+metadata/slot = "outfit"
+metadata/source = "Tripo/user submission"
+
+[node name="Accessory" type="MeshInstance3D" parent="." unique_id=1560328773]
+mesh = ExtResource("1_djb5e")
+surface_material_override/0 = ExtResource("material")

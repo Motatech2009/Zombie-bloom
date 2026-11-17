@@ -11,10 +11,26 @@ static func valid(outfit: Variant,class_id: String) -> bool:
 static func decorate(rig: Node3D,outfit: Dictionary,actor: Node3D = null) -> void:
 	var previous := rig.get_node_or_null("Atelier16")
 	if previous!=null: rig.remove_child(previous); previous.queue_free()
+	for name in ["DefaultHat16","DefaultPack16"]:
+		var default_part := rig.get_node_or_null(name)
+		if default_part!=null: default_part.show()
+	var torso := rig.get_node_or_null("Body16")
+	if torso!=null: torso.scale = Vector3.ONE
 	var root := Node3D.new(); root.name = "Atelier16"; rig.add_child(root)
 	for slot in outfit:
 		var item := Catalog16.cosmetic(str(outfit[slot]))
 		if item.is_empty(): continue
+		var path := "res://assets/cosmetics/tripo16/"+str(item.id)+".tscn"
+		if slot!="effect" and ResourceLoader.exists(path):
+			var visual: Node3D = load(path).instantiate(); root.add_child(visual)
+			if item.id in ["COS-ENG-01","COS-ENG-02","COS-BAT-01","COS-ATI-02","COS-UNI-01","COS-TITAN-01"]:
+				var hat := rig.get_node_or_null("DefaultHat16")
+				if hat!=null: hat.hide()
+			if slot=="outfit" and torso!=null: torso.scale = Vector3(.88,.97,.65)
+			if slot=="backpack":
+				var pack := rig.get_node_or_null("DefaultPack16")
+				if pack!=null: pack.hide()
+			continue
 		if item.id=="COS-TITAN-01":
 			titan_crown(root); continue
 		var color := Color(str(item.palette)); var variant := int(str(item.id).right(2))

@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/cosmetics/tripo16/COS-ENG-05.res" id="1_6ousg"]
+
+[ext_resource type="Material" path="res://assets/cosmetics/tripo16/material.tres" id="material"]
+
+[node name="COS-ENG-05" type="Node3D" unique_id=2061422292]
+metadata/cosmetic_id = "COS-ENG-05"
+metadata/slot = "backpack"
+metadata/source = "Tripo/user submission"
+
+[node name="Accessory" type="MeshInstance3D" parent="." unique_id=634908706]
+mesh = ExtResource("1_6ousg")
+surface_material_override/0 = ExtResource("material")

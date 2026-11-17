@@ -1,0 +1,220 @@
+[
+  {
+    "id": "shock",
+    "input_triangles": 14891,
+    "levels": [
+      {
+        "input_triangles": 3739,
+        "muzzles": 1,
+        "part_triangles": [
+          3739
+        ],
+        "pivot": [
+          0.0,
+          1.86120044348543,
+          0.0
+        ],
+        "scale": 7.88041511297152,
+        "tier": 1
+      },
+      {
+        "input_triangles": 5392,
+        "muzzles": 1,
+        "part_triangles": [
+          5392
+        ],
+        "pivot": [
+          0.0,
+          2.15355677130723,
+          0.0
+        ],
+        "scale": 7.6766067245323,
+        "tier": 2
+      },
+      {
+        "input_triangles": 5760,
+        "muzzles": 1,
+        "part_triangles": [
+          5760
+        ],
+        "pivot": [
+          0.0,
+          2.18508490632792,
+          0.0
+        ],
+        "scale": 7.73304073068879,
+        "tier": 3
+      }
+    ]
+  },
+  {
+    "id": "raised_turret",
+    "input_triangles": 15266,
+    "levels": [
+      {
+        "input_triangles": 2626,
+        "muzzles": 1,
+        "part_triangles": [
+          1850,
+          852,
+          168
+        ],
+        "pivot": [
+          0.0,
+          3.6,
+          0.0
+        ],
+        "scale": 10.6897156171147,
+        "tier": 1
+      },
+      {
+        "input_triangles": 5508,
+        "muzzles": 2,
+        "part_triangles": [
+          4054,
+          1248,
+          350
+        ],
+        "pivot": [
+          0.0,
+          3.6,
+          0.0
+        ],
+        "scale": 10.9701554931116,
+        "tier": 2
+      },
+      {
+        "input_triangles": 7132,
+        "muzzles": 2,
+        "part_triangles": [
+          5126,
+          1884,
+          410
+        ],
+        "pivot": [
+          0.0,
+          3.6,
+          0.0
+        ],
+        "scale": 11.0719906286447,
+        "tier": 3
+      }
+    ]
+  },
+  {
+    "id": "cannon",
+    "input_triangles": 14926,
+    "levels": [
+      {
+        "input_triangles": 3186,
+        "muzzles": 1,
+        "part_triangles": [
+          1746,
+          371,
+          1335
+        ],
+        "pivot": [
+          0.0,
+          1.11108627111824,
+          0.0
+        ],
+        "scale": 8.55503682300235,
+        "tier": 1
+      },
+      {
+        "input_triangles": 5078,
+        "muzzles": 2,
+        "part_triangles": [
+          1838,
+          484,
+          3152
+        ],
+        "pivot": [
+          0.0,
+          1.17334638874796,
+          0.0
+        ],
+        "scale": 8.00446220109448,
+        "tier": 2
+      },
+      {
+        "input_triangles": 6662,
+        "muzzles": 2,
+        "part_triangles": [
+          2024,
+          332,
+          4562
+        ],
+        "pivot": [
+          0.0,
+          1.65738637410705,
+          0.0
+        ],
+        "scale": 8.27365823296084,
+        "tier": 3
+      }
+    ]
+  },
+  {
+    "id": "core",
+    "input_triangles": 15468,
+    "levels": [
+      {
+        "input_triangles": 3826,
+        "muzzles": 0,
+        "part_triangles": [
+          3826
+        ],
+        "pivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 16.636393819376,
+        "tier": 1
+      },
+      {
+        "input_triangles": 2630,
+        "muzzles": 0,
+        "part_triangles": [
+          2630
+        ],
+        "pivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 14.726430599874,
+        "tier": 2
+      },
+      {
+        "input_triangles": 4430,
+        "muzzles": 0,
+        "part_triangles": [
+          4430
+        ],
+        "pivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 14.4830681819047,
+        "tier": 3
+      },
+      {
+        "input_triangles": 4582,
+        "muzzles": 0,
+        "part_triangles": [
+          4582
+        ],
+        "pivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 15.3103453236676,
+        "tier": 4
+      }
+    ]
+  }
+]

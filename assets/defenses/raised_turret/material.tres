@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/defenses/raised_turret/albedo.jpg" id="1"]
+[ext_resource type="Texture2D" path="res://assets/defenses/raised_turret/normal.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/defenses/raised_turret/rough_metal.jpg" id="3"]
+
+[resource]
+resource_name = "tripo_material_5ccaffb4-b87a-4364-b312-0359062e8c40"
+metallic = 0.25
+metallic_texture_channel = 2
+roughness = 0.9
+roughness_texture_channel = 1
+normal_enabled = true
+
+albedo_texture = ExtResource("1")
+normal_texture = ExtResource("2")
+roughness_texture = ExtResource("3")
+metallic_texture = ExtResource("3")

@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/cosmetics/tripo16/COS-TITAN-01.res" id="1_8rs5k"]
+
+[ext_resource type="Material" path="res://assets/cosmetics/tripo16/material.tres" id="material"]
+
+[node name="COS-TITAN-01" type="Node3D" unique_id=955641979]
+metadata/cosmetic_id = "COS-TITAN-01"
+metadata/slot = "head"
+metadata/source = "Tripo/user submission"
+
+[node name="Accessory" type="MeshInstance3D" parent="." unique_id=563015522]
+mesh = ExtResource("1_8rs5k")
+surface_material_override/0 = ExtResource("material")

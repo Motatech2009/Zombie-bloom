@@ -1,0 +1,25 @@
+Zombie Bloom 1.6.0-rc.6 — modelos Tripo — 17/11/2026
+
+13 modelos de construção: canhão, Tesla e elevada N1–N3; Núcleo N1–N4.
+19 cosméticos físicos, 12.781 triângulos ao todo, um atlas 2048² compartilhado.
+Defesas com atlas 1024², mipmaps e compressão VRAM desktop/Android.
+
+Validação local Godot 4.6.3 Windows, projeto isolado:
+TRIPO MODELS RESULT: 110 checks, 0 failures
+COSMETIC MODELS RESULT: 87 checks, 0 failures
+RELEASE16 CONTENT RESULT: 81 checks, 0 failures
+RELEASE16 ADDITIONS RESULT: 35 checks, 0 failures
+BASIC TURRET MODELS RESULT: 40 checks, 0 failures
+MOBILE EXPERIENCE RESULT: 30 checks, 0 failures
+MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
+SCENE TRANSITION RESULT: 48 checks, 0 failures
+RELEASE16 UI RESULT: 14 checks, 0 failures
+COSMETIC MODELS RESULT: 87 checks, 0 failures
+SCENE TRANSITION RESULT: 48 checks, 0 failures
+RELEASE16 UI RESULT: 12 checks, 0 failures
+FORTRESS RESULT: 101 checks, 0 failures (verificação atualizada para malhas combinadas).
+
+Revisão visual: conjuntos isolados, articulação e encaixes no personagem; menu/loja/troféu e defesas em desktop e toque.
+CI completo, pacotes Windows/APK e verificação do PCK: pendentes nesta revisão inicial; resultados serão anexados após a execução.
+Android físico e partida Windows–Android não testados.
+Firebase real permanece sem publicação nesta etapa.

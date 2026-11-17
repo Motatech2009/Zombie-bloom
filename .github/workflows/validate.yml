@@ -146,6 +146,20 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/basic_turret_models_tests.gd 2>&1 | tee basic-turret-models.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' basic-turret-models.log; then exit 1; fi
           grep -E 'BASIC TURRET MODELS RESULT: [0-9]+ checks, 0 failures' basic-turret-models.log
+      - name: Validate Tripo defense models and cosmetic kits
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/tripo16_models_tests.gd 2>&1 | tee tripo16-models.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' tripo16-models.log; then exit 1; fi
+          grep -E 'TRIPO MODELS RESULT: [0-9]+ checks, 0 failures' tripo16-models.log
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/tripo16_cosmetics_tests.gd "${args[@]}" 2>&1 | tee "tripo16-cosmetics-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "tripo16-cosmetics-${platform}.log"; then exit 1; fi
+            grep -E 'COSMETIC MODELS RESULT: [0-9]+ checks, 0 failures' "tripo16-cosmetics-${platform}.log"
+          done
       - name: Validate scene transitions on desktop and touch
         shell: bash
         run: |
@@ -222,7 +236,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy turret-models; do
+          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy turret-models cannon-models tesla-models raised-models core-models cosmetic-models; do
             for platform in desktop mobile; do
               args=(--view="$view")
               if [ "$platform" = mobile ]; then args+=(--mobile); fi
@@ -268,6 +282,16 @@ jobs:
           cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
           cp docs/frontier014-results.txt docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+      - name: Verify models inside the exported Windows package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_root="$PWD"
+          mkdir -p /tmp/zb-export-smoke
+          cd /tmp/zb-export-smoke
+          timeout 120s godot --headless --main-pack "$source_root/builds/windows/ZombieBloom.exe" --script "$source_root/tests/exported_models_smoke.gd" 2>&1 | tee "$source_root/exported-models.log"
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "$source_root/exported-models.log"; then exit 1; fi
+          grep -E 'EXPORTED MODELS RESULT: [0-9]+ checks, 0 failures' "$source_root/exported-models.log"
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
