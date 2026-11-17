@@ -16,3 +16,14 @@ Ambiente local: Windows, Godot oficial 4.6.3; render OpenGL/RX 7600.
 - Não há publicação administrativa no Firebase real, promoção para versão final, merge ou substituição de downloads de produção.
 
 Correção do CI: processos headless não executam a trilha continuamente nem reproduzem áudio; a síntese manual permanece verificável sem playback. Evita recursos AudioStreamPlaybackWAV pendentes no encerramento de testes longos; clientes gráficos mantêm áudio. Progressão (43) e adições (33) passaram novamente sem aviso.
+
+CI final da revisão 5fd7232d3fb6f8686ef08cef4a4c04b1be9c1760:
+- Push: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088324771 — sucesso.
+- Pull request: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088333040 — sucesso.
+- 33 checagens novas, sete testes Node, 15 checagens Firebase, 22 checagens HTTP da conta e sete checagens Godot/conta emulados, sem falhas.
+- Exportações e assinatura Android verificadas; 24 prévias 1.6 geradas.
+- ZIP Windows (47.147.956 bytes): SHA-256 34c2cecd623f1f5ed0052659dd6ff902b6352ceac2f691066b8bcd440ea3a023.
+- ZIP Android (66.717.477 bytes): SHA-256 c34be2d51efe4982df77b8be67d243fb9028293e926dfb96c4704fe06995e6a0.
+- Hashes recalculados após download, iguais ao registro de artefatos. Ambos contêm as notas RC.2.
+- Executável Windows exportado abriu/renderizou em RX 7600 com áudio real e encerrou em código 0, sem erros ou ObjectDB.
+- Firebase real e aparelhos físicos continuam pendentes. Os pacotes correspondem à revisão de código acima; atualizações posteriores de documentação não alteram esses executáveis.

@@ -109,3 +109,12 @@ Pendências para a versão final: publicar/validar o Firebase real; testar APK e
 - **Compatibilidade:** protocolo 20 e APK 1602; ambos os participantes precisam da RC.2. Save continua formato 6 com campos opcionais, mantendo os saves antigos. Resgate tem sequência própria e não usa a isca.
 
 Os valores de sucata, componentes e da nova defesa são parâmetros iniciais de balanceamento, ajustáveis. O serviço online real e os testes físicos Android continuam pendentes. A operação de conquista usa a confiança comunitária P2P: os controles de conta/tempo/repetição não substituem validação independente de combate.
+
+## Downloads da RC.2 validada
+
+Revisão de código: `5fd7232d3fb6f8686ef08cef4a4c04b1be9c1760`. [CI aprovado](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088324771).
+
+- [Windows x64 — ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088324771/artifacts/14331720099)
+- [Android — APK em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088324771/artifacts/14331171272)
+
+Extraia o ZIP. Atualize PC e Android para esta mesma RC.2/protocolo 20. Os hashes e a verificação de abertura do executável exportado estão em `docs/release16-additions-results.txt`. Os links do histórico RC.1 acima não incluem as novas adições. A sincronização real ainda exige publicação do Firebase; os testes físicos do Android e entre aparelhos permanecem necessários.
