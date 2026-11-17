@@ -111,7 +111,9 @@ func fire_turret() -> void:
 	aim_at(point)
 	if spec.id=="turret":
 		var actual_origin := muzzle_origin()
-		var muzzle_hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(actual_origin,point,1|4|8,[get_rid()]))
+		var muzzle_ray := PhysicsRayQueryParameters3D.create(actual_origin,point,1|4|8,[get_rid()])
+		muzzle_ray.hit_from_inside = true
+		var muzzle_hit := get_world_3d().direct_space_state.intersect_ray(muzzle_ray)
 		if muzzle_hit.is_empty() or muzzle_hit.collider!=candidates[0]: cooldown = .15; return
 		origin = actual_origin
 	if spec.id=="cannon":

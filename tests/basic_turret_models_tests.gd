@@ -46,7 +46,11 @@ func run() -> void:
 		check(origin_a.distance_to(origin_b)>.1 if tier>1 else origin_a.is_equal_approx(origin_b),"N"+str(tier)+" uses its real barrel markers without multiplying damage")
 		var pose: Vector2 = tower.aim_pose(); tower.tier = 1 if tier==3 else tier+1; tower.refresh_tier()
 		check(tower.aim_pose().is_equal_approx(pose),"changing level preserves the current aiming pose")
-	target.position.y = 3; await frames(); var hp: float = target.health.current; tower.fire_turret()
+	target.position = Vector3(35,0,13.5); await frames()
+	for tier in range(1,4):
+		tower.tier = tier; tower.refresh_tier(); var close_hp: float = target.health.current; tower.fire_turret()
+		check(target.health.current<close_hp,"N"+str(tier)+" still hits an enemy touching the barrel")
+	target.position = Vector3(35,3,5); await frames(); var hp: float = target.health.current; tower.fire_turret()
 	check(tower.head.get_node("Pitch").rotation.x>0 and target.health.current<hp,"head elevates and real ray hits a target above the base")
 	var packet: Dictionary = w.net_state(1,true)
 	var entry: Dictionary = packet.structures.filter(func(s): return int(s.piece)==1)[0]
