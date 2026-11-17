@@ -73,7 +73,26 @@ Evidências consolidadas: [resultados locais da candidata](docs/release16-candid
 
 ## Gates restantes da candidata
 
-1. CI da árvore final: testes, exportação Windows, APK assinado e inspeção de prévias.
+1. **Concluído na revisão de código `bb4264e`:** CI integral, Functions Emulator, Windows x64, APK de teste assinado e inspeção das prévias desktop/mobile. Abertura do executável também conferida no Windows com RX 7600 e áudio real. Evidências e downloads abaixo.
 2. Publicar serviço/regras no projeto real com administrador e conferir fluxo autenticado. CLI local não autenticado; não substituir isso por emulador nem declarar saldo real funcionando sem publicação.
 3. Partidas físicas Windows↔Android e verificação de desempenho nos aparelhos do projeto. Linux/headless e renderização Mesa não substituem esse teste.
 4. Avaliação dos defaults criativos e balanceamento pelo criador antes de promoção final. Não mesclar/publicar a RC como versão final automaticamente.
+
+## Verificação final dos pacotes — 17/11/2026
+
+A revisão de código `bb4264eecfc7e478e8e7b6b8ca8f9dc6dc0b9627` passou nas execuções de [push](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063597516) e [pull request](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063604788). As correções finais de loot do Titã e cenários determinísticos estão incluídas. Não é necessário retomar a execução anterior nem distribuir o binário que antecede essas correções.
+
+| Pacote de teste | Download da revisão validada | SHA-256 do ZIP |
+|---|---|---|
+| Windows x64 | [Windows](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063597516/artifacts/14319627648) | `87918e7978ea931f9089c7b0809d387aa3d2f986d9eac10a73c6a5de5b76017f` |
+| Android | [APK em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063597516/artifacts/14320540131) | `2b42ac4d5507e10e4951b263a7de8546fecb7ee4ba3f114abf081e370e8c8776` |
+
+Os hashes foram recalculados após baixar os arquivos. Os artefatos exigem sessão no GitHub e têm retenção até 15/02/2027. Extraia `ZombieBloom.exe` no PC e `ZombieBloom-Android.apk` no Android. O APK usa o identificador de prévia `com.motatech.zombiebloom.preview`; PC e Android precisam desta mesma revisão/protocolo 19 para cooperativo.
+
+Abertura Windows conferida com o executável exportado, perfil temporário isolado, renderizador OpenGL e AMD Radeon RX 7600. Inicialização headless e inicialização gráfica com áudio real encerraram com código 0, sem erros de script/renderer nem aviso ObjectDB. A variante gráfica com áudio Dummy emitiu aviso de dois objetos de áudio no encerramento forçado; ele não ocorreu com o driver real. Isso é teste curto de abertura, não certificação de uma campanha completa, FPS ou coop físico.
+
+As 18 prévias foram geradas no CI; menu desktop, loja e cartas mobile foram inspecionados. O controle interativo de janelas ficou indisponível no ambiente, portanto não há alegação de clique manual ou partida completa validada por essa via.
+
+O endpoint real `account16Api` respondeu **HTTP 404** na checagem somente de leitura. Não há sessão administrativa Firebase disponível no ambiente. A moeda, compras e horas confirmadas no servidor permanecem bloqueadas até publicação e teste autenticado. O guia de publicação está em `backend/firebase/README_1_6.md`; não foram criadas contas fictícias em produção.
+
+Pendências para a versão final: publicar/validar o Firebase real; testar APK em aparelho físico e Windows↔Android; avaliar balanceamento e os parâmetros criativos. Os downloads acima são **1.6.0-rc.1 para teste**, não a promoção da versão final.

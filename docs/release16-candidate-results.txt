@@ -57,7 +57,7 @@ Visual:
 
 Limites que impedem lançamento final:
 - Serviço account16Api e regras ainda não publicados: CLI real sem autenticação administrativa.
-- Exportações Windows/APK e Functions runtime aguardam CI desta árvore.
+- Exportações Windows/APK e Functions Emulator completo: aprovados na revisão bb4264e; downloads e hashes em RELEASE_1_6.md.
 - Testes físicos Windows/Android, coop entre plataformas, FPS real e balanceamento prolongado dependem dos aparelhos do projeto.
 - Defaults criativos continuam configuráveis/propostos. Não há aprovação criativa inferida nem antitrapaça competitivo independente.
 
@@ -70,5 +70,13 @@ Correções de integração verificadas:
 - Coleta final do Titã persiste imediatamente; reentrada após expiração não recria o loot. Prêmio especial não é mesclado a pilhas comuns no limite de drops.
 - Testes legados usam cenários comuns explícitos; não dependem do sorteio novo 5%/10%. A suíte 1.6 mantém os testes de probabilidade e encontros reais.
 - Regressões locais após estabilização: 16 suítes aprovadas e progressão repetida oito vezes, sem aviso ObjectDB. O CI continua bloqueando esse aviso.
-- CI da revisão d0ef2b8 passou pelo Functions Emulator completo e exportou Windows/APK. Esses binários antecedem a correção final do loot; a candidata final aguarda a nova execução, sem distribuir o binário anterior como definitivo.
+- CI final da revisão bb4264e passou por testes, Functions Emulator completo e exportação Windows/APK, incluindo a correção final do loot. Execuções 44063597516 (push) e 44063604788 (PR) concluídas com sucesso.
 - Pendências de partidas abandonadas não impedem os créditos da partida atual e não geram chamadas repetidas para uma partida inativa. Duas verificações adicionais de fila aprovadas.
+
+Retomada e conferência final (17/11/2026):
+- Hashes dos ZIPs Windows/Android recalculados e iguais aos digests registrados no GitHub.
+- Windows exportado executado em perfil temporário: headless e OpenGL/RX 7600 com áudio real, saída 0, sem erros ou ObjectDB.
+- Áudio Dummy em execução gráfica com encerramento forçado produziu aviso de AudioStreamWAV/AudioStreamPlaybackWAV; não reproduzido com áudio real. Não interpretado como teste de memória prolongado.
+- Menu desktop, loja mobile e cartas mobile inspecionados nas prévias do CI. Controle interativo de janelas indisponível; sem playtest manual alegado.
+- Serviço real account16Api: HTTP 404 em sondagem sem mutação; publicação administrativa e fluxo autenticado ainda pendentes.
+- Nenhum merge, lançamento final, troca de links públicos ou gravação de teste em produção efetuado.
