@@ -31,6 +31,12 @@ func run() -> void:
 	await meta.sync()
 	check(int(meta.last_registration.baseline)==1,"online registration uses completed watermark, never running horde index")
 	check(meta.pending.is_empty() and meta.status.contains("anteriores ao registro"),"pre-registration offline rewards are reconciled once with an explicit status")
+	meta.pending = [{"match_id":"abandoned-run","wave":1},{"match_id":w.account_run_id,"wave":1}]
+	meta.registered["abandoned-run"] = true; meta.calls.clear()
+	await meta.sync()
+	var credits: Array = meta.calls.filter(func(c): return c.action=="horde")
+	check(credits.size()==1 and credits[0].data.match_id==w.account_run_id,"an abandoned match never blocks credits from the currently bound match")
+	check(meta.pending.size()==1 and meta.pending[0].match_id=="abandoned-run","old-match pending credit is retained without repeated invalid requests")
 	meta.world = null; meta.persist()
 	var stored = JSON.parse_string(FileAccess.get_file_as_string(meta.path()))
 	check(stored.observed_hordes.has(w.account_run_id),"reward observation watermark is persisted with the queue")

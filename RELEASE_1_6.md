@@ -60,7 +60,7 @@ A etapa A mudou o protocolo de 17 para 18; a integração completa usa **19**, p
 ## Integração das etapas B–F
 
 - `data/release16/catalog.json`: moeda, nove talentos e 21 cosméticos, preços e parâmetros de exploração. Nomes/artes/valores de proposta são defaults configuráveis da candidata, sem atribuir aprovação criativa não dada.
-- `account_meta16.gd` / `play_clock16.gd`: horas locais por conta, sessão, recorde, exclusão de menus/pausa/segundo plano/AFK; lotes, troca de identidade, fila e saldo confirmado. Não há gravação por segundo nem consulta de banco em menu ocioso depois de carregar perfil.
+- `account_meta16.gd` / `play_clock16.gd`: horas locais por conta, sessão, recorde, exclusão de menus/pausa/segundo plano/AFK; lotes, troca de identidade, fila e saldo confirmado. Não há gravação por segundo nem consulta de banco em menu ocioso depois de carregar perfil. Pendências antigas não bloqueiam os créditos da partida em uso.
 - Backend em `backend/firebase/functions`: ID token, transações, deduplicação, relógio e limites de servidor. Guia e limites em `backend/firebase/README_1_6.md`. Não equivale a antitrapaça independente.
 - Cosméticos têm representação nativa em massinha, somente visual; prévia em mundo 3D isolado, rotação e partículas limitadas/desativadas no mobile. Slots de elo são preservados; visual comprado sobrepõe o slot escolhido, sem revogar a conquista.
 - Talentos e melhorias são individuais. Liga Reforçada marca a maior melhoria da estrutura sem empilhamento infinito; fusão mantém o maior bônus. Bolsa funcional não depende do visual da conta.

@@ -110,7 +110,7 @@ func sync() -> void:
 	if owner==uid and reply.ok:
 		var sent := 0
 		for item in pending.duplicate(true):
-			if not registered.has(item.match_id): continue
+			if not registered.has(item.match_id) or item.match_id!=bound_run: continue
 			if sent>=8: break
 			sent += 1
 			var reward := await request("horde",item)
