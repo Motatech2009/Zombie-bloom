@@ -50,7 +50,7 @@ func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = "campaign"
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	world = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	await frames(); world.set_process(false); world.waves.set_physics_process(false)
 	var actor: Node3D = world.player; actor.set_physics_process(false)
 	actor.position = Vector3(20,0,20)

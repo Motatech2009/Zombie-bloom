@@ -18,7 +18,7 @@ func run() -> void:
 	MobilePlatform.force_touch = true
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false); world.set_process(false)
 	await frames()
 	var controls: TouchControls = world.touch_controls

@@ -9,7 +9,7 @@ func check(ok: bool,message: String) -> void:
 func run() -> void:
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate()
 	world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false)
 	world.set_process(false)
 	var actor: CharacterBody3D = world.player

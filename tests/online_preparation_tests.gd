@@ -11,7 +11,7 @@ func run() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
 	campaign.resume_requested = false
 	var w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
 	check(w.horde_left==600,"new game prepares first wave for 600s")
 	for mode in ["campaign","endless"]:
 		w.game_mode = mode

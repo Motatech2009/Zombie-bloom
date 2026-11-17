@@ -16,7 +16,7 @@ func build(piece: int,pos: Vector3) -> Node3D:
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	Director15.selected_mutators = []; Director15.selected_class = "engineer"
-	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w
+	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false); w.resources.scrap = 10000; w.stock = {"wood":10000,"parts":10000}
 	await physics_frame; await process_frame
 	check(w.player.specialization=="engineer","new player receives selected class")

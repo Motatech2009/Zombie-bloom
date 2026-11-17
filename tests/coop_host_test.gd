@@ -18,7 +18,7 @@ func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = "endless"
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate()
 	world.checkpoint_enabled = false
-	root.add_child(world)
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world)
 	current_scene = world
 	world.waves.set_physics_process(false)
 	var deadline := Time.get_ticks_msec()+16000

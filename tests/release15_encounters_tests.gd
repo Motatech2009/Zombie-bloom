@@ -16,7 +16,7 @@ func clear_enemies() -> void:
 	for actor in get_nodes_in_group("enemies"): actor.get_parent().remove_child(actor); actor.queue_free()
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
-	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w
+	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false); w.resources.scrap = 10000; w.stock = {"wood":10000,"parts":10000}
 	var mauler = boss(1,Vector3(30,0,30)); mauler.cast_point = Vector3(30,0,15); mauler.boss_cast()
 	check(mauler.rush_left>0 and mauler.rush_direction.z<-.9,"Quebra-Muros starts a directed siege charge")

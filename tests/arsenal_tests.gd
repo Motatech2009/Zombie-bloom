@@ -34,7 +34,7 @@ func run() -> void:
 	var save_path: String = world.checkpoint_path()
 	var existed := FileAccess.file_exists(save_path)
 	var backup := FileAccess.get_file_as_string(save_path) if existed else ""
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	check(FileAccess.file_exists(save_path) and world.valid_snapshot(JSON.parse_string(FileAccess.get_file_as_string(save_path))),"initial automatic checkpoint already contains nine valid weapon states")
 	world.checkpoint_enabled = false
 	if existed:

@@ -11,7 +11,7 @@ func run() -> void:
 	account.set_process(false); account.token = "test"; account.user_id = "world-test"; account.ledger = ProgressLedger.new()
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
 	w.records.credit("host","kills",2); w.records.credit("host","scrap",12); w.sync_account_progress()
 	check(account.ledger.totals.kills==2 and account.ledger.totals.scrap==12,"host gameplay totals feed the signed-in account")

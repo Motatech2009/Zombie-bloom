@@ -72,7 +72,7 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-performance-tests.log; then exit 1; fi
           grep -E 'MOBILE PERFORMANCE RESULT: [0-9]+ checks, 0 failures' mobile-performance-tests.log
-          timeout 120s godot --headless --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
+          timeout 120s godot --headless --verbose --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' progression-tests.log; then exit 1; fi
           grep -E 'PROGRESSION RESULT: [0-9]+ checks, 0 failures' progression-tests.log
           timeout 120s godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log

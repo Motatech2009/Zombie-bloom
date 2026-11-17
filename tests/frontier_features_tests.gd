@@ -11,7 +11,7 @@ func frames(n: int = 3) -> void:
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var w: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false)
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false)
 	var a: Node3D = w.player; a.set_physics_process(false); a.invulnerable = 3600
 	await frames()
 	check(w.horde_left==600,"a new refuge provides ten minutes before its first automatic horde")

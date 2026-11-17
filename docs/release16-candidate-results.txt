@@ -1,5 +1,5 @@
 Zombie Bloom 1.6.0-rc.1 — evidências locais da candidata
-Data de referência: 16/11/2026 (Brasil). Não é release final.
+Data de referência: 17/11/2026 (Brasil). Não é release final.
 Godot 4.6.3; Linux/headless; ENet em processos reais; render OpenGL/Mesa.
 
 Suítes individuais (última execução válida por suíte):
@@ -68,3 +68,6 @@ Correções de integração verificadas:
 - Save de setor aceita posto sem caixas comuns; campanha permanece separada do resgate.
 - Mira vertical do Titã validada com raio real de pistola: coração alcançável, bônus 1,5x exato e braço excluído. Campanha (127), arsenal (99) e mira mobile (35) passaram após a correção.
 - Coleta final do Titã persiste imediatamente; reentrada após expiração não recria o loot. Prêmio especial não é mesclado a pilhas comuns no limite de drops.
+- Testes legados usam cenários comuns explícitos; não dependem do sorteio novo 5%/10%. A suíte 1.6 mantém os testes de probabilidade e encontros reais.
+- Regressões locais após estabilização: 16 suítes aprovadas e progressão repetida oito vezes, sem aviso ObjectDB. O CI continua bloqueando esse aviso.
+- CI da revisão d0ef2b8 passou pelo Functions Emulator completo e exportou Windows/APK. Esses binários antecedem a correção final do loot; a candidata final aguarda a nova execução, sem distribuir o binário anterior como definitivo.
