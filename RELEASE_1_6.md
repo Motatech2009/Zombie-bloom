@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.1**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.2**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -78,7 +78,7 @@ Evidências consolidadas: [resultados locais da candidata](docs/release16-candid
 3. Partidas físicas Windows↔Android e verificação de desempenho nos aparelhos do projeto. Linux/headless e renderização Mesa não substituem esse teste.
 4. Avaliação dos defaults criativos e balanceamento pelo criador antes de promoção final. Não mesclar/publicar a RC como versão final automaticamente.
 
-## Verificação final dos pacotes — 17/11/2026
+## Histórico dos pacotes RC.1 — 17/11/2026
 
 A revisão de código `bb4264eecfc7e478e8e7b6b8ca8f9dc6dc0b9627` passou nas execuções de [push](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063597516) e [pull request](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44063604788). As correções finais de loot do Titã e cenários determinísticos estão incluídas. Não é necessário retomar a execução anterior nem distribuir o binário que antecede essas correções.
 
@@ -96,3 +96,16 @@ As 18 prévias foram geradas no CI; menu desktop, loja e cartas mobile foram ins
 O endpoint real `account16Api` respondeu **HTTP 404** na checagem somente de leitura. Não há sessão administrativa Firebase disponível no ambiente. A moeda, compras e horas confirmadas no servidor permanecem bloqueadas até publicação e teste autenticado. O guia de publicação está em `backend/firebase/README_1_6.md`; não foram criadas contas fictícias em produção.
 
 Pendências para a versão final: publicar/validar o Firebase real; testar APK em aparelho físico e Windows↔Android; avaliar balanceamento e os parâmetros criativos. Os downloads acima são **1.6.0-rc.1 para teste**, não a promoção da versão final.
+
+## Adições confirmadas pelo criador — 1.6.0-rc.2
+
+- **Isca de Desvio:** chance de 30% apenas no loot dos chefes das hordas de Campanha/Defesa Infinita. Não sai do Titã nem de chefes de exploração. Usar pela mochila na preparação congela o contador por 600 segundos; infectados da exploração continuam ativos. Preserva o tempo anterior, limita a uma ativação por preparação e não permite encadear iscas. O efeito é da equipe e validado pelo anfitrião.
+- A próxima horda recebe `ceil(população normal final × 1,20)`, incluindo os fatores de jogadores e o mutador de hordas dobradas. Continua com um único boss, sem bônus oculto de vida/dano. Recalcular população por entrada/saída de jogadores conserva o multiplicador. A horda seguinte volta ao normal. Temporizador, uso e penalidade persistem no save e nos snapshots.
+- **Titã:** baú compartilhado único de 800–1.200 sucatas, 30–45 componentes, 60 munições de rifle e um kit. Restante do baú continua no setor para outras viagens, inclusive após renovação normal. Coleta de baús de boss usa pilhas para evitar centenas de interações de quatro unidades.
+- **Coroa do Enraizado / COS-TITAN-01:** visual de cabeça universal, exclusivo por causar dano e estar no setor na derrota. Todos os participantes elegíveis recebem; o último golpe não monopoliza a conquista. Não tem atributos nem preço de compra. Os elos e outros cosméticos são preservados. A coroa tem modelo provisório nativo; modelagem definitiva será feita no Blender.
+- A conquista local é persistida separadamente por conta/convidado; não migra automaticamente ao trocar conta. O perfil da partida inclui destinatário e registro privados para reconexão. Confirmação online usa a nova operação `titan`, token Firebase e ledger transacional idempotente; compra direta do troféu é recusada no cliente e no servidor.
+- **Torreta elevada:** 150 sucatas +6 madeiras +8 componentes; 150 PV básicos, alcance 17/18/19 m, dano/cadência da torreta normal. Modelo e ponto de disparo a 3,6 m; passa sobre barricadas baixas conforme a linha física de tiro. Casas e muralhas altas continuam bloqueando. Índice 11 acrescentado ao catálogo sem mudar os índices anteriores.
+- **Alcance:** área no chão ao posicionar uma defesa ou aproximar-se de uma existente. Torres mostram limite e trechos obstruídos; estacas/arames mostram área de contato; apoio mostra raio de reparo com indicação de cura. Apenas uma prévia ativa, atualização a 5 Hz e 32 amostras no celular/64 no desktop.
+- **Compatibilidade:** protocolo 20 e APK 1602; ambos os participantes precisam da RC.2. Save continua formato 6 com campos opcionais, mantendo os saves antigos. Resgate tem sequência própria e não usa a isca.
+
+Os valores de sucata, componentes e da nova defesa são parâmetros iniciais de balanceamento, ajustáveis. O serviço online real e os testes físicos Android continuam pendentes. A operação de conquista usa a confiança comunitária P2P: os controles de conta/tempo/repetição não substituem validação independente de combate.

@@ -57,6 +57,13 @@ func take_damage(amount: float) -> void:
 	if exposed>0 and point.is_finite() and not world.explosive15:
 		var local := rig.to_local(point)
 		if absf(local.x)<.26 and absf(local.y-1.22)<.28 and local.z<-.12: amount *= 1.5
+	if amount>0 and not health.dead and world.avatars.has(world.shot_owner):
+		var actor: Node3D = world.avatars[world.shot_owner]
+		if actor.region_coord==world.coord_at(global_position):
+			var state: Dictionary = world.exp16.sectors.get(encounter_key,{})
+			var contributors: Array = state.get("contributors",[])
+			if actor.profile_id not in contributors: contributors.append(actor.profile_id)
+			state.contributors = contributors
 	super.take_damage(amount)
 func clear_roots() -> void:
 	for node in world.get_tree().get_nodes_in_group("titan_root_warnings"):

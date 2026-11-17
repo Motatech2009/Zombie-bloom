@@ -15,6 +15,8 @@ static func decorate(rig: Node3D,outfit: Dictionary,actor: Node3D = null) -> voi
 	for slot in outfit:
 		var item := Catalog16.cosmetic(str(outfit[slot]))
 		if item.is_empty(): continue
+		if item.id=="COS-TITAN-01":
+			titan_crown(root); continue
 		var color := Color(str(item.palette)); var variant := int(str(item.id).right(2))
 		match slot:
 			"head":
@@ -44,3 +46,11 @@ static func decorate(rig: Node3D,outfit: Dictionary,actor: Node3D = null) -> voi
 				if MobilePlatform.lightweight() or MobilePlatform.enabled(): continue
 				var fx := Node3D.new(); fx.set_script(load("res://scripts/release16/cosmetic_effect16.gd")); fx.actor = actor; fx.class_id = item.class_id; root.add_child(fx)
 				for i in range(3): VisualFactory.box(fx,Vector3(.045,.07,.04),Vector3(cos(i*2.1)*.55,.4+i*.3,sin(i*2.1)*.55),color)
+
+static func titan_crown(root: Node3D) -> void:
+	VisualFactory.cylinder(root,.37,.10,Vector3(0,1.93,0),Color("65533d"))
+	for i in range(7):
+		var angle := i*TAU/7
+		var twig := VisualFactory.cylinder(root,.045,.25+(i%2)*.08,Vector3(cos(angle)*.30,2.06,sin(angle)*.30),Color("6f7849"))
+		twig.rotation.z = cos(angle)*.35; twig.rotation.x = sin(angle)*.35
+	VisualFactory.box(root,Vector3(.15,.18,.07),Vector3(0,1.96,-.36),Color("9fce59"))

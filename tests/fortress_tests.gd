@@ -33,7 +33,7 @@ func first_mesh(node: Node) -> MeshInstance3D:
 		if found!=null: return found
 	return null
 func run() -> void:
-	check(FortressData.pieces().size()==11,"eleven defenses preserve existing indices and add the recycler")
+	check(FortressData.pieces().size()==12,"twelve defenses preserve existing indices and append the raised turret")
 	for piece in range(10):
 		for tier in range(1,4):
 			var id: String = FortressData.pieces()[piece].id

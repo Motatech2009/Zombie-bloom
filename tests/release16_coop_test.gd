@@ -19,6 +19,7 @@ func run() -> void:
 		if arg.begins_with("--tag="): tag = arg.trim_prefix("--tag=")
 		if arg.begins_with("--players="): target_players = int(arg.trim_prefix("--players="))
 	MobilePlatform.force_touch = tag=="3" and role!="host"
+	root.get_node("Meta16").titan_earned = {}; root.get_node("Meta16").trophy_equipped = {}
 	var link: Node = root.get_node("Coop")
 	if role=="host": await host(link)
 	else: await client(link)
@@ -60,6 +61,15 @@ func host(link: Node) -> void:
 	var own: Dictionary = w.upgrades.current(w.player)
 	check(w.perform_action(1,"choice",{"index":0,"choice_id":own.id}),"host commits its own independent card")
 	check(not w.combat_paused(),"all independent choices release combat")
+	var visitor: Node3D
+	for a in w.avatars.values():
+		if a.profile_id=="1".repeat(32): visitor = a
+	if visitor!=null:
+		visitor.bag.add("decoy16",1)
+		visitor.set_meta("titan_victory16","b".repeat(64)); visitor.set_meta("titan_owner16","")
+	deadline = Time.get_ticks_msec()+5000
+	while w.truce16.left<=0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
+	check(w.truce16.left>590 and w.truce16.pending and visitor.bag.count("decoy16")==0,"remote participant activates exactly one team diversion")
 	await create_timer(3).timeout
 	for a in w.avatars.values(): check(total(w.upgrades.levels_for(a))==1,"late replay changes no level for "+a.display_name)
 func client(link: Node) -> void:
@@ -87,4 +97,12 @@ func client(link: Node) -> void:
 	while w.resources.pending>0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.resources.pending==0 and w.upgrades.level_for(w.player,chosen_id)==1,"host confirms own selected level through a real private snapshot")
 	check(total(w.upgrades.levels_for(w.player))==1,"replayed RPC does not apply a second card")
+	deadline = Time.get_ticks_msec()+5000
+	if tag=="1":
+		while w.player.bag.count("decoy16")==0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
+		w.send_action("decoy16",{}); await create_timer(.15).timeout; w.send_action("decoy16",{})
+	while w.truce16.left<=0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
+	check(w.truce16.left>590 and w.truce16.pending,"private network snapshots carry team diversion and upcoming penalty")
+	await create_timer(.3).timeout
+	check(root.get_node("Meta16").has_cosmetic("COS-TITAN-01")== (tag=="1"),"only the designated contributor receives the private Titan trophy")
 	await create_timer(4).timeout

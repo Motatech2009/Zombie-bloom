@@ -46,10 +46,10 @@ test('reject malformed requests, fake items, unauthorized fields',async()=>{
  await assert.rejects(()=>s.call('one','purchase',{item_id:'fake',operation_id:'x'},1e9));
 });
 test('all 21 catalog items buy, equip and persist without gameplay fields',async()=>{
- const s=new Store();const catalog=require('../catalog.json');assert.equal(catalog.cosmetics.length,21);
+ const s=new Store();const catalog=require('../catalog.json');assert.equal(catalog.cosmetics.filter(item=>!item.unlock).length,21);
  s.docs.set('accounts16/one',{...initial(),balance:30000});
  let spent=0;
- for(const item of catalog.cosmetics){
+ for(const item of catalog.cosmetics.filter(item=>!item.unlock)){
   const p=await s.call('one','purchase',{item_id:item.id,operation_id:item.id},1e9);spent+=item.price;assert.equal(p.profile.balance,30000-spent);
   const cls=item.class_id==='all'?'engineer':item.class_id;
   const e=await s.call('one','equip',{class_id:cls,slot:item.slot,item_id:item.id},1e9);assert.equal(e.profile.equipped[cls][item.slot],item.id);
@@ -64,4 +64,21 @@ test('registration distinguishes new offline baseline from reconnect without adv
  p=await s.call('one','start',{match_id:'saved',mode:'endless',baseline:8},start+60000);
  assert.equal(p.new_registration,false);assert.equal(p.confirmed_wave,5);
  await assert.rejects(()=>s.call('one','horde',{match_id:'saved',wave:5},start+600000));
+});
+
+test('Titan trophy is exclusive, transactional, idempotent and has no coin grant',async()=>{
+ const s=new Store(),t=1e9,payload={match_id:'run',encounter_id:'a'.repeat(64)};
+ s.docs.set('accounts16/one',{...initial(),balance:30000});
+ await assert.rejects(()=>s.call('one','purchase',{item_id:'COS-TITAN-01',operation_id:'fake_buy'},t));
+ await assert.rejects(()=>s.call('one','titan',payload,t));
+ await s.call('one','start',{match_id:'run',mode:'endless',baseline:0},t);
+ await assert.rejects(()=>s.call('one','titan',payload,t+1000));
+ await s.call('one','sync',{sessions:{s1:120}},t+120000);
+ const grants=await Promise.all(Array.from({length:10},()=>s.call('one','titan',payload,t+120000)));
+ assert.equal(grants.filter(x=>!x.duplicate).length,1);
+ const p=(await s.call('one','profile',{},t+120000)).profile;
+ assert.equal(p.balance,30000);assert.deepEqual(p.owned,['COS-TITAN-01']);
+ assert.equal((await s.call('two','profile',{},t)).profile.owned.length,0);
+ for(const class_id of ['engineer','scout','shooter'])assert.equal((await s.call('one','equip',{class_id,slot:'head',item_id:'COS-TITAN-01'},t+120000)).profile.equipped[class_id].head,'COS-TITAN-01');
+ await assert.rejects(()=>s.call('one','titan',{...payload,encounter_id:'../wrong'},t+120000));
 });

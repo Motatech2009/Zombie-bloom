@@ -202,6 +202,7 @@ func _process(delta: float) -> void:
 	wood_count.text = str(world.stock.wood)
 	parts_count.text = str(world.stock.parts)
 	status_text.text = "CONGELADO · %.1f s" % actor.slow_left if actor.slow_left>0 else "CAÍDO · Aguarde um aliado" if actor.health.dead else ""
+	if not world.truce16.hint().is_empty(): wave_detail.text = world.truce16.hint()
 	roll_text.text = "ESPAÇO · ROLANDO" if actor.roll_left>0 else "ESPAÇO · %.1f s" % actor.roll_cooldown if actor.roll_cooldown>0 else "ESPAÇO · ROLAMENTO PRONTO"
 	roll_text.modulate = UI.MUTED if actor.health.dead else UI.TEXT if actor.roll_cooldown>0 else UI.LIME
 	roll_bar.value = 5-actor.roll_cooldown
@@ -240,6 +241,7 @@ func show_inventory() -> void:
 	var box := open_modal("inventory",1210)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",29,UI.LIME)
 	UI.label(box,"Capacidade: %d · Mochila nível %d" % [world.player.bag.slots.size(),world.player.bag.bag_level],15,UI.MUTED)
+	add_decoy16_button(box)
 	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
 	UI.label(box,"Clique dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"Primeiros nove espaços = barra rápida. Clique dois espaços para trocar.",15,UI.MUTED)
@@ -532,3 +534,9 @@ func show_post16() -> void:
 		var id: String = entry[0]
 		var button := UI.button(box,entry[1],func(): world.send_action("post_trade",{"id":id}); close_modal()); button.set_meta("trade_id",id); button.set_meta("base_text",entry[1]); post_buttons16.append(button)
 	UI.button(box,"VOLTAR",close_modal,true)
+
+func add_decoy16_button(box: Node) -> void:
+	if world.player.bag.count("decoy16")==0: return
+	UI.label(box,"Isca: +10 minutos. Próxima horda +20% infectados. Uma por preparação.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var button := UI.button(box,"USAR ISCA DE DESVIO · 10 MIN",func(): world.send_action("decoy16",{}); close_modal())
+	button.disabled = world.waves.running or world.truce16.left>0 or world.truce16.pending or world.truce16.used_after==world.waves.wave or world.game_mode=="rescue"

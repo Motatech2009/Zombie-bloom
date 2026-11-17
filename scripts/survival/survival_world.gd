@@ -3,6 +3,7 @@ var damage_origin15 := Vector3.INF
 var damage_point16 := Vector3.INF
 var exp16 := Exploration16.new()
 var rescue16 := Rescue16.new()
+var truce16 := Truce16.new()
 var explosive15 := false
 var critical15 := false
 var v15 := Director15.new()
@@ -120,6 +121,7 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("bat",1)
 
 func _ready() -> void:
+	truce16.world = self
 	exp16.world = self; rescue16.world = self
 	resources.free(); resources = HordeResources16.new()
 	upgrades.free(); upgrades = IndividualProgression16.new(); channel15.world = self; v15.world = self; v15.day.world = self
@@ -142,7 +144,9 @@ func _ready() -> void:
 	super._ready()
 	v15.initialize(self)
 	upgrades.state(player); upgrades.refresh_local()
+	player.set_meta("account_uid16",Account.user_id)
 	Meta16.world = self; Meta16.bound_run = ""
+	var range_view := DefenseRange16.new(); range_view.world = self; add_child(range_view)
 	if MobilePlatform.enabled():
 		MobilePlatform.configure(get_tree().root)
 		camera.size = 27
@@ -305,6 +309,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 		"mission16": result = rescue16.interact(actor)
 		"post_trade":
 			if data.get("id") is String: result = exp16.trade(actor,data.id)
+		"decoy16": result = truce16.activate(actor)
 		"equip_bag": result = actor.bag.equip_field_bag()
 		"fuse": result = v15.fuse(actor)
 		"recycle": result = v15.recycle(actor)
@@ -345,7 +350,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 				builder.selected = previous.selected
 				builder.angle = previous.angle
 	player = saved
-	if result and action in ["choice","defer_choice"] and area_index==-1 and phase=="prep": save_checkpoint(false)
+	if result and action in ["choice","defer_choice","decoy16"] and area_index==-1 and phase=="prep": save_checkpoint(false)
 	return result
 
 func load_individual_sector(direction: int) -> bool:
@@ -472,7 +477,7 @@ func enemy_defeated(enemy: Node3D) -> void:
 		records.credit(record_identity(killer),"kills",1); records.credit(record_identity(killer),"points",v15.score_multiplier())
 	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
 		enemy.set_meta("boss_rewarded",true)
-		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng))
+		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng,enemy.is_in_group("wave_enemies") and not enemy.field_enemy and game_mode!="rescue"))
 		if reward!=null: mark_boss_drop(reward)
 		notify("CHEFE VENCIDO · Suprimentos extras no chão: munição, sucata e componentes.")
 	if enemy.field_enemy and enemy.encounter_index>=0 and not enemy.encounter_index in field_defeated: field_defeated.append(enemy.encounter_index)
@@ -645,7 +650,7 @@ func transfer_source(actor: Node3D,source: Node3D) -> bool:
 	var contents: Dictionary = source.get_meta("contents",{})
 	var transferred := false
 	for id in contents.keys():
-		var amount: int = mini(int(contents[id]),ItemBag.stack(id) if source.get_meta("airdrop",false) or source.has_meta("house_id") else 4 if id not in ItemBag.WEAPON_IDS else 1)
+		var amount: int = mini(int(contents[id]),ItemBag.stack(id) if source.get_meta("boss_drop",false) or source.get_meta("airdrop",false) or source.has_meta("house_id") else 4 if id not in ItemBag.WEAPON_IDS else 1)
 		var taken: int = actor.bag.add(id,amount)
 		if taken<=0: continue
 		if id=="scrap" and source.get_meta("world_origin",true): records.credit(record_identity(actor.peer_id),"scrap",taken)
@@ -793,9 +798,11 @@ func choose_team_upgrade(index: int) -> bool:
 	return upgrades.choose(index)
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"outfit16":actor.outfit16.duplicate(),"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
+	return {"titan_owner16":str(actor.get_meta("titan_owner16","")),"titan_victory16":str(actor.get_meta("titan_victory16","")),"outfit16":actor.outfit16.duplicate(),"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
 
 func valid_profile(data: Variant) -> bool:
+	if data is Dictionary and (not data.get("titan_owner16","") is String or str(data.get("titan_owner16","")).length()>128): return false
+	if data is Dictionary and (not data.get("titan_victory16","") is String or str(data.get("titan_victory16","")).length()>64): return false
 	if data is Dictionary and not Cosmetics16.valid(data.get("outfit16",{}),str(data.get("class","engineer"))): return false
 	if data is Dictionary and (data.get("class","engineer") not in ["engineer","scout","shooter"] or not bounded(data.get("cosmetic",0),0,10)): return false
 	if data is Dictionary and data.has("tuning"):
@@ -808,6 +815,8 @@ func valid_profile(data: Variant) -> bool:
 	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
 
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
+	actor.set_meta("titan_victory16",str(data.get("titan_victory16","")))
+	actor.set_meta("titan_owner16",str(data.get("titan_owner16","")))
 	actor.specialization = str(data.get("class","engineer")); actor.cosmetic = int(data.get("cosmetic",0)); actor.outfit16 = data.get("outfit16",{}).duplicate()
 	v15.decorate(actor)
 	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
@@ -842,6 +851,7 @@ func snapshot() -> Dictionary:
 	var data := super.snapshot()
 	data.format = 6
 	data.systems16 = exp16.dump()
+	data.truce16 = truce16.dump()
 	data.systems15 = v15.dump()
 	data.progression16 = upgrades.dump()
 	data.horde_interval = HORDE_INTERVAL
@@ -866,6 +876,7 @@ func snapshot() -> Dictionary:
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("truce16") and not Truce16.valid(data.truce16): return false
 	if data is Dictionary and data.has("systems16") and not Exploration16.valid(data.systems16): return false
 	if data is Dictionary and data.has("progression16") and not IndividualProgression16.valid(data.progression16): return false
 	if data is Dictionary and data.has("systems15") and not Director15.valid(data.systems15): return false
@@ -934,6 +945,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	if int(data.get("preparation_policy",0))!=2 and float(data.get("horde_left",0))>0:
 		data = data.duplicate(true)
 		data.horde_left = minf(float(data.horde_left),preparation_seconds(int(data.get("wave",0))+1))
+	truce16.restore(data.get("truce16",{}))
 	exp16.restore(data.get("systems16",{"sectors":{}}))
 	if not data.has("systems16"):
 		for key in data.get("discovered",{}):
@@ -1117,7 +1129,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 		if enemy.spec.id=="titan16" and enemy.windup>0 and enemy.cast16=="roots":
 			for i in range(enemy.roots16.size()): hazards.append({"id":-100000000-enemy.net_id*4-i,"p":enemy.roots16[i],"pool":true,"warning":true,"radius":2.4,"color":Color("94b86b")})
 		elif enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"visuals15":v15.visuals() if include_bulk else [],"mission16":rescue16.dump() if game_mode=="rescue" else {},"special16":{SectorGenerator.key(avatars[peer].region_coord):{"kind":exp16.kind_at(avatars[peer].region_coord),"stocks":exp16.sectors.get(SectorGenerator.key(avatars[peer].region_coord),{}).get("stocks",{}).duplicate()}},"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":upgrades.pending_for(avatars[peer]),"offers":upgrades.current(avatars[peer]).get("offers",[]).duplicate(true),"progression16":upgrades.private_state(avatars[peer]),"paused16":combat_paused(),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"truce16":truce16.dump(),"visuals15":v15.visuals() if include_bulk else [],"mission16":rescue16.dump() if game_mode=="rescue" else {},"special16":{SectorGenerator.key(avatars[peer].region_coord):{"kind":exp16.kind_at(avatars[peer].region_coord),"stocks":exp16.sectors.get(SectorGenerator.key(avatars[peer].region_coord),{}).get("stocks",{}).duplicate()}},"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":upgrades.pending_for(avatars[peer]),"offers":upgrades.current(avatars[peer]).get("offers",[]).duplicate(true),"progression16":upgrades.private_state(avatars[peer]),"paused16":combat_paused(),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if not data.get("mission16",{}).is_empty(): rescue16.apply(data.mission16)
@@ -1141,6 +1153,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	waves.running = data.running
 	waves.to_spawn = int(data.remaining)
 	horde_left = data.clock
+	truce16.restore(data.get("truce16",{}))
 	core.health.maximum = data.core_max
 	core.health.current = data.core_hp
 	if core_tier!=int(data.core_tier):

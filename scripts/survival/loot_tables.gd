@@ -25,7 +25,7 @@ static func ammo_quantity(id: String,rng: RandomNumberGenerator) -> int:
 		"cells": return rng.randi_range(6,12)
 	return rng.randi_range(8,18)
 
-static func boss(wave: int,rng: RandomNumberGenerator) -> Dictionary:
+static func boss(wave: int,rng: RandomNumberGenerator,horde_boss: bool = false) -> Dictionary:
 	var tier := mini(30,maxi(1,wave))
 	var result := {"scrap":45+tier*3,"parts":6+tier/3,"light":24+tier}
 	var ammo: String = ["shell","rifle_ammo","heavy","cells"][rng.randi_range(0,3)]
@@ -36,6 +36,7 @@ static func boss(wave: int,rng: RandomNumberGenerator) -> Dictionary:
 		var weapon := rng.randi_range(1,Arsenal.WEAPONS.size()-1)
 		result[ItemBag.WEAPON_IDS[weapon]] = 1
 		result[ItemBag.AMMO_IDS[weapon]] = maxi(int(result.get(ItemBag.AMMO_IDS[weapon],0)),1 if weapon==4 else 12)
+	if horde_boss and rng.randf()<float(Catalog16.data().truce.drop_chance): result.decoy16 = 1
 	return result
 
 static func infected(biome: int,rng: RandomNumberGenerator) -> Dictionary:

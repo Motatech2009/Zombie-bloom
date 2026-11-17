@@ -47,7 +47,7 @@ async function operate(tx, uid, action, data, now) {
     }
     if (a.last_start_ms && now-a.last_start_ms<60000) fail('Aguarde antes de registrar outra partida.',429);
     a.active_match=data.match_id; a.last_start_ms=now; if(!a.last_sync_ms)a.last_sync_ms=now;
-    tx.set(mp,{wave:data.baseline,mode:data.mode,started_ms:now,last_reward_ms:now,active_baseline:a.active_seconds});
+    tx.set(mp,{wave:data.baseline,mode:data.mode,started_ms:now,last_reward_ms:now,active_baseline:a.active_seconds,started_active_seconds:a.active_seconds});
     tx.set(path,a); return {profile:publicProfile(a),registered:true,confirmed_wave:data.baseline,new_registration:true};
   }
   if (action === 'horde') {
@@ -67,9 +67,22 @@ async function operate(tx, uid, action, data, now) {
     tx.set(mp,match);tx.set(ledger,{amount:100,kind:'horde',match_id:data.match_id,wave:data.wave,at_ms:now,trust:'community-rate-limited'});tx.set(path,a);
     return {profile:publicProfile(a)};
   }
+  if (action === 'titan') {
+    if (!id(data.match_id) || typeof data.encounter_id!=='string' || !/^[a-f0-9]{64}$/.test(data.encounter_id)) fail('Encontro inválido.');
+    const ledger=`${path}/ledger/titan_${data.match_id}_${data.encounter_id}`;
+    const [match,previous]=await Promise.all([tx.get(`${path}/matches/${data.match_id}`),tx.get(ledger)]);
+    if(previous)return {profile:publicProfile(a),duplicate:true};
+    if(!match || a.active_match!==data.match_id || match.mode==='rescue')fail('Partida do encontro não confirmada.',409);
+    if(now-match.started_ms<120000 || a.active_seconds-(match.started_active_seconds??match.active_baseline)<120)fail('Participação no encontro ainda não confirmada.',409);
+    const item=catalog.cosmetics.find(c=>c.unlock==='titan16');
+    if(!item)fail('Troféu indisponível.',503);
+    if(!a.owned.includes(item.id))a.owned.push(item.id);
+    tx.set(ledger,{kind:'titan',item_id:item.id,match_id:data.match_id,encounter_id:data.encounter_id,at_ms:now,trust:'community-p2p-participation'});
+    tx.set(path,a);return {profile:publicProfile(a)};
+  }
   if (action === 'purchase') {
     const item=catalog.cosmetics.find(c=>c.id===data.item_id);
-    if(!item || !id(data.operation_id))fail('Item/operação inválido.');
+    if(!item || item.unlock || !id(data.operation_id))fail('Item/operação inválido.');
     const ledger=`${path}/ledger/buy_${data.operation_id}`;
     const previous=await tx.get(ledger);
     if(previous){if(previous.item_id!==item.id)fail('Operação já usada.',409);return {profile:publicProfile(a),duplicate:true};}

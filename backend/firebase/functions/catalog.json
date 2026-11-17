@@ -194,6 +194,16 @@
       "price": 400,
       "description": "pingente discreto com emblema do Núcleo nas costas",
       "palette": "b5a98c"
+    },
+    {
+      "id": "COS-TITAN-01",
+      "class_id": "all",
+      "title": "Coroa do Enraizado",
+      "slot": "head",
+      "price": 0,
+      "unlock": "titan16",
+      "description": "Troféu exclusivo por participar da derrota do Titã Enraizado. Raízes de argila e fragmento verde; somente aparência.",
+      "palette": "8fc34c"
     }
   ],
   "talents": [
@@ -281,10 +291,10 @@
     "titan_hp": 20000,
     "titan_slam_damage": 30,
     "titan_root_damage": 12,
-    "titan_scrap_min": 250,
-    "titan_scrap_max": 400,
-    "titan_parts_min": 8,
-    "titan_parts_max": 12
+    "titan_scrap_min": 800,
+    "titan_scrap_max": 1200,
+    "titan_parts_min": 30,
+    "titan_parts_max": 45
   },
   "afk_seconds": 300,
   "post": {
@@ -294,5 +304,10 @@
     "stock_per_horde": 2,
     "wood_exchange": 20,
     "parts_exchange": 1
+  },
+  "truce": {
+    "drop_chance": 0.3,
+    "seconds": 600,
+    "extra_population": 0.2
   }
 }

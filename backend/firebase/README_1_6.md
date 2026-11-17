@@ -49,3 +49,7 @@ firebase emulators:exec --config backend/firebase/firebase.json --project demo-z
 ```
 
 O projeto `demo-zombie-bloom` impede que esses testes criem jogadores fictícios no banco de produção.
+
+## Troféu exclusivo do Titã (RC.2)
+
+A operação `titan` recebe `match_id` e `encounter_id` SHA-256. Exige conta autenticada, partida ativa Campanha/Infinito e ao menos 120 segundos de participação/tempo observado. Concede apenas COS-TITAN-01, sem moedas, por transação idempotente. O catálogo não permite comprar itens com `unlock`. O cliente conserva a conquista local por conta/convidado e sinaliza a confirmação pendente. O anfitrião identifica quem causou dano e estava no setor ao concluir o combate; essa declaração P2P não constitui prova antitrapaça independente.

@@ -125,6 +125,13 @@ jobs:
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
           python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
           python3 tests/run_split_test.py 2>&1 | tee split-tests.log
+      - name: Validate 1.6 diversion, trophy and defense additions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
+          if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
+          grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -186,7 +193,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for view in menu profile elos shop account cards post titan rescue; do
+          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy; do
             for platform in desktop mobile; do
               args=(--view="$view")
               if [ "$platform" = mobile ]; then args+=(--mobile); fi

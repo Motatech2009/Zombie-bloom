@@ -78,7 +78,7 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 	var camera := Camera3D.new(); viewport.add_child(camera); camera.projection = Camera3D.PROJECTION_ORTHOGONAL; camera.size = 2.7; camera.position = Vector3(3,2.1,-4); camera.look_at(Vector3(0,1,0)); camera.current = true
 	menu.menu_button(menu.content,"GIRAR PRÉVIA",func(): actor.rotation.y += PI/4)
 	for item in Catalog16.data().cosmetics:
-		var owned: bool = item.id in meta().confirmed.get("owned",[])
+		var owned: bool = meta().has_cosmetic(item.id)
 		if (filter_class=="owned" and not owned) or (filter_class!="owned" and item.class_id!=filter_class): continue
 		var id: String = item.id
 		var card := UI.vbox(UI.panel(menu.content),4)
@@ -89,11 +89,14 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 			var cls: String = Director15.selected_class if item.class_id=="all" else item.class_id
 			menu.menu_button(card,"EQUIPAR",func(): await meta().equip(cls,item.slot,id); shop(menu,filter_class))
 			menu.menu_button(card,"RETIRAR",func(): await meta().equip(cls,item.slot,""); shop(menu,filter_class))
+		elif item.get("unlock","")=="titan16":
+			UI.label(card,"EXCLUSIVO · participe da derrota do Titã",13,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		else:
 			var buy: Button = menu.menu_button(card,"COMPRAR · %d" % int(item.price),func(): confirm_purchase(menu,id,filter_class))
 			buy.disabled = meta().busy or not account().signed_in() or meta().api_url.is_empty() or int(meta().confirmed.get("balance",0))<int(item.price)
 static func confirm_purchase(menu: Node,id: String,filter_class: String) -> void:
 	menu.clear_content(); var item := Catalog16.cosmetic(id)
+	if item.has("unlock"): shop(menu,filter_class); return
 	UI.label(menu.content,"CONFIRMAR COMPRA",25,UI.LIME)
 	UI.label(menu.content,"%s · %d %s" % [item.title,int(item.price),str(Catalog16.data().currency.name)],18)
 	menu.menu_button(menu.content,"CONFIRMAR",func(): await meta().purchase(id); shop(menu,filter_class),true)

@@ -61,7 +61,7 @@ func run() -> void:
 	check(world.local_input(actor).move==Vector2.ZERO and not world.local_input(actor).fire,"modal panels cannot drive movement or fire underneath")
 	world.hud.close_modal()
 	world.hud.show_build_catalog(); await frames()
-	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==11,"mobile construction catalog exposes all ten defenses in a scrollable item list")
+	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==12,"mobile construction catalog exposes all twelve defenses in a scrollable item list")
 	world.hud.close_modal()
 	actor.position = Vector3(0,0,8); actor.set_physics_process(false)
 	world.resources.scrap = 1000; world.stock = {"wood":100,"parts":100}

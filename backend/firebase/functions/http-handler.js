@@ -18,7 +18,7 @@ exports.handler=async(req,res)=>{
     },user.uid,req.body.action,req.body.data||{},now));
     return res.json(result);
   }catch(e){
-    const status=e.status||(StringString(e.code||'').startsWith('auth/')?401:500);
+    const status=e.status||(String(e.code||'').startsWith('auth/')?401:500);
     if(status===500)console.error('account16 transaction failed',e.code||'internal');
     else if(status===409||status===429)console.warn('account16 rejected',{uid,action:String(req.body.action||'').slice(0,24),status});
     return res.status(status).json({error:status===500?'Serviço temporariamente indisponível.':status===401?'Sessão inválida.':e.message});

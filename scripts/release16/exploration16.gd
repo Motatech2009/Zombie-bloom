@@ -108,11 +108,18 @@ func defeated(boss: Node3D) -> void:
 	if s.dead: return
 	s.dead = true; s.hp = 0
 	var rng := RandomNumberGenerator.new(); rng.seed = hash(boss.encounter_key+str(world.world_seed)+"loot16")
-	s.reward = {"scrap":rng.randi_range(250,400),"parts":rng.randi_range(8,12),"rifle_ammo":60,"medkit":1}
+	var rewards: Dictionary = Catalog16.data().encounters
+	s.reward = {"scrap":rng.randi_range(int(rewards.titan_scrap_min),int(rewards.titan_scrap_max)),"parts":rng.randi_range(int(rewards.titan_parts_min),int(rewards.titan_parts_max)),"rifle_ammo":60,"medkit":1}
+	var victory: String = (str(world.world_seed)+":"+boss.encounter_key).sha256_text()
+	for actor in world.avatars.values():
+		if actor.profile_id in s.get("contributors",[]) and actor.region_coord==world.coord_at(boss.global_position):
+			actor.set_meta("titan_victory16",victory)
+			actor.set_meta("titan_owner16",str(actor.get_meta("account_uid16","")))
+			world.private_notice(actor.peer_id,"TITÃ DERROTADO · Coroa do Enraizado conquistada!")
 	s.loot_created = true
 	var loot: Node3D = world.spawn_loot(boss.global_position+Vector3(0,0,3),s.reward.duplicate(),0,"",0,false,true,true)
 	if loot!=null: loot.set_meta("special16",true); loot.set_meta("encounter16",boss.encounter_key); world.mark_boss_drop(loot); nodes[boss.encounter_key].loot = loot
-	world.notify("TITÃ DERROTADO · suprimentos raros compartilhados. Nenhuma moeda é concedida por este abate.")
+	world.notify("TITÃ DERROTADO · baú de sucata e componentes. Participantes conquistaram a Coroa do Enraizado.")
 func loot_changed(loot: Node3D) -> void:
 	var key := str(loot.get_meta("encounter16",""))
 	if sectors.has(key): sectors[key].reward = loot.contents.duplicate()
@@ -137,6 +144,9 @@ static func valid(data: Variant) -> bool:
 		var s = data.sectors[key]
 		if not key is String or key.length()>24 or not s is Dictionary or s.get("kind") not in ["normal","post","titan"] or not SectorMemory.number(s.get("hp"),0,20000) or not s.get("dead") is bool or not s.get("stocks") is Dictionary or not SectorMemory.contents(s.get("reward")): return false
 		if not s.get("pos") is Array or s.pos.size()!=2 or not SectorMemory.number(s.pos[0],-65,65) or not SectorMemory.number(s.pos[1],-65,65): return false
+		if not s.get("contributors",[]) is Array or s.get("contributors",[]).size()>64: return false
+		for id in s.get("contributors",[]):
+			if not id is String or id.length()>64: return false
 		for value in s.stocks.values():
 			if not SectorMemory.number(value,0,2,true): return false
 	return true

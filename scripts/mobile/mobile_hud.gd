@@ -149,6 +149,7 @@ func adapt_modal(node: Node) -> void:
 func show_inventory() -> void:
 	var box := open_modal("inventory",880)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",24,UI.LIME)
+	add_decoy16_button(box)
 	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
 	UI.label(box,"Toque dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"",14,UI.MUTED); inventory_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -20,7 +20,7 @@ func refresh_tier() -> void:
 	health.maximum = data.health*(1+.65*(tier-1))*(1+float(get_meta("alloy16",0)))
 	spec.values.damage = (68.0 if spec.id=="cannon" else 24.0 if spec.id=="shock" else 15.0)*(1+.45*(tier-1))
 	spec.values.interval = (2.4 if spec.id=="cannon" else 1.5 if spec.id=="shock" else .65)/(1+.18*(tier-1))
-	spec.values.range = (22.0 if spec.id=="cannon" else 11.0 if spec.id=="shock" else 15.0)+tier-1
+	spec.values.range = FortressData.reach(spec.id,tier)
 	if get_meta("fused",false): spec.values.interval *= .55
 	refresh_visual()
 
@@ -28,6 +28,8 @@ func refresh_visual() -> void:
 	if visual_tier==tier: return
 	visual_tier = tier
 	for child in model.get_children(): model.remove_child(child); child.queue_free()
+	if spec.id=="raised_turret":
+		build_raised_visual(); return
 	var path = "res://assets/fortress/"+spec.id+"_"+str(tier)+".tscn"
 	var visual: Node3D = load(path if ResourceLoader.exists(path) else "res://assets/fortress/station_"+str(tier)+".tscn").instantiate()
 	visual.name = "Visual"; model.add_child(visual)
@@ -71,7 +73,7 @@ func _physics_process(delta: float) -> void:
 func fire_turret() -> void:
 	if disabled_left>0 or health.dead: return
 	var candidates: Array[Node3D] = []
-	var origin := global_position+Vector3(0,1.45,0)
+	var origin := global_position+Vector3.UP*FortressData.muzzle_height(spec.id)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var point: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
 		if point.distance_to(origin)>float(spec.values.range): continue
@@ -103,3 +105,17 @@ func toggle() -> bool:
 	opened = not opened; collision_layer = 0 if opened else 8
 	set_open_visual()
 	return true
+
+func build_raised_visual() -> void:
+	var color: Color = spec.color.lightened(.08*(tier-1))
+	for x in [-.8,.8]:
+		for z in [-.8,.8]:
+			VisualFactory.box(model,Vector3(.22,3.2,.22),Vector3(x,1.6,z),Color("54675d"))
+			VisualFactory.box(model,Vector3(.48,.12,.48),Vector3(x,.06,z),color)
+	for y in [.8,1.8,2.8]: VisualFactory.box(model,Vector3(1.8,.14,.18),Vector3(0,y,.8),color)
+	VisualFactory.box(model,Vector3(2.1,.22,2.1),Vector3(0,3.14,0),color)
+	head = Node3D.new(); head.position.y = 3.6; model.add_child(head)
+	VisualFactory.box(head,Vector3(.9,.45,.8),Vector3.ZERO,color)
+	VisualFactory.box(head,Vector3(.18,.18,1.3),Vector3(0,0,-.7),Color("263a3a"))
+	for i in range(tier): VisualFactory.box(head,Vector3(.1,.12,.24),Vector3(-.3+i*.2,.28,0),Color("d4f889"))
+	ClayStyle.apply_tree(model)

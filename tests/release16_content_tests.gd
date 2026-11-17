@@ -14,7 +14,7 @@ func create_world(mode: String = "endless") -> void:
 	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w; stop_world()
 func run() -> void:
 	GameSettings.volume = 0
-	check(Catalog16.talents().size()==9 and Catalog16.data().cosmetics.size()==21,"catalog has nine class talents and 21 cosmetic items")
+	check(Catalog16.talents().size()==9 and Catalog16.data().cosmetics.size()==22,"catalog has nine class talents and 21 shop cosmetics plus one exclusive Titan trophy")
 	for base in [18,20]:
 		var bag := ItemBag.new(); bag.resize_bag(base); bag.add("field_bag",1)
 		check(bag.equip_field_bag() and bag.slots.size()==base+3,"field bag adds three slots on base %d" % base)
@@ -109,7 +109,9 @@ func run() -> void:
 	w.elapsed = 400; w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
 	boss = w.exp16.nodes[key].boss; boss.set_physics_process(false)
 	check(is_equal_approx(boss.health.current,10000),"Titan HP survives sector cache expiry")
-	boss.take_damage(100000); w.exp16.remember()
+	w.shot_owner = 1; boss.take_damage(100000); w.shot_owner = 0; w.exp16.remember()
+	check(str(w.player.get_meta("titan_victory16","")).length()==64,"actual contributing survivor earns Titan trophy")
+	check(w.exp16.sectors[key].reward.scrap>=800 and w.exp16.sectors[key].reward.parts>=30 and not w.exp16.sectors[key].reward.has("decoy16"),"Titan drops increased resources and never a horde diversion")
 	check(w.exp16.sectors[key].dead and w.exp16.sectors[key].reward.scrap>=250,"defeat records once and creates one shared rare reward")
 	var reward: Dictionary = w.exp16.sectors[key].reward.duplicate(); w.exp16.defeated(boss)
 	check(w.exp16.sectors[key].reward==reward,"repeated defeat does not reroll or duplicate Titan loot")
@@ -118,6 +120,8 @@ func run() -> void:
 	var attempts := 0
 	while not reward_loot.contents.is_empty() and attempts<200:
 		w.transfer_source(w.player,reward_loot); attempts += 1
+		if w.player.bag.free_slots()==0:
+			for i in range(w.player.bag.slots.size()): w.player.bag.slots[i] = {"id":"","qty":0}
 	check(reward_loot.contents.is_empty() and w.exp16.sectors[key].reward.is_empty(),"the final item updates persistent Titan loot immediately before its node disappears")
 	reward_loot.queue_free(); await process_frame
 	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[2]; w.travel_cooldown = 0; w.step_sector(2)

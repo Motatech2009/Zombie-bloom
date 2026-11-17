@@ -1,0 +1,16 @@
+Zombie Bloom 1.6.0-rc.2 — isca, troféu do Titã e defesas
+Referência: 17/11/2026, Brasil.
+Ambiente local: Windows, Godot oficial 4.6.3; render OpenGL/RX 7600.
+
+- 29 execuções de suítes individuais: 1.390 verificações, 0 falhas (inclui desktop/mobile).
+- Nova suíte release16_additions_tests.gd: 33 verificações. Sorteio determinístico de 10.000 chefes de horda produziu 2.995 iscas; chefes não elegíveis produziram zero.
+- Coleta do item usa modelo próprio, ícone, título e slot; interação de uso está na mochila em PC e celular.
+- Isca: consumo único, replay, 600 s sem reduzir contador original, retomada sem perder fração do frame, save/JSON antigo e novo, +20% por uma única horda e proibição em Resgate.
+- Disparos físicos: torreta baixa bloqueada; elevada acerta por cima da barricada; muralha pesada bloqueia a elevada.
+- Abertura/renderização real: prévias desktop-defenses, desktop-trophy e mobile-diversion, sem erros ou aviso ObjectDB; inspeção visual concluída.
+- ENet real 2 participantes: 23 verificações; 3 participantes: 36; 4 participantes: 49; todas sem falhas, incluindo ativação remota/replay da isca, efeito de equipe e concessão privada do troféu.
+- Serviço Node: 7 testes aprovados, incluindo exclusividade da coroa, dez requisições concorrentes, isolamento entre contas e ausência de crédito de moeda pelo Titã.
+- CI passa a executar 9 verificações HTTP adicionais do troféu em Auth/Firestore/Functions emulados, incluindo token inválido e compra recusada. Resultado integral/emuladores/exportações devem ser conferidos na execução da revisão publicada.
+- Corrigido o tratamento de exceção de autenticação no handler HTTP (StringString -> String).
+- Coroa exclusiva tem representação provisória; modelos Blender definitivos ficam para a etapa de arte escolhida pelo criador.
+- Não há publicação administrativa no Firebase real, promoção para versão final, merge ou substituição de downloads de produção.

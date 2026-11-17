@@ -20,7 +20,7 @@ async function api(user,action,data={}){
  check((await api(a,'profile')).body.profile.balance===0,'new account receives no invented currency');
  const now=Date.now();const account=`accounts16/${a.localId}`;
  await db.doc(account).set({balance:0,owned:[],equipped:{},active_seconds:600,longest_seconds:600,last_sync_ms:now,active_match:'real-run',last_reward_ms:0});
- await db.doc(`${account}/matches/real-run`).set({wave:0,mode:'endless',started_ms:now-620000,last_reward_ms:now-620000,active_baseline:0});
+ await db.doc(`${account}/matches/real-run`).set({wave:0,mode:'endless',started_ms:now-620000,last_reward_ms:now-620000,active_baseline:0,started_active_seconds:0});
  const credits=await Promise.all(Array.from({length:10},()=>api(a,'horde',{match_id:'real-run',wave:1})));
  check(credits.every(r=>r.status===200&&r.body.profile.balance===100),'ten concurrent retries grant exactly 100 through Firestore transaction');
  check((await db.collection(`${account}/ledger`).get()).size===1,'one ledger entry is stored for repeated victory');
@@ -41,5 +41,15 @@ async function api(user,action,data={}){
  check(leak.status===403,'another authenticated player cannot read private wallet document');
  const bob=(await api(b,'profile',{uid:a.localId})).body.profile;
  check(bob.balance===0&&bob.owned.length===0,'profile response remains bound to authenticated UID');
+ const trophy={match_id:'real-run',encounter_id:'f'.repeat(64)};
+ check((await api(a,'purchase',{item_id:'COS-TITAN-01',operation_id:'forbidden-trophy'})).status===400,'Titan trophy cannot be purchased even at catalog price zero');
+ check((await api(b,'titan',{...trophy,uid:a.localId})).status===409,'another account cannot use the contributor match for a trophy');
+ check((await api({idToken:'invalid'},'titan',trophy)).status===401,'invalid ID token returns a safe authentication error');
+ const grants=await Promise.all(Array.from({length:10},()=>api(a,'titan',trophy)));
+ check(grants.every(r=>r.status===200&&r.body.profile.owned.includes('COS-TITAN-01'))&&grants.filter(r=>!r.body.duplicate).length===1,'ten concurrent trophy retries create one entitlement');
+ check(grants.every(r=>r.body.profile.balance===p.balance),'Titan trophy does not mint horde currency');
+ const ledger=(await db.collection(`${account}/ledger`).get()).docs.filter(d=>d.id.startsWith('titan_'));
+ check(ledger.length===1,'trophy has one persistent transaction record');
+ for(const class_id of ['engineer','scout','shooter'])check((await api(a,'equip',{class_id,slot:'head',item_id:'COS-TITAN-01'})).status===200,'unlocked trophy equips for '+class_id);
  console.log(`ACCOUNT16 EMULATOR RESULT: ${checks} checks, 0 failures`);
 })().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
