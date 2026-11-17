@@ -75,7 +75,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,20,Director15.selected_class,Director15.selected_cosmetic,Meta16.outfit(Director15.selected_class),Account.user_id)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,21,Director15.selected_class,Director15.selected_cosmetic,Meta16.outfit(Director15.selected_class),Account.user_id)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -151,13 +151,13 @@ func blast_event(point: Vector3,radius: float) -> void:
 	if mode=="host": _blast_visual.rpc(point,radius)
 
 @rpc("any_peer","call_remote","reliable",0)
-func _join_ready(token: String,name_text: String,protocol: int = 20,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
+func _join_ready(token: String,name_text: String,protocol: int = 21,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
 	if account_uid.length()>128: return
 	if not Cosmetics16.valid(outfit,specialization): return
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=20:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão de jogo (protocolo 20)."); return
+	if protocol!=21:
+		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão de jogo (protocolo 21)."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return

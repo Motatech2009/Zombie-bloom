@@ -1,0 +1,14 @@
+Zombie Bloom 1.6.0-rc.5 — 17/11/2026
+
+1538 verificações Godot individuais (32 execuções: suítes existentes + balanceamento + UI/transição touch), 0 falhas após atualização das expectativas 44→70 PV e horda 18→23. Campaign reexecutada em perfil isolado para não competir pelo save com outras suítes.
+
+Firestore Spark: 37 verificações REST em Auth/Firestore emulados Standard; 17 verificações Godot REST completas. Nenhuma Functions necessária para a economia padrão.
+Compra sem saldo, preço falsificado, escrita arbitrária, campos extras/tipos inválidos, documento incompleto, acesso entre contas, replay, concorrência, órfãos, teto diário, horas repetidas e troféu foram conferidos.
+
+Cooperativo ENet real: 2 jogadores 26; 3 jogadores 41; 4 jogadores 56 verificações, 0 falhas. Protocolo 21. Android físico não testado.
+
+Balanceamento: comum 70 PV, corredor 48 PV, demais não-bosses da sobrevivência ×1,25; hordas ×1,25 arredondadas para cima; simultâneos 36. Bosses/Titã sem aumento adicional de PV.
+
+Firebase real: não publicado, CLI sem autenticação; regras prontas para publicação manual. Edição real não confirmada administrativamente; mesmo banco nativo/default existente mantido. Nenhum dado de teste em produção.
+
+Economia comunitária: regras validam contabilidade, não comprovam combate/atividade real. Sem migração automática de saldo do serviço opcional accounts16.

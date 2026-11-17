@@ -43,7 +43,7 @@ func _physics_process(delta: float) -> void:
 				enemy_kind = 2; spec = CampaignData.enemy_spec(2).duplicate(true)
 				spec.values.speed *= minf(1.75,1+.012*maxi(0,world.waves.wave-1))
 				spec.values.damage *= 1+.055*maxi(0,world.waves.wave-1)
-				health.setup(float(spec.values.health)*CampaignData.health_scale(maxi(1,world.waves.wave))*(1+.04*maxi(0,world.waves.wave-1)))
+				health.setup(1.25*float(spec.values.health)*CampaignData.health_scale(maxi(1,world.waves.wave))*(1+.04*maxi(0,world.waves.wave-1)))
 				set_meta("night_hp",1.0); set_meta("night_damage",1.0); set_meta("nest_speed",false)
 				refresh_quality(); world.v15.day.apply_enemy(self)
 			return

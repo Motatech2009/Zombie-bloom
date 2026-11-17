@@ -93,7 +93,7 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 			UI.label(card,"EXCLUSIVO · participe da derrota do Titã",13,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		else:
 			var buy: Button = menu.menu_button(card,"COMPRAR · %d" % int(item.price),func(): confirm_purchase(menu,id,filter_class))
-			buy.disabled = meta().busy or not account().signed_in() or meta().api_url.is_empty() or int(meta().confirmed.get("balance",0))<int(item.price)
+			buy.disabled = meta().busy or not account().signed_in() or not meta().available() or int(meta().confirmed.get("balance",0))<int(item.price)
 static func confirm_purchase(menu: Node,id: String,filter_class: String) -> void:
 	menu.clear_content(); var item := Catalog16.cosmetic(id)
 	if item.has("unlock"): shop(menu,filter_class); return

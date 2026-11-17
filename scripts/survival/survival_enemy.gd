@@ -35,7 +35,7 @@ func _ready() -> void:
 	if is_boss:
 		health.setup(health.maximum*1.6*(1+.5*(world.party_count()-1)))
 		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
-	else: health.setup(health.maximum*(1+.04*maxi(0,world.waves.wave-1)))
+	else: health.setup(health.maximum*(1.0 if spec.id in ["walker","runner"] else 1.25)*(1+.04*maxi(0,world.waves.wave-1)))
 	ability_left = 5+fmod(float(net_id),3)
 
 func create_model(factor: float) -> void:

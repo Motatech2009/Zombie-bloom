@@ -1,3 +1,13 @@
+# Balanceamento vigente — 1.6 RC.5
+
+Campanha/Defesa Infinita usam scripts/campaign/campaign_data.gd. População: ceil(total anterior × 1,25), depois fatores de equipe/mutadores e a isca (+20%). Resgate: ceil((6+3×horda)×1,25) × equipe. Limite simultâneo 36 preservado.
+
+Errante 70 PV e corredor 48 PV, antes da progressão/noturno. Pistola 22 de dano / 0,22 s: quatro/três acertos normais para matar na abertura. Outros infectados comuns da sobrevivência recebem ×1,25 PV; bosses/Titã não recebem esse fator. Velocidade, dano inimigo e munição da pistola preservados. Balanceamento prolongado depende de partidas reais.
+
+## Registro histórico do primeiro protótipo
+
+Os valores abaixo descrevem o primeiro protótipo; não são a tabela vigente dos modos 1.6.
+
 # Balanceamento inicial
 
 Números de protótipo; diversão e dificuldade ainda exigem testes com jogadores. Edite os Resources citados abaixo e o catálogo.

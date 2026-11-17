@@ -1,55 +1,45 @@
-# Serviço de conta da 1.6
+# Economia comunitária da 1.6 — Firestore / Spark
 
-A candidata usa Firebase Authentication existente, Firestore e `account16Api` (HTTP, Functions v2, Node 22). A URL está em `[services16]` de `online.cfg`; ela não concede privilégios. Nenhuma credencial administrativa deve entrar no jogo.
+A RC.5 usa Firebase Authentication existente e acesso REST ao Firestore nativo, sem Cloud Functions. Em online.cfg, services16.backend=firestore. A carteira não depende do endpoint account16Api.
 
-## Publicação no projeto existente
+## Ativação manual no projeto zombiebloom
 
-A execução local tentou consultar `zombiebloom`, mas o CLI respondeu `Failed to authenticate, have you run firebase login?`. Não houve publicação nem alteração administrativa no projeto real.
+1. Abrir Firestore Database > Regras no console do Firebase.
+2. Substituir o conteúdo pelo arquivo completo firestore.rules desta pasta e clicar Publicar.
+3. Usar a RC.5 nos aparelhos; entrar na conta, jogar uma partida registrada online, concluir uma horda e conferir o saldo. Comprar um item e entrar novamente para conferir saldo/inventário.
 
-Com acesso de administrador, a partir da raiz do repositório:
+Não é necessário criar moedas/documentos manualmente, habilitar faturamento ou fornecer credenciais ao jogo. A carteira começa com zero. As regras preservam players e devices do ranking. Não houve publicação real: o CLI continua sem autenticação administrativa; não foi possível confirmar a edição do banco real por essa via. É mantido o banco nativo (default) usado pelo jogo, sem provisionar instâncias. A edição Standard foi validada no emulador.
 
-```sh
-npm ci --prefix backend/firebase/functions --ignore-scripts
-firebase login
-firebase deploy --config backend/firebase/firebase.json --project zombiebloom --only firestore:rules,functions:account16Api
-```
+## Dados e garantias verificadas
 
-Se o Firebase indicar exigências de plano, permissões, API ou faturamento, resolvê-las no projeto antes de continuar; não contornar com uma carteira gravável pelo aplicativo. A candidata deve continuar identificada como RC enquanto o serviço real e o fluxo autenticado não forem conferidos.
+- community16/{uid}: carteira privada por conta, saldo, IDs de cosméticos, equipamentos, horas e limites. Compras consultam preços fixos nas regras. Só são aceitos débitos exatos com propriedade criada na mesma gravação atômica; nenhum saldo livre enviado pelo aplicativo é aceito.
+- matches/{run}: partida, modo, linha de base e última horda creditada. Avanço e +100 Brotos precisam acontecer juntos. Sequência estrita e controle de concorrência por updateTime evitam crédito repetido. Compra repetida do mesmo item retorna propriedade já existente sem novo débito.
+- sessions/{id}: checkpoint cumulativo de horas. A soma e o checkpoint são atômicos, com orçamento global limitado ao tempo desde a criação online da conta. Sessões repetidas não somam duas vezes. Horas locais anteriores continuam no aparelho, sem certificação retroativa.
+- Hordas anteriores ao primeiro registro não pagam retroativamente. Mínimos entre créditos da partida: 600/600/480/360/300/180 s; resgate 60 s (três hordas). Mínimo global 60 s e teto 150 créditos/dia UTC. Relógio do banco valida os limites, sem aceitar datas de crédito do cliente.
+- Troféu do Titã não pode ser comprado; concessão única exige partida ativa Campanha/Infinito registrada há 120 s. O jogo conserva a regra de contribuição local/P2P.
+- Catálogo de 22 IDs fechado; equipamentos só aceitam itens possuídos, da classe e slot corretos. Preços e IDs das regras devem acompanhar data/release16/catalog.json.
+- Menu ocioso não fica consultando o banco. Horas são enviadas em lotes a cada 120 s, com até 16 checkpoints por sincronização. Pendências econômicas param no primeiro erro, conservando a fila.
+- Troca do backend não importa saldo/cache local como dinheiro. accounts16 permanece reservado ao serviço opcional. Saldos de backends diferentes não são misturados nem migrados automaticamente.
 
-Endpoint esperado: `https://us-central1-zombiebloom.cloudfunctions.net/account16Api`.
+## Limites de confiança
 
-## Contrato e confiança
+Regras validam contabilidade, identidade e limites, mas não executam o combate. Um cliente alterado pode simular vitórias ao longo do tempo ou declarar uma vitória contra o Titã; não há prova independente por servidor. Horas ativas reportadas também não provam atividade humana. Esta é uma economia comunitária para cosméticos, sem dinheiro real ou promessa de antitrapaça competitivo. Limites gratuitos e cotas do Firestore continuam aplicáveis.
 
-POST com ID token Firebase em `Authorization: Bearer ...`, corpo `{action, data}`. A identidade sempre vem do token verificado, nunca de `data.uid`. Ações: `profile`, `sync`, `start`, `horde`, `purchase`, `equip`.
+I've set up prototype Security Rules to keep the data in Firestore safe. They are designed to be secure for owner isolation, fixed catalog prices, atomic debits and bounded reward transitions. However, you should review and verify them before broadly sharing your app. If you'd like, I can help you harden these rules.
 
-- `accounts16/{uid}` mantém saldo, propriedade/equipamento, tempo agregado, limites e partida ativa.
-- Subcoleções `sessions`, `matches`, `ledger` mantêm checkpoints e eventos idempotentes. Só o Admin SDK do serviço escreve.
-- Uma vitória válida acrescenta 100 Brotos por conta, sem dividir entre aliados. ID: partida + índice da horda. Créditos anteriores não são recriados ao reabrir o save.
-- A sequência é estrita, depende de partida registrada, tempo observado no servidor e participação ativa acumulada. Há intervalo global mínimo de 60 s entre créditos e limite inicial de 150 créditos por dia UTC. Preparação mínima da campanha/infinito: 600/600/480/360/300/180 s; resgate: 60 s. São limites de serviço, separados da simulação de combate.
-- Tempo ativo usa checkpoints cumulativos de sessão e orçamento global de tempo decorrido, compartilhado por todos os aparelhos da conta. Reenvio não soma novamente; aparelhos simultâneos não multiplicam o mesmo orçamento. O orçamento não gasto pode cobrir reconciliação offline, limitado a sete dias. Tempo anterior ao primeiro registro online não é certificado retroativamente.
-- Resultado offline não vira saldo automaticamente. Hordas anteriores ao primeiro registro de partida não são elegíveis; o retorno do registro remove essas pendências da fila e informa a limitação. Resultados posteriores sem comprovação temporal suficiente continuam pendentes para nova tentativa. A interface diferencia horas locais, horas confirmadas e saldo confirmado.
-- Compra consulta preço/ID no catálogo do servidor e confirma débito + propriedade na mesma transação. Saldo insuficiente, classe errada ou operação reaproveitada com outro item falham.
-- Transações concorrentes, respostas perdidas e repetições preservam idempotência. Logs de rejeições 409/429 ajudam revisão de anomalias; não registram senha nem token.
+As regras são um protótipo com testes em emuladores; revisar configuração e fluxo reais antes de ampla distribuição.
 
-**Limite explícito:** o jogo continua P2P. Esses controles limitam abuso de economia comunitária, mas não provam cada inimigo morto em um servidor independente. Não apresentar ranking ou carteira como antitrapaça competitiva completa. Premiação física continua dependendo de validação do criador.
+## Validação local / CI
 
-## Regras e testes
+A partir da raiz do repositório, com Firebase CLI, Java 21+ e Godot 4.6.3:
 
-As regras protótipo preservam o ranking existente e negam acesso direto a todos os documentos privados `accounts16`. O endpoint devolve somente o perfil filtrado da identidade autenticada. A suíte de emuladores verificou escrita direta recusada, isolamento entre contas e transações; revisar também a configuração real antes de ampla distribuição.
+~~~sh
+firebase emulators:exec --config backend/firebase/firebase.json --project demo-zombie-bloom --only auth,firestore 'node backend/firebase/test/spark-economy.js && godot --headless --path . --script res://tests/spark_economy_emulator_test.gd'
+godot --headless --path . --script res://tests/balance16_tests.gd
+~~~
 
-```sh
-node --test backend/firebase/functions/test/*.test.js
-firebase emulators:exec --config backend/firebase/firebase.json --project demo-zombie-bloom --only auth,firestore,functions 'node backend/firebase/functions/test/emulator-integration.js && godot --headless --path . --script res://tests/release16_meta_emulator_test.gd'
-```
+37 verificações REST de regras e concorrência, 17 de integração Godot, 10 de balanceamento. Os únicos seeds administrativos ficam em testes excluídos dos executáveis e usam explicitamente o emulador demo-zombie-bloom.
 
-Em ambientes que proíbem sockets Unix do Functions Emulator, o teste alternativo expõe **o mesmo handler** em TCP, com Auth/Firestore reais emulados:
+## Serviço com Functions preservado para o futuro
 
-```sh
-firebase emulators:exec --config backend/firebase/firebase.json --project demo-zombie-bloom --only auth,firestore 'node backend/firebase/functions/test/run-emulator-http.js'
-```
-
-O projeto `demo-zombie-bloom` impede que esses testes criem jogadores fictícios no banco de produção.
-
-## Troféu exclusivo do Titã (RC.2)
-
-A operação `titan` recebe `match_id` e `encounter_id` SHA-256. Exige conta autenticada, partida ativa Campanha/Infinito e ao menos 120 segundos de participação/tempo observado. Concede apenas COS-TITAN-01, sem moedas, por transação idempotente. O catálogo não permite comprar itens com `unlock`. O cliente conserva a conquista local por conta/convidado e sinaliza a confirmação pendente. O anfitrião identifica quem causou dano e estava no setor ao concluir o combate; essa declaração P2P não constitui prova antitrapaça independente.
+backend/firebase/functions conserva o serviço account16Api (Node 22). É opcional e exige seu próprio deploy/plano; não é usado na configuração atual. Para mudar, configurar services16.backend=service e publicar/conferir o serviço e suas regras. accounts16 permanece sem acesso direto do cliente. Nenhuma chave administrativa entra no jogo. Essa implementação também não substitui um servidor independente de combate.

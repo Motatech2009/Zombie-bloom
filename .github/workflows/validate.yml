@@ -132,6 +132,13 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
           if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
           grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
+      - name: Validate increased horde population and pistol durability
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/balance16_tests.gd 2>&1 | tee balance16.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' balance16.log; then exit 1; fi
+          grep -E 'BALANCE16 RESULT: [0-9]+ checks, 0 failures' balance16.log
       - name: Validate imported basic turret models and real firing
         shell: bash
         run: |
@@ -168,6 +175,10 @@ jobs:
           firebase emulators:exec --project demo-zombie-bloom --only auth,firestore 'godot --headless --path ../.. --script res://tests/firebase_emulator_test.gd' 2>&1 | tee ../../firebase-emulator.log
           if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../firebase-emulator.log; then exit 1; fi
           grep -E 'FIREBASE EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../firebase-emulator.log
+          firebase emulators:exec --project demo-zombie-bloom --only auth,firestore 'node test/spark-economy.js && godot --headless --path ../.. --script res://tests/spark_economy_emulator_test.gd' 2>&1 | tee ../../spark-economy.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../spark-economy.log; then exit 1; fi
+          grep -E 'SPARK ECONOMY RESULT: [0-9]+ checks, 0 failures' ../../spark-economy.log
+          grep -E 'SPARK GODOT RESULT: [0-9]+ checks, 0 failures' ../../spark-economy.log
           firebase emulators:exec --project demo-zombie-bloom --only auth,firestore,functions 'node functions/test/emulator-integration.js && godot --headless --path ../.. --script res://tests/release16_meta_emulator_test.gd' 2>&1 | tee ../../account16-emulator.log
           if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../account16-emulator.log; then exit 1; fi
           grep -E 'ACCOUNT16 EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../account16-emulator.log

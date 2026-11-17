@@ -17,6 +17,7 @@ var dirty := false
 var disk_left := 5.0
 var sync_left := 120.0
 var api_url := ""
+var backend := "firestore"
 var status := "Entre para sincronizar horas e cosméticos."
 var activity := false
 var last_horde := 0
@@ -26,7 +27,9 @@ func path() -> String: return "user://meta16_"+(uid if not uid.is_empty() else "
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var cfg := ConfigFile.new()
-	if cfg.load("res://online.cfg")==OK: api_url = str(cfg.get_value("services16","url",""))
+	if cfg.load("res://online.cfg")==OK:
+		api_url = str(cfg.get_value("services16","url",""))
+		backend = str(cfg.get_value("services16","backend","firestore"))
 	Account.changed.connect(identity_changed)
 	identity_changed()
 func identity_changed() -> void:
@@ -38,6 +41,8 @@ func identity_changed() -> void:
 		if data is Dictionary:
 			observed_hordes = data.get("observed_hordes",{}); sessions = data.get("sessions",{}); pending = data.get("pending",[]); registered = data.get("registered",{}); confirmed = data.get("confirmed",confirmed)
 			titan_pending = data.get("titan_pending",[]); titan_earned = data.get("titan_earned",{}); trophy_equipped = data.get("trophy_equipped",{})
+			if str(data.get("economy_backend","service"))!=backend:
+				registered = {}; confirmed = {"balance":0,"owned":[],"equipped":{},"active_seconds":0,"longest_seconds":0}
 			clock.total = maxf(0,float(data.get("total",0))); clock.longest = maxf(0,float(data.get("longest",0)))
 	session_id = Crypto.new().generate_random_bytes(16).hex_encode(); clock.last_ms = Time.get_ticks_msec(); sync_left = 2
 	changed.emit()
@@ -84,9 +89,11 @@ func persist() -> void:
 	if session_id.is_empty(): return
 	var file := FileAccess.open(path()+".tmp",FileAccess.WRITE)
 	if file==null: return
-	file.store_string(JSON.stringify({"titan_pending":titan_pending,"titan_earned":titan_earned,"trophy_equipped":trophy_equipped,"observed_hordes":observed_hordes,"sessions":sessions,"total":clock.total,"longest":clock.longest,"pending":pending,"registered":registered,"confirmed":confirmed})); file.close()
+	file.store_string(JSON.stringify({"economy_backend":backend,"titan_pending":titan_pending,"titan_earned":titan_earned,"trophy_equipped":trophy_equipped,"observed_hordes":observed_hordes,"sessions":sessions,"total":clock.total,"longest":clock.longest,"pending":pending,"registered":registered,"confirmed":confirmed})); file.close()
 	DirAccess.rename_absolute(path()+".tmp",path()); dirty = false
+func available() -> bool: return backend=="firestore" or not api_url.is_empty()
 func request(action: String,data: Dictionary = {}) -> Dictionary:
+	if backend=="firestore": return await FirestoreEconomy16.new(Account).request(action,data)
 	if api_url.is_empty() or not Account.signed_in(): return {"ok":false,"error":"Serviço 1.6 ainda não publicado."}
 	if not await Account.ensure_token(): return {"ok":false,"error":"Entre novamente para sincronizar."}
 	var req := HTTPRequest.new(); req.timeout = 15; add_child(req)
@@ -101,7 +108,7 @@ func request(action: String,data: Dictionary = {}) -> Dictionary:
 	req.queue_free(); return result
 func sync() -> void:
 	sync_left = 120
-	if busy or api_url.is_empty() or uid.is_empty(): return
+	if busy or not available() or uid.is_empty(): return
 	var needs_registration: bool = has_live_world() and not registered.has(world.account_run_id)
 	var equip_pending := trophy_sync_pending()
 	if sessions.is_empty() and pending.is_empty() and titan_pending.is_empty() and profile_loaded and not needs_registration and not equip_pending: return
@@ -114,7 +121,7 @@ func sync() -> void:
 	else: status = str(reply.get("error","Sincronização pendente."))
 	if reply.ok and has_live_world():
 		var run: String = world.account_run_id
-		if not registered.has(run):
+		if not registered.has(run) or str(confirmed.get("active_match",run))!=run:
 			var registration := await request("start",{"match_id":run,"mode":world.game_mode,"baseline":int(world.upgrades.state(world.player).get("through",0))})
 			if owner!=uid: busy = false; return
 			if registration.ok:

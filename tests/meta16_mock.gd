@@ -4,7 +4,7 @@ var last_registration: Dictionary = {}
 var new_registration := false
 var calls: Array = []
 func _ready() -> void:
-	set_process(false); session_id = "test"; uid = "meta16-local-"+Crypto.new().generate_random_bytes(4).hex_encode(); sync_left = 999
+	backend = "service"; set_process(false); session_id = "test"; uid = "meta16-local-"+Crypto.new().generate_random_bytes(4).hex_encode(); sync_left = 999
 func request(action: String,data: Dictionary = {}) -> Dictionary:
 	requests += 1
 	calls.append({"action":action,"data":data.duplicate(true)})

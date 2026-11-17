@@ -46,9 +46,9 @@ func run() -> void:
 	var old: Dictionary = state.duplicate(true); old.erase("truce16")
 	check(w.valid_snapshot(old),"previous version saves remain compatible without diversion fields")
 	w.horde_left = 0
-	check(w.waves.start() and w.waves.to_spawn==22,"next horde has ceil 18 times 1.2 enemies")
+	check(w.waves.start() and w.waves.to_spawn==28,"next horde has ceil 23 times 1.2 enemies")
 	w.waves.rescale()
-	check(w.waves.to_spawn==22,"population recomputation preserves the one-horde penalty")
+	check(w.waves.to_spawn==28,"population recomputation preserves the one-horde penalty")
 	check(w.waves.enemy_type(0)==8 and w.waves.enemy_type(1)!=8,"extra population preserves one formal boss")
 	w.waves.to_spawn = 0; w.waves.complete()
 	w.upgrades.defer_for(w.player,w.upgrades.current(w.player).id)

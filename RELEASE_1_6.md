@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.4**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.5**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -136,3 +136,13 @@ Os três modelos enviados pelo criador substituem as cenas da torreta básica no
 São preservados os 9.608 triângulos do arquivo original: 2.410 / 3.368 / 3.830 por nível, com apenas duas malhas e um material compartilhado em cada cena. O atlas de produção tem limite de 1K com mipmaps. Originais e reconstrução ficam em art_source/basic_turret e tools/art, excluídos dos pacotes.
 
 Validação local: 40 verificações novas com tiros reais, inimigos encostados no cano, alvo elevado, base rotacionada, troca de nível, snapshots e compatibilidade; 35 das adições RC2 e 101 de defesas; quatro processos ENet reais com 116 verificações, incluindo três confirmações dos convidados sobre modelo N3 e orientação. Prévia desktop e toque renderizada no Windows/OpenGL. APK 1604, versão 1.6.0-rc.4, protocolo 20; código anterior de salvamento preservado. Pacotes e CI serão vinculados no PR #5 ao concluir.
+
+
+## RC.5 — economia Spark e maior pressão das hordas
+
+- Configuração padrão agora usa Firestore nativo gratuito, com carteira privada community16, catálogo/preços fixos nas regras e compra atômica. Serviço Functions permanece opcional. Regras reais ainda precisam ser publicadas; [guia manual](backend/firebase/README_1_6.md).
+- Recompensas comunitárias continuam informadas pelo cliente, com sequência, intervalo e teto diário validados no banco; não constituem prova de combate independente. Cache do backend antigo não cria saldo novo.
+- Zumbi comum: 44→70 PV; corredor: 30→48 PV. Pistola básica de 22 causa morte em quatro/três acertos normais na primeira horda, antes de bônus/críticos. Demais infectados comuns da sobrevivência recebem +25% PV; bosses/Titã mantêm vida anterior.
+- Campanha/infinito: ceil(total anterior×1,25), inclusive crescimento após a horda 20. Primeira horda 18→23, quinta 48→60, vigésima 240→300; fatores cooperativos e isca continuam acumulados sobre o novo total. Resgate: 12/15/19 inimigos solo nas três hordas. Limite simultâneo de 36 preservado, sem aumentar velocidade/dano nem retirar força da pistola.
+- APK 1605, protocolo 21: atualizar todos os participantes para a mesma candidata. Saves anteriores preservados.
+- Validação específica: 37 verificações de regras/concorrência, 17 de integração Godot/Firestore, 10 de balanceamento; regressões existentes de jogo e interface. Novos pacotes serão vinculados ao PR ao concluir o CI.
