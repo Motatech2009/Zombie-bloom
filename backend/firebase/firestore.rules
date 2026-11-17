@@ -5,6 +5,9 @@ service cloud.firestore {
     function counter(data, key) {
       return !(key in data) || (data[key] is int && data[key] >= 0);
     }
+    // 1.6 private account, ledger, match and session documents: Admin SDK only.
+    // The authenticated HTTP service returns a filtered profile; no direct wallet writes.
+    match /accounts16/{document=**} { allow read, write: if false; }
     match /players/{uid} {
       allow get: if request.auth != null;
       allow list: if request.auth != null && request.query.limit != null && request.query.limit <= 25;

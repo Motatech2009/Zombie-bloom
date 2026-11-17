@@ -116,25 +116,30 @@ func menu_button(parent: Node,title: String,callback: Callable,primary: bool = f
 func show_main() -> void:
 	clear_content(); home = true; layout_menu()
 	UI.label(content,"MOTA TECH  /  SOBREVIVÊNCIA COOPERATIVA",10,UI.MUTED)
-	UI.label(content,"ZOMBIE",26 if MobilePlatform.enabled() else 45)
-	UI.label(content,"BLOOM.",32 if MobilePlatform.enabled() else 56,UI.LIME)
+	if MobilePlatform.enabled(): UI.label(content,"ZOMBIE BLOOM.",28,UI.LIME)
+	else:
+		UI.label(content,"ZOMBIE",45)
+		UI.label(content,"BLOOM.",56,UI.LIME)
 	if not MobilePlatform.enabled():
 		UI.label(content,"O mundo acabou. Seu refúgio ainda resiste.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	Menu16.account_card(self,true)
 	UI.spacer(content,4)
 	menu_button(content,"JOGAR",show_play,true)
 	menu_button(content,"JOGAR COM AMIGOS",show_multiplayer)
 	menu_button(content,"MEU ELO / CLASSIFICAÇÃO",show_rankings)
 	var progress := UI.label(content,RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates.",12,UI.LIME)
 	progress.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	progress.visible = not MobilePlatform.enabled()
 	var refresh_progress := func():
 		if is_instance_valid(progress): progress.text = RankProgress.summary(int(Account.local_summary.get("kills",0))) if Account.signed_in() else "Entre para conquistar seu primeiro elo: 100 abates."
 	Account.changed.connect(refresh_progress)
 	progress.tree_exiting.connect(func(): Account.changed.disconnect(refresh_progress))
-	menu_button(content,"PERFIL DE COMBATE",func(): show_loadout15("",false))
-	menu_button(content,"CONFIGURAÇÕES",show_settings)
-	var secondary := UI.hbox(content,8)
-	menu_button(secondary,"COMO JOGAR",show_help).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	menu_button(secondary,"SAIR",func(): get_tree().quit())
+	var shortcuts := UI.hbox(content,6)
+	menu_button(shortcuts,"SOBREVIVENTE",func(): Menu16.profile(self)).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_button(shortcuts,"COSMÉTICOS",func(): Menu16.shop(self)).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var secondary := UI.hbox(content,6)
+	for entry in [["AJUSTES",show_settings],["AJUDA",show_help],["SAIR",func(): get_tree().quit()]]:
+		var button := menu_button(secondary,entry[0],entry[1]); button.size_flags_horizontal = Control.SIZE_EXPAND_FILL; button.add_theme_font_size_override("font_size",12)
 
 func show_play() -> void:
 	clear_content()
@@ -142,6 +147,7 @@ func show_play() -> void:
 	UI.label(content,"Escolha a campanha ou resista por quanto tempo conseguir.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	menu_button(content,"NOVA CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
 	menu_button(content,"NOVA DEFESA INFINITA",func(): choose_mode("endless"))
+	menu_button(content,"EXPEDIÇÃO DE RESGATE",func(): choose_mode("rescue"))
 	for mode in ["campaign","endless"]:
 		var selected: String = mode
 		var exists := false
@@ -161,7 +167,7 @@ func choose_mode(mode: String) -> void:
 
 func start_game() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
-	if FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v6.json") or FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v5.json") or FileAccess.file_exists("user://zombie_bloom_"+campaign.next_mode+"_v4.json"):
+	if has_save16(campaign.next_mode):
 		clear_content()
 		UI.label(content,"NOVO REFÚGIO",35,UI.LIME)
 		UI.label(content,"O próximo checkpoint substituirá a campanha atual.
@@ -202,8 +208,15 @@ func _process(delta: float) -> void:
 	for i in range(actors.size()):
 		VisualFactory.animate_human(actors[i], clock + i, .25, 0, false)
 
-func show_multiplayer() -> void:
+func show_multiplayer(action: String = "") -> void:
 	clear_content()
+	if action.is_empty():
+		UI.label(content,"JOGAR COM AMIGOS",27,UI.LIME)
+		UI.label(content,"Até quatro sobreviventes. Conexão direta entre PC e Android.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		menu_button(content,"CRIAR SALA",func(): show_multiplayer("host"),true)
+		menu_button(content,"ENTRAR NA SALA",func(): show_multiplayer("join"))
+		menu_button(content,"VOLTAR",show_main)
+		return
 	UI.label(content,"COOPERATIVO / ATÉ 4",28,UI.LIME)
 	UI.label(content,"Conexão direta. Exploração por quadrantes independentes.
 2 jogadores = x2; 3 = x4; 4 = x8 infectados.",17,UI.MUTED)
@@ -215,22 +228,26 @@ func show_multiplayer() -> void:
 	var address := LineEdit.new()
 	address.placeholder_text = "IP, IP:porta ou endereço da rede virtual"
 	address.text = "127.0.0.1"
-	content.add_child(address)
+	content.add_child(address); address.visible = action=="join"
+	var advanced_toggle := CheckButton.new(); advanced_toggle.text = "Avançado · porta UDP / roteador"; content.add_child(advanced_toggle)
+	var advanced := UI.vbox(content,6); advanced.visible = false; advanced_toggle.toggled.connect(func(on): advanced.visible = on)
 	var port := SpinBox.new()
 	port.min_value = 1024
 	port.max_value = 65535
 	port.value = 24567
-	content.add_child(port)
+	advanced.add_child(port)
 	var mode_picker := OptionButton.new()
 	mode_picker.add_item("Defesa infinita")
 	mode_picker.add_item("Campanha de 20 cercos")
-	content.add_child(mode_picker)
+	mode_picker.add_item("Expedição de Resgate")
+	content.add_child(mode_picker); mode_picker.visible = action=="host"
 	var resume_check := CheckButton.new()
 	resume_check.text = "Continuar o refúgio salvo deste modo"
-	content.add_child(resume_check)
+	content.add_child(resume_check); resume_check.visible = action=="host"
+	mode_picker.item_selected.connect(func(index): resume_check.disabled = index==2; resume_check.button_pressed = false if index==2 else resume_check.button_pressed)
 	var internet_check := CheckButton.new()
 	internet_check.text = "Tentar abrir a porta no roteador (UPnP / internet)"
-	content.add_child(internet_check)
+	advanced.add_child(internet_check); internet_check.visible = action=="host"
 	UI.label(content,"Em casas diferentes: use IP público com porta aberta ou o IP do Tailscale. Veja CONEXÃO no menu da sala.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var status := UI.label(content,"LAN: use o IP local. Internet: o anfitrião precisa receber UDP na porta escolhida.",15,UI.MUTED)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -238,15 +255,22 @@ func show_multiplayer() -> void:
 	var on_status := func(message: String):
 		if is_instance_valid(status): status.text = message
 	if not coop.status_changed.is_connected(on_status): coop.status_changed.connect(on_status)
-	UI.button(content,"CRIAR SALA",func():
-		load("res://scripts/campaign/campaign_world.gd").next_mode = "endless" if mode_picker.selected==0 else "campaign"
+	status.tree_exiting.connect(func():
+		if coop.status_changed.is_connected(on_status): coop.status_changed.disconnect(on_status))
+	var create := UI.button(content,"CRIAR SALA",func():
+		load("res://scripts/campaign/campaign_world.gd").next_mode = ["endless","campaign","rescue"][mode_picker.selected]
 		load("res://scripts/campaign/campaign_world.gd").resume_requested = resume_check.button_pressed
 		coop.nickname = name_field.text.strip_edges().left(16)
-		if coop.host_session(int(port.value))==OK:
-			if internet_check.button_pressed: coop.internet.enable(int(port.value))
-			get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+		var start := func():
+			if coop.host_session(int(port.value))==OK:
+				if internet_check.button_pressed: coop.internet.enable(int(port.value))
+				get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
+		if not resume_check.button_pressed and has_save16(["endless","campaign","rescue"][mode_picker.selected]):
+			var dialog := ConfirmationDialog.new(); dialog.dialog_text = "O próximo checkpoint substituirá o refúgio salvo deste modo. Começar uma nova partida?"; add_child(dialog); dialog.confirmed.connect(start); dialog.confirmed.connect(dialog.queue_free); dialog.canceled.connect(dialog.queue_free); dialog.popup_centered(Vector2i(520,220))
+		else: start.call()
 	,true)
-	UI.button(content,"ENTRAR NO IP",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text))
+	create.visible = action=="host"
+	var join := UI.button(content,"ENTRAR NA SALA",func(): coop.join_session(address.text.strip_edges(),int(port.value),name_field.text)); join.visible = action=="join"
 	UI.button(content,"CANCELAR / VOLTAR",func(): coop.close_session(); show_main())
 
 func _notification(what: int) -> void:
@@ -255,21 +279,26 @@ func _notification(what: int) -> void:
 func show_account() -> void:
 	clear_content()
 	menu_button(content,"‹ VOLTAR AO MENU",show_main)
-	UI.label(content,"MINHA CONTA",27,UI.LIME)
+	var account_heading := UI.label(content,"MINHA CONTA",27,UI.LIME)
+	var form := {"register":false}
 	UI.label(content,"Seu progresso, seu nome no ranking.",15,UI.MUTED)
 	var name_field := LineEdit.new(); name_field.text = Account.nickname; name_field.max_length = 16; name_field.placeholder_text = "Apelido público"; content.add_child(name_field)
-	menu_button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
+	var save_name := menu_button(content,"SALVAR APELIDO",func(): Account.save_online_profile(name_field.text))
 	var email := LineEdit.new(); email.placeholder_text = "E-mail"; content.add_child(email)
 	var password := LineEdit.new(); password.placeholder_text = "Senha (mínimo 8 caracteres)"; password.secret = true; content.add_child(password)
 	for field in [name_field,email,password]: field.custom_minimum_size.y = 44
 	var buttons: Array[Button] = []
 	buttons.append(menu_button(content,"ENTRAR",func():
+		if form.register:
+			form.register = false; name_field.visible = false; account_heading.text = "MINHA CONTA"; buttons[0].text = "ENTRAR"; buttons[1].text = "CRIAR CONTA"; return
 		var value := password.text; password.clear(); Account.authenticate(email.text,value),true))
 	buttons.append(menu_button(content,"CRIAR CONTA",func():
+		if not form.register:
+			form.register = true; name_field.visible = true; account_heading.text = "CRIAR CONTA"; buttons[0].text = "JÁ TENHO CONTA"; buttons[1].text = "CONFIRMAR CADASTRO"; return
 		Account.save_nickname(name_field.text)
 		var value := password.text; password.clear(); Account.authenticate(email.text,value,true)))
 	buttons.append(menu_button(content,"ESQUECI MINHA SENHA",func(): Account.recover(email.text)))
-	var logout := menu_button(content,"SAIR DA CONTA",func(): Account.logout())
+	var logout := menu_button(content,"SAIR DA CONTA",confirm_logout16)
 	var status_label := UI.label(content,Account.status,15,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var summary := UI.label(content,"",15,UI.LIME); summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	menu_button(content,"VER RANKINGS",show_rankings)
@@ -279,6 +308,8 @@ func show_account() -> void:
 		status_label.text = Account.status
 		for button in buttons: button.disabled = Account.busy or Account.signed_in() if button!=buttons[2] else Account.busy
 		logout.visible = Account.signed_in(); logout.disabled = Account.busy
+		save_name.visible = Account.signed_in(); name_field.visible = Account.signed_in() or form.register
+		for button in buttons: button.visible = not Account.signed_in()
 		email.visible = not Account.signed_in(); password.visible = not Account.signed_in()
 		summary.text = "%s · %d abates · %d hordas · %d sucata" % [Account.nickname,Account.local_summary.get("kills",0),Account.local_summary.get("hordes",0),Account.local_summary.get("scrap",0)] if Account.signed_in() else "Jogue como convidado ou entre para registrar seus resultados."
 	refresh.call(); Account.changed.connect(refresh)
@@ -288,13 +319,14 @@ func show_rankings() -> void:
 	clear_content()
 	menu_button(content,"‹ VOLTAR AO MENU",show_main)
 	UI.label(content,"MURAL DOS SOBREVIVENTES",23,UI.LIME)
+	Menu16.rank_tabs(self,"ranking")
 	var kills := int(Account.local_summary.get("kills",0))
 	var personal := UI.hbox(content,16)
 	var badge := RankBadge.new(); badge.level = RankProgress.tier(kills); personal.add_child(badge)
 	var info := UI.vbox(personal,4); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var personal_name := UI.label(info,Account.nickname if Account.signed_in() else "CONVIDADO",19)
 	var personal_progress := UI.label(info,RankProgress.summary(kills),13,UI.MUTED); personal_progress.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var bar := UI.meter(info); bar.max_value = RankProgress.next_goal(kills); bar.value = kills
+	var bar := UI.meter(info); bar.min_value = RankProgress.THRESHOLDS[maxi(0,RankProgress.tier(kills)-1)] if RankProgress.tier(kills)>0 else 0; bar.max_value = RankProgress.next_goal(kills); bar.value = kills
 	menu_button(content,"MINHA CONTA / ENTRAR",show_account)
 	UI.label(content,"SEU ELO CRESCE COM ABATES · A POSIÇÃO COMPARA JOGADORES REAIS",11,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.add_item("Pontos de desafios"); metric.custom_minimum_size.y = 44; content.add_child(metric)
@@ -307,7 +339,7 @@ func show_rankings() -> void:
 		consult.disabled = Account.busy; status_label.text = Account.status
 		var updated_kills := int(Account.local_summary.get("kills",0))
 		badge.level = RankProgress.tier(updated_kills); personal_name.text = Account.nickname if Account.signed_in() else "CONVIDADO"
-		personal_progress.text = RankProgress.summary(updated_kills); bar.max_value = RankProgress.next_goal(updated_kills); bar.value = updated_kills
+		personal_progress.text = RankProgress.summary(updated_kills); bar.min_value = RankProgress.THRESHOLDS[maxi(0,RankProgress.tier(updated_kills)-1)] if RankProgress.tier(updated_kills)>0 else 0; bar.max_value = maxi(int(bar.min_value)+1,RankProgress.next_goal(updated_kills)); bar.value = updated_kills
 		for child in results.get_children(): results.remove_child(child); child.queue_free()
 		if Account.rows.is_empty(): UI.label(results,"Ainda não há resultados nesta consulta.",15,UI.MUTED)
 		for row in Account.rows:
@@ -322,12 +354,6 @@ func show_rankings() -> void:
 			UI.label(line,str(row.score),19,UI.LIME)
 	Account.changed.connect(refresh)
 	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
-	UI.label(content,"ELOS POR ABATES",16,UI.LIME)
-	var gallery := GridContainer.new(); gallery.columns = 5; content.add_child(gallery)
-	for i in range(10):
-		var column := UI.vbox(gallery,2); column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var icon := RankBadge.new(); icon.level = i+1; icon.custom_minimum_size = Vector2(65,68); column.add_child(icon)
-		UI.label(column,str(RankProgress.THRESHOLDS[i]),12,UI.MUTED)
 
 func show_loadout15(_mode: String,new_game: bool) -> void:
 	clear_content()
@@ -359,3 +385,14 @@ func show_loadout15(_mode: String,new_game: bool) -> void:
 		if new_game: start_game()
 		else: show_main(),true)
 	menu_button(content,"VOLTAR",show_play if new_game else show_main)
+
+func confirm_logout16() -> void:
+	clear_content(); UI.label(content,"SAIR DA CONTA?",25,UI.LIME)
+	UI.label(content,"O login lembrado será removido deste aparelho. Seu save da partida permanece.",15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	menu_button(content,"SAIR DA CONTA",func(): await Account.logout(); show_account(),true)
+	menu_button(content,"CANCELAR",show_account)
+
+func has_save16(mode: String) -> bool:
+	for version in ["v6","v5","v4","v3","v2"]:
+		if FileAccess.file_exists("user://zombie_bloom_"+mode+"_"+version+".json"): return true
+	return mode=="campaign" and FileAccess.file_exists("user://zombie_bloom_arena_campaign.json")

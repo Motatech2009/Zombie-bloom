@@ -1,6 +1,7 @@
 extends "res://scripts/entities/player.gd"
 var specialization := "engineer"
 var cosmetic := 0
+var outfit16: Dictionary = {}
 var pinned_left := 0.0
 var pin_owner: Node3D
 var combat_left := 0.0
@@ -55,7 +56,7 @@ func start_roll(direction: Vector3) -> bool:
 	roll_direction = direction.normalized()
 	roll_count += 1
 	roll_left = ROLL_DURATION
-	roll_cooldown = ROLL_RECHARGE
+	roll_cooldown = ROLL_RECHARGE*(1-Catalog16.bonus(self,"scout_escape"))
 	invulnerable = maxf(invulnerable,.20)
 	weapons.reload_left = 0
 	cancel_gather()
@@ -195,7 +196,7 @@ func simulate_motion(frame: Dictionary,delta: float) -> void:
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
 	var direction := movement_direction(input)
 	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
-	if specialization=="scout" and combat_left<=0: speed *= 1.1
+	if specialization=="scout" and combat_left<=0: speed *= 1.1*(1+Catalog16.bonus(self,"scout_silent"))
 	if pinned_left>0: speed = 0
 	if gather_target!=null: speed *= .25
 	var rolling := roll_left>0
@@ -209,3 +210,7 @@ func simulate_motion(frame: Dictionary,delta: float) -> void:
 	if rolling:
 		roll_left = maxf(0,roll_left-delta)
 		if roll_left==0: stop_roll(); velocity = Vector3.ZERO
+
+func take_damage(amount: float) -> void:
+	if world.exp16.safe(global_position): return
+	super.take_damage(amount)

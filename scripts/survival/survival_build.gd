@@ -18,7 +18,9 @@ func commit_channel(data: Dictionary) -> Node3D:
 	active = true; location = data.pos; selected = int(data.piece); angle = float(data.angle)
 	var result := super.place()
 	active = previous[0]; location = previous[1]; selected = previous[2]; angle = previous[3]
-	if result!=null: world.built_this_round += 1
+	if result!=null:
+		world.built_this_round += 1
+		world.mark_alloy16(result,world.player)
 	return result
 
 func piece_specs() -> Array: return FortressData.pieces()

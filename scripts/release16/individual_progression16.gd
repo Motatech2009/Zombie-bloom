@@ -27,16 +27,21 @@ func current(actor: Node3D) -> Dictionary:
 
 func available(actor: Node3D) -> Array:
 	var result: Array = []
-	for entry in Catalog.UPGRADES+EXTRA:
+	for entry in Catalog.UPGRADES+EXTRA+Catalog16.talents():
+		if entry.has("class_id") and entry.class_id!=actor.specialization: continue
 		var level := level_for(actor,entry.id)
-		if level>=cap(): continue
+		if level>=limit_for(entry.id): continue
 		var item: Dictionary = entry.duplicate()
-		item.level = level; item.maximum = cap()
+		item.level = level; item.maximum = limit_for(entry.id)
 		item.text = effect_text(entry.id,level)+" → "+effect_text(entry.id,level+1)
 		result.append(item)
 	return result
 
+func limit_for(id: String) -> int: return 3 if id in Catalog16.talent_ids() else cap()
+
 func effect_text(id: String,level: int) -> String:
+	var talent := Catalog16.talent(id)
+	if not talent.is_empty(): return str(talent.effect) % (int(talent.step)*level)
 	match id:
 		"damage": return "+%d%% dano" % (4*level)
 		"rate": return "+%d%% cadência" % (3*level)
@@ -63,6 +68,8 @@ func prepare(actor: Node3D) -> void:
 		var j := rng.randi_range(0,i)
 		var value = options[i]; options[i] = options[j]; options[j] = value
 	choice.offers = options.slice(0,3)
+	var own := options.filter(func(t): return t.has("class_id"))
+	if not own.is_empty() and not choice.offers.any(func(t): return t.has("class_id")): choice.offers[0] = own[0]
 
 func award_horde(wave: int) -> void:
 	if world.is_client or wave<=0: return
@@ -97,7 +104,8 @@ func choose_for(actor: Node3D,index: int,choice_id: String) -> bool:
 	var cards: Array = choice.offers
 	if index<0 or index>=cards.size(): return false
 	var id: String = cards[index].id
-	if id not in IDS or level_for(actor,id)>=cap(): prepare(actor); return false
+	var talent := Catalog16.talent(id)
+	if (id not in IDS and talent.is_empty()) or (not talent.is_empty() and talent.class_id!=actor.specialization) or level_for(actor,id)>=limit_for(id): prepare(actor); return false
 	var own_levels := levels_for(actor)
 	own_levels[id] = int(own_levels.get(id,0))+1
 	state(actor).levels = own_levels.duplicate()
@@ -128,9 +136,11 @@ func apply_actor(actor: Node3D) -> void:
 	levels = levels_for(actor)
 	super.apply_actor(actor)
 	levels = saved
+	actor.weapons.rate_multiplier *= 1+Catalog16.bonus(actor,"shot_rate")
+	actor.weapons.reload_multiplier *= 1-Catalog16.bonus(actor,"shot_reload")
 
 func private_state(actor: Node3D) -> Dictionary:
-	return {"identity":actor.profile_id,"levels":levels_for(actor).duplicate(),"choice":current(actor).duplicate(true),"pending":pending_for(actor),"deferred":state(actor).deferred}
+	return {"through":int(state(actor).through),"identity":actor.profile_id,"levels":levels_for(actor).duplicate(),"choice":current(actor).duplicate(true),"pending":pending_for(actor),"deferred":state(actor).deferred}
 
 func dump() -> Dictionary:
 	for actor in world.avatars.values(): state(actor).levels = levels_for(actor).duplicate()
@@ -158,7 +168,7 @@ static func valid(data: Variant) -> bool:
 		if not entry is Dictionary or not entry.get("levels") is Dictionary or not entry.get("queue") is Array or entry.queue.size()>128 or not entry.get("deferred") is bool: return false
 		if not integer_in(entry.get("through"),0,100000000): return false
 		for id in entry.levels:
-			if id not in IDS or not integer_in(entry.levels[id],0,12): return false
+			if (id not in IDS and id not in Catalog16.talent_ids()) or not integer_in(entry.levels[id],0,3 if id in Catalog16.talent_ids() else 12): return false
 		var seen: Dictionary = {}
 		for choice in entry.queue:
 			if not choice is Dictionary or not choice.get("id") is String or choice.id.length()>160 or choice.id.is_empty() or seen.has(choice.id): return false
@@ -166,7 +176,7 @@ static func valid(data: Variant) -> bool:
 			if not integer_in(choice.get("wave"),1,int(entry.through)) or not choice.get("offers") is Array or choice.offers.size()>3: return false
 			var offered: Dictionary = {}
 			for card in choice.offers:
-				if not card is Dictionary or card.get("id") not in IDS or offered.has(card.id): return false
+				if not card is Dictionary or (card.get("id") not in IDS and card.get("id") not in Catalog16.talent_ids()) or offered.has(card.id): return false
 				offered[card.id] = true
 	return true
 

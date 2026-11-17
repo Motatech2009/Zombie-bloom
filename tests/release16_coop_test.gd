@@ -41,9 +41,12 @@ func host(link: Node) -> void:
 	var coords: Dictionary = {}
 	for actor in w.avatars.values():
 		actor.invulnerable = 3600
+		actor.bag.equip_level(2); actor.outfit16 = {"head":"COS-ENG-01"}; w.v15.decorate(actor)
 		actor.position = SectorGenerator.EXITS[direction]
 		check(w.perform_action(actor.peer_id,"travel",{"direction":direction}),"participant travels to its own sector before rewards")
 		coords[actor.region_coord] = true
+		w.regions.run_in(actor.region_coord,func():
+			var boss: Node3D = w.make_enemy(20,Vector3(15,0,-4),true,-1); boss.set_physics_process(false))
 		direction += 1
 	check(coords.size()==target_players,"reward recipients occupy distinct quadrants")
 	w.waves.wave = 1; w.waves.running = true; w.waves.to_spawn = 0; w.waves.complete()
@@ -70,6 +73,8 @@ func client(link: Node) -> void:
 	deadline = Time.get_ticks_msec()+12000
 	while w.resources.pending==0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.resources.pending==1 and w.upgrades.offers.size()==3,"recipient sees exactly its own three cards")
+	check(w.player.bag.slots.size()==24 and w.player.outfit16.get("head","")=="COS-ENG-01","functional bag and equipped clay cosmetic replicate independently")
+	check(w.client_enemies.values().any(func(e): return e.spec.id=="titan16" and e.health.maximum==20000),"Titan has a native remote model and fixed replicated health")
 	var choice: Dictionary = w.upgrades.current(w.player)
 	check(str(choice.get("id","")).ends_with(link.identity),"reward is bound to stable identity, not peer slot")
 	if choice.is_empty(): return

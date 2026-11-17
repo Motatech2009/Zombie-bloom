@@ -119,6 +119,11 @@ func _physics_process(delta: float) -> void:
 	label.hide()
 
 func choose_target() -> void:
+	if get_meta("rescue_wave16",false) and world.game_mode=="rescue":
+		target = world.core if world.rescue16.goal_coord()==Vector2i.ZERO else world.rescue16.objective
+		for actor in world.avatars.values():
+			if not actor.health.dead and actor.global_position.distance_to(global_position)<7: target = actor; break
+		return
 	if world.regions.enabled():
 		var coord: Vector2i = world.coord_at(global_position)
 		target = world.core if not field_enemy else self

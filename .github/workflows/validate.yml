@@ -115,6 +115,13 @@ jobs:
           for players in 2 3 4; do
             python3 tests/run_release16_coop_test.py --players "$players" 2>&1 | tee "release16-coop-${players}.log"
           done
+          godot --headless --path . --script res://tests/release16_content_tests.gd 2>&1 | tee release16-content-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-content-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 CONTENT RESULT: [0-9]+ checks, 0 failures' release16-content-tests.log
+          godot --headless --path . --script res://tests/release16_meta_tests.gd 2>&1 | tee release16-meta-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-meta-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 META RESULT: [0-9]+ checks, 0 failures' release16-meta-tests.log
+          python3 tests/run_release16_coop_test.py --players 4 --script release16_rescue_coop_test.gd 2>&1 | tee release16-rescue-coop.log
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
           python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
           python3 tests/run_split_test.py 2>&1 | tee split-tests.log
@@ -130,10 +137,16 @@ jobs:
         run: |
           set -euo pipefail
           npm install --global firebase-tools
+          npm ci --prefix backend/firebase/functions --ignore-scripts
+          node --test backend/firebase/functions/test/*.test.js
           cd backend/firebase
           firebase emulators:exec --project demo-zombie-bloom --only auth,firestore 'godot --headless --path ../.. --script res://tests/firebase_emulator_test.gd' 2>&1 | tee ../../firebase-emulator.log
           if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../firebase-emulator.log; then exit 1; fi
           grep -E 'FIREBASE EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../firebase-emulator.log
+          firebase emulators:exec --project demo-zombie-bloom --only auth,firestore,functions 'node functions/test/emulator-integration.js && godot --headless --path ../.. --script res://tests/release16_meta_emulator_test.gd' 2>&1 | tee ../../account16-emulator.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../account16-emulator.log; then exit 1; fi
+          grep -E 'ACCOUNT16 EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../account16-emulator.log
+          grep -E 'ACCOUNT16 GODOT EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../account16-emulator.log
       - name: Render desktop and mobile review images
         shell: bash
         run: |
@@ -169,6 +182,23 @@ jobs:
             xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release15_preview.gd -- "${args[@]}" 2>&1 | tee "preview15-${view}.log"
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "preview15-${view}.log"; then exit 1; fi
           done
+      - name: Render version 1.6 review images
+        shell: bash
+        run: |
+          set -euo pipefail
+          for view in menu profile elos shop account cards post titan rescue; do
+            for platform in desktop mobile; do
+              args=(--view="$view")
+              if [ "$platform" = mobile ]; then args+=(--mobile); fi
+              xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release16_preview.gd -- "${args[@]}" 2>&1 | tee "preview16-${platform}-${view}.log"
+              if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "preview16-${platform}-${view}.log"; then exit 1; fi
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.6-UI-previews
+          path: builds/review16/*.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: ZombieBloom-1.5-UI-previews
@@ -199,13 +229,13 @@ jobs:
           godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
           test -s builds/windows/ZombieBloom.exe
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
-          cp RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
           mkdir -p builds/windows/docs
           cp docs/frontier014-results.txt docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: ZombieBloom-Windows-x64
+          name: ZombieBloom-1.6-RC-Windows-x64
           path: builds/windows/
           if-no-files-found: error
       - uses: actions/setup-java@v4
@@ -234,11 +264,11 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging builds/android/ZombieBloom-Android.apk | tee android-manifest.log
           grep 'android.permission.INTERNET' android-manifest.log
           grep "native-code:.*arm64-v8a" android-manifest.log
-          cp RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
+          cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
       - name: Upload Android build
         uses: actions/upload-artifact@v4
         with:
-          name: ZombieBloom-Android-APK
+          name: ZombieBloom-1.6-RC-Android-APK
           path: builds/android/
           if-no-files-found: error
       - name: Upload validation logs
@@ -251,4 +281,4 @@ jobs:
             builds/coop-test/*.log
             builds/motion-test/*.log
             builds/split-test/*.log
-            builds/release16-coop-*/*.log
+            builds/release16-*/*.log

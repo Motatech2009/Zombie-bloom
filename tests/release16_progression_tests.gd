@@ -34,6 +34,9 @@ func run() -> void:
 		first_ids[own.choice.id] = true
 		var packet: Dictionary = w.net_state(peer)
 		check(packet.progression16.identity==actor.profile_id and not packet.progression16.has("players"),"snapshot contains only recipient character progression %d" % peer)
+	w.waves.wave = 2; w.waves.running = true
+	check(int(w.net_state(2).progression16.through)==1,"new horde start never advertises its completion as a currency reward")
+	w.waves.wave = 1; w.waves.running = false
 	var a: Node3D = w.avatars[2]; var b: Node3D = w.avatars[3]
 	var b_before: Dictionary = w.upgrades.private_state(b).duplicate(true)
 	var offered: Dictionary = w.upgrades.current(a).duplicate(true)
@@ -95,6 +98,8 @@ func run() -> void:
 	# Filled catalogs consume no reward and cannot softlock.
 	for actor in w.avatars.values():
 		var full := {}; for id in IndividualProgression16.IDS: full[id] = 12
+		for talent in Catalog16.talents():
+			if talent.class_id==actor.specialization: full[talent.id] = 3
 		if actor.peer_id==1: w.upgrades.levels = full
 		else: w.upgrades.players[actor.profile_id].levels = full
 	w.upgrades.award_horde(11)

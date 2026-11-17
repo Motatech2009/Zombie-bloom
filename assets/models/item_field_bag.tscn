@@ -1,0 +1,15 @@
+[gd_scene format=3]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.42,0.32,0.22,1)
+roughness = 0.95
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(0.6,0.65,0.3)
+material = SubResource("mat")
+[node name="FieldBag" type="Node3D"]
+[node name="Body" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.4,0)
+mesh = SubResource("mesh")
+[node name="Pocket" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.3,-0.2)
+scale = Vector3(0.65,0.4,0.4)
+mesh = SubResource("mesh")

@@ -17,7 +17,7 @@ func _ready() -> void:
 
 func refresh_tier() -> void:
 	var data: Dictionary = FortressData.pieces()[piece_index]
-	health.maximum = data.health*(1+.65*(tier-1))
+	health.maximum = data.health*(1+.65*(tier-1))*(1+float(get_meta("alloy16",0)))
 	spec.values.damage = (68.0 if spec.id=="cannon" else 24.0 if spec.id=="shock" else 15.0)*(1+.45*(tier-1))
 	spec.values.interval = (2.4 if spec.id=="cannon" else 1.5 if spec.id=="shock" else .65)/(1+.18*(tier-1))
 	spec.values.range = (22.0 if spec.id=="cannon" else 11.0 if spec.id=="shock" else 15.0)+tier-1

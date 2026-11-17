@@ -12,7 +12,7 @@ var spawn_left: float = 0
 func coord() -> Vector2i:
 	return Vector2i(int(state.coord[0]),int(state.coord[1])) if not state.is_empty() else Vector2i.ZERO
 func at_sector() -> bool:
-	return not state.is_empty() and not state.collected and coord()==world.sector_coord and world.field_root!=null
+	return not state.is_empty() and not state.collected and coord()==world.sector_coord and world.field_root!=null and world.exp16.kind_at(coord())=="normal"
 func total_guards() -> int:
 	return int(state.get("base_guards",0))*world.team_multiplier()
 func remaining() -> int:
@@ -28,7 +28,7 @@ func can_open() -> bool:
 	return at_sector() and state.land<=0 and remaining()==0 and active_guards().is_empty()
 
 func tick(delta: float) -> void:
-	if world.is_client or world.phase=="ended" or world.combat_paused(): return
+	if world.is_client or world.game_mode=="rescue" or world.phase=="ended" or world.combat_paused(): return
 	left -= delta
 	if left<=0:
 		var overdue := -left
@@ -50,7 +50,7 @@ func start_drop() -> void:
 	var target := Vector2i.ZERO
 	while target==Vector2i.ZERO:
 		target = Vector2i(world.world_rng.randi_range(-3,3),world.world_rng.randi_range(-3,3))
-		if SectorGenerator.distance(target)>3: target = Vector2i.ZERO
+		if SectorGenerator.distance(target)>3 or Exploration16.roll(world.world_seed,target)!="normal": target = Vector2i.ZERO
 	var weapon: String = ItemBag.WEAPON_IDS[world.world_rng.randi_range(1,Arsenal.WEAPONS.size()-1)]
 	var contents := {"scrap":160,"wood":60,"parts":24,"rifle_ammo":60,"heavy":18,"cells":24,"grenade":4,"medkit":2}
 	contents[weapon] = 1

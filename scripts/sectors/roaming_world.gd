@@ -124,7 +124,7 @@ func step_sector(direction: int) -> bool:
 		return false
 	var next: Vector2i = sector_coord+SectorGenerator.DIRECTIONS[direction]
 	if absi(next.x)>4096 or absi(next.y)>4096: notify("Limite da região cartografada."); return false
-	if waves.running and SectorGenerator.distance(next)>=SectorGenerator.distance(sector_coord):
+	if waves.running and game_mode!="rescue" and SectorGenerator.distance(next)>=SectorGenerator.distance(sector_coord):
 		notify("Horda no Núcleo. Siga uma saída que aproxime você de (0,0).")
 		return false
 	builder.set_active(false)
@@ -152,7 +152,7 @@ func step_sector(direction: int) -> bool:
 		var key := SectorGenerator.key(next)
 		var visits: int = int(discovered.get(key,{"visits":0}).visits)+1
 		descriptor = sector_descriptor(next,visits)
-		discovered[key] = {"visits":visits,"risk":descriptor.risk}
+		discovered[key] = {"visits":visits,"risk":descriptor.risk,"special16":descriptor.get("special16","normal")}
 		if discovered.size()>8192:
 			for old_key in discovered.keys():
 				if old_key!="0:0" and old_key!=key:

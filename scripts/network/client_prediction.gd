@@ -28,7 +28,7 @@ func roll(direction: Vector3) -> bool:
 func begin_roll(actor: Node3D,direction: Vector3) -> void:
 	if actor.roll_cooldown>0: return
 	actor.pinned_left = 0; actor.pin_owner = null
-	actor.roll_direction = direction.normalized(); actor.roll_left = actor.ROLL_DURATION; actor.roll_cooldown = actor.ROLL_RECHARGE
+	actor.roll_direction = direction.normalized(); actor.roll_left = actor.ROLL_DURATION; actor.roll_cooldown = actor.ROLL_RECHARGE*(1-Catalog16.bonus(actor,"scout_escape"))
 
 func simulate(frame: Dictionary) -> void:
 	var actor: Node3D = world.player

@@ -8,6 +8,8 @@ var gather_bar: ProgressBar
 var gather_label: Label
 var depot_buttons: Dictionary = {}
 var choice_cooldown: float = 0
+var post_info16: Label
+var post_buttons16: Array[Button] = []
 var systems15_button: Button
 var alert15_label: Label
 var day15_label: Label
@@ -161,6 +163,8 @@ func _process(delta: float) -> void:
 		systems15_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT); systems15_button.offset_left = -195; systems15_button.offset_right = -14; systems15_button.offset_top = -195; systems15_button.offset_bottom = -151
 		alert15_label = UI.label(root,"",14,Color("ffa276")); alert15_label.position = Vector2(20,180)
 		day15_label = UI.label(root,"",12,UI.LIME); day15_label.position = Vector2(20,155)
+	if world.game_mode=="rescue":
+		status_text.text = world.rescue16.hint()
 	day15_label.text = ("NOITE VERMELHA" if world.v15.day.blood and world.v15.day.night() else "NOITE" if world.v15.day.night() else "DIA")+" · %02d:%02d" % [int(fposmod(world.v15.day.clock,900))/60,int(world.v15.day.clock)%60]
 	alert15_label.text = "⚠ NÚCLEO SOB ATAQUE · (0,0) "+world.return_hint() if world.v15.alert_left>0 else ""
 	alert15_label.modulate.a = .65+.35*sin(Time.get_ticks_msec()*.008)
@@ -170,12 +174,26 @@ func _process(delta: float) -> void:
 		day15_label.position = Vector2(365,112); alert15_label.position = Vector2(255,137)
 		alert15_label.add_theme_font_size_override("font_size",11)
 	if mode=="shop" and desktop_shop!=null: desktop_shop.refresh()
+	if mode=="post16" and is_instance_valid(post_info16):
+		post_info16.text = "Vendedores se abrigaram — volte após a horda." if world.waves.running else "Materiais da sua mochila. O relógio e a defesa do Núcleo continuam."
+		for button in post_buttons16:
+			var id: String = button.get_meta("trade_id","")
+			var state: Dictionary = world.exp16.sectors.get(SectorGenerator.key(world.player.region_coord),{})
+			var used := int(state.get("stocks",{}).get(str(world.waves.wave)+":"+id,0))
+			button.disabled = world.waves.running
+			if id in ["medkit","light"]:
+				var cost := int(Catalog16.data().post.medkit_scrap if id=="medkit" else Catalog16.data().post.light_scrap)
+				button.text = str(button.get_meta("base_text"))+" · estoque %d" % maxi(0,int(Catalog16.data().post.stock_per_horde)-used)
+				button.disabled = button.disabled or used>=int(Catalog16.data().post.stock_per_horde) or world.player.bag.count("scrap")<cost
+			elif id=="bag": button.disabled = button.disabled or world.player.bag.bag_level!=1 or world.player.bag.count("scrap")<int(Catalog16.data().bag.upgrade_scrap) or world.player.bag.count("parts")<int(Catalog16.data().bag.upgrade_parts)
+			elif id=="exchange": button.disabled = button.disabled or world.player.bag.count("wood")<20
 	choice_cooldown = maxf(0,choice_cooldown-delta)
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
 	super._process(delta)
 	var actor: Node3D = world.player
 	xp_text.text = "CARTAS %d" % world.resources.pending if world.resources.pending>0 else "EVOLUÇÃO %d" % (actor.weapons.level-1)
 	notice_text.text = world.notice_for(actor.peer_id); notice_text.visible = not notice_text.text.is_empty()
+	if world.game_mode=="rescue": wave_detail.text = world.rescue16.hint()
 	if world.combat_paused(): wave_detail.text = "ALIADOS ESCOLHENDO · COMBATE PAUSADO"
 	for i in range(9):
 		var item: Dictionary = actor.bag.slots[i]
@@ -193,7 +211,7 @@ func _process(delta: float) -> void:
 	if hand in ItemBag.WEAPON_IDS:
 		var index := ItemBag.WEAPON_IDS.find(hand)
 		ammo_text.text = "%d / %d" % [actor.weapons.ammo[index],actor.bag.count(ItemBag.AMMO_IDS[index])]
-	else: ammo_text.text = "CORPO A CORPO" if hand=="bat" else "%d/18" % (18-actor.bag.free_slots())
+	else: ammo_text.text = "CORPO A CORPO" if hand=="bat" else "%d/%d" % [actor.bag.slots.size()-actor.bag.free_slots(),actor.bag.slots.size()]
 	power_text.text = "BOLSA · %d espaços livres" % actor.bag.free_slots()
 	quota_text.text = "CONSTRUÇÕES %d/%d   ·   EQUIPE %d   ·   HOSTIS ×%d" % [world.built_this_round,world.build_quota(),world.party_count(),world.team_multiplier()]
 	gather_bar.visible = actor.gather_target!=null or actor.gather_progress>0
@@ -215,12 +233,14 @@ func _process(delta: float) -> void:
 
 func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	var box := super.open_modal(next_mode,width)
-	if world.connected_game() or next_mode in ["inventory","equipment"]: get_tree().paused = false
+	if world.connected_game() or next_mode in ["inventory","equipment","post16"]: get_tree().paused = false
 	return box
 
 func show_inventory() -> void:
 	var box := open_modal("inventory",1210)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",29,UI.LIME)
+	UI.label(box,"Capacidade: %d · Mochila nível %d" % [world.player.bag.slots.size(),world.player.bag.bag_level],15,UI.MUTED)
+	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
 	UI.label(box,"Clique dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"Primeiros nove espaços = barra rápida. Clique dois espaços para trocar.",15,UI.MUTED)
 	var row := UI.hbox(box,20)
@@ -270,7 +290,7 @@ func show_inventory() -> void:
 
 func refresh_inventory() -> void:
 	if not is_instance_valid(inventory_status): return
-	inventory_status.text = "%d/18 espaços · Núcleo: %d sucata, %d madeira, %d componentes · Seleção %s" % [18-world.player.bag.free_slots(),world.resources.scrap,world.stock.wood,world.stock.parts,str(inventory_selected+1) if inventory_selected>=0 else "—"]
+	inventory_status.text = "%d/%d espaços · Núcleo: %d sucata, %d madeira, %d componentes · Seleção %s" % [world.player.bag.slots.size()-world.player.bag.free_slots(),world.player.bag.slots.size(),world.resources.scrap,world.stock.wood,world.stock.parts,str(inventory_selected+1) if inventory_selected>=0 else "—"]
 	for id in depot_buttons:
 		depot_buttons[id].text = "%s ×%d / retirar" % [ItemBag.TITLES[id],world.depot_count(id)]
 		depot_buttons[id].disabled = world.depot_count(id)<=0
@@ -485,9 +505,13 @@ A melhoria pertence a esta arma e fica salva neste refúgio.",16,UI.MUTED).autow
 	UI.button(box,"FECHAR",close_modal)
 
 func show_systems15() -> void:
+	if world.exp16.safe(world.player.global_position): show_post16(); return
 	if not mode.is_empty(): return
 	var box := open_modal("systems15",700)
 	UI.label(box,"REFÚGIO E EXPLORAÇÃO",24,UI.LIME)
+	if world.game_mode=="rescue":
+		UI.label(box,world.rescue16.hint(),16,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.button(box,"MISSÃO · INTERAGIR COM OBJETIVO",func(): world.send_action("mission16",{}); close_modal())
 	if world.resources.pending>0 and not world.waves.running:
 		UI.button(box,"SUAS EVOLUÇÕES PENDENTES · %d" % world.resources.pending,func(): close_modal(); show_upgrade())
 	UI.label(box,"Classe: "+{"engineer":"Engenheiro","scout":"Batedor","shooter":"Atirador"}.get(world.player.specialization,"Engenheiro")+" · obras interrompidas por dano ou movimento.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -496,4 +520,15 @@ func show_systems15() -> void:
 	UI.button(box,"BENTO: SINALIZADOR / 140 SUCATA + 6 COMPONENTES",func(): world.send_action("beacon",{}); close_modal())
 	UI.button(box,"USAR EXTRAÇÃO / 4 s",func(): world.send_action("extract",{}); close_modal())
 	UI.label(box,"Eventos: segure COLETAR/E junto ao comboio ou sobrevivente. Ninhos roxos podem ser destruídos a tiros.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(box,"VOLTAR",close_modal,true)
+
+func show_post16() -> void:
+	if not mode.is_empty(): return
+	var box := open_modal("post16",740)
+	post_buttons16.clear()
+	UI.label(box,"POSTO DO FAROL",26,UI.LIME)
+	post_info16 = UI.label(box,"Materiais da sua mochila. O relógio e a defesa do Núcleo continuam.",15,UI.MUTED); post_info16.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	for entry in [["bag","MARA · REFORÇAR BOLSA · 120 sucata + 8 componentes"],["medkit","DAVI · KIT MÉDICO · 45 sucata"],["light","FERRUGEM · 30 MUNIÇÃO LEVE · 40 sucata"],["exchange","FERRUGEM · 20 madeira → 1 componente"]]:
+		var id: String = entry[0]
+		var button := UI.button(box,entry[1],func(): world.send_action("post_trade",{"id":id}); close_modal()); button.set_meta("trade_id",id); button.set_meta("base_text",entry[1]); post_buttons16.append(button)
 	UI.button(box,"VOLTAR",close_modal,true)

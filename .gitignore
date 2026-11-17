@@ -2,3 +2,5 @@
 builds/
 *.tmp
 *.log
+
+node_modules/

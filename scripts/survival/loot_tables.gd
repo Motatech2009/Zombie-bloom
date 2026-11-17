@@ -15,6 +15,7 @@ static func regional(data: Dictionary,index: int) -> Dictionary:
 		items[id] = ammo_quantity(id,rng)
 	if rng.randf()<(.24 if biome==0 else .14): items.medkit = 1
 	if rng.randf()<(.25 if biome==4 else .08 if biome==1 else .025): items.grenade = 1
+	if rng.randf()<float(Catalog16.data().bag.loot_chance): items.field_bag = 1
 	return items
 
 static func ammo_quantity(id: String,rng: RandomNumberGenerator) -> int:

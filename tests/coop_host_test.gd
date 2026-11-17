@@ -97,7 +97,10 @@ func run() -> void:
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
+	world.exp16.sectors["0:-1"] = {"kind":"normal","hp":20000.0,"dead":false,"reward":{},"stocks":{},"pos":[15.0,0.0]}
 	check(travel_party(world,0),"the complete party crosses the northern exit")
+	# This fixture verifies exact house deltas; test nest loot multipliers separately.
+	world.v15.event_states["0:-1:"+str(world.descriptor.visit)] = {"type":"convoy","complete":true,"started":false,"left":45.0,"spawn":0.0,"bonus":false,"owner":""}
 	check(world.airdrops.at_sector() and world.descriptor.risk==4 and world.airdrops.crate!=null,"server loads the guarded airdrop into the same procedural party sector")
 	var house: Node3D = world.raid_house(0)
 	check(house!=null and house.guard_total==int(house.data.guards)*8,"house scene and guard objective use the same four-player scaling")

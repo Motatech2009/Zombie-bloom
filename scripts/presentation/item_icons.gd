@@ -3,6 +3,7 @@ extends RefCounted
 static var textures: Dictionary = {}
 static func get_icon(id: String) -> Texture2D:
 	if id.is_empty(): return null
+	if id=="field_bag": id = "bag"
 	if not textures.has(id):
 		var path := "res://assets/icons/"+id+".svg"
 		textures[id] = load(path) if ResourceLoader.exists(path) else null

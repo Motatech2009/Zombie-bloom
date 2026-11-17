@@ -25,7 +25,7 @@ func run() -> void:
 	check(later.size()==1,"explicit postpone action is available")
 	var labels: Array = w.hud.modal.find_children("*","Label",true,false)
 	check(labels.any(func(l): return l.text=="SUA EVOLUÇÃO"),"heading identifies personal upgrade")
-	check(labels.filter(func(l): return l.text.contains("NÍVEL 0 → 1 / 2")).size()==3,"all cards show current, next and cap")
+	check(labels.filter(func(l): return l.text.contains("NÍVEL 0 → 1 / 2") or l.text.contains("NÍVEL 0 → 1 / 3")).size()==3,"all cards show current, next and cap")
 	if MobilePlatform.enabled():
 		var scrolls: Array = w.hud.modal.find_children("*","ScrollContainer",true,false)
 		check(scrolls.size()==1 and scrolls[0].horizontal_scroll_mode==ScrollContainer.SCROLL_MODE_DISABLED,"mobile cards scroll vertically without compulsory horizontal scroll")

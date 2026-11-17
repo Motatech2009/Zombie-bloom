@@ -7,14 +7,16 @@ import time
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument("--players", type=int, choices=[2, 3, 4], default=4)
-players = parser.parse_args().players
-out = root / "builds" / f"release16-coop-{players}"
+parser.add_argument("--script", choices=["release16_coop_test.gd", "release16_rescue_coop_test.gd"], default="release16_coop_test.gd")
+args = parser.parse_args()
+players = args.players
+out = root / "builds" / f"release16-{args.script.removesuffix(".gd")}-{players}"
 out.mkdir(parents=True, exist_ok=True)
 jobs = []
 try:
     for role, tag in [("host", "1")]+[("client", str(i)) for i in range(1, players)]:
         handle = (out / f"{role}-{tag}.log").open("w")
-        job = subprocess.Popen(["godot", "--headless", "--path", str(root), "--script", "res://tests/release16_coop_test.gd", "--", f"--role={role}", f"--tag={tag}", f"--players={players}"], stdout=handle, stderr=subprocess.STDOUT)
+        job = subprocess.Popen(["godot", "--headless", "--path", str(root), "--script", "res://tests/"+args.script, "--", f"--role={role}", f"--tag={tag}", f"--players={players}"], stdout=handle, stderr=subprocess.STDOUT)
         jobs.append((role, tag, job, handle))
         if role == "host":
             time.sleep(.7)

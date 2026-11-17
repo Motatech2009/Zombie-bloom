@@ -38,7 +38,7 @@ func tick(delta: float) -> void:
 	if not enabled(): return
 	initialize(); sessions[world.sector_coord] = capture()
 	for coord in sessions.keys():
-		if coord!=Vector2i.ZERO and not world.avatars.values().any(func(a): return a.region_coord==coord):
+		if coord!=Vector2i.ZERO and not world.avatars.values().any(func(a): return a.region_coord==coord) and not (world.game_mode=="rescue" and world.rescue16.defending() and world.rescue16.goal_coord()==coord):
 			run_in(coord,world.remember_sector)
 			var old: Node3D = root_at(coord)
 			world.clear_region_hazards(SectorGenerator.key(coord))
@@ -52,7 +52,7 @@ func travel(actor: Node3D,direction: int) -> bool:
 	var next: Vector2i = source+SectorGenerator.DIRECTIONS[direction]
 	if absi(next.x)>4096 or absi(next.y)>4096: return false
 	if (actor.position-world.sector_offset(source)).distance_to(SectorGenerator.EXITS[direction])>=3.7: return false
-	if world.waves.running and SectorGenerator.distance(next)>=SectorGenerator.distance(source): return false
+	if world.waves.running and world.game_mode!="rescue" and SectorGenerator.distance(next)>=SectorGenerator.distance(source): return false
 	var saved_camera: Transform3D = world.camera.transform
 	var saved_notice: String = world.notice
 	var saved_notice_left: float = world.notice_left
@@ -80,7 +80,7 @@ func travel(actor: Node3D,direction: int) -> bool:
 	actor.velocity = Vector3.ZERO; actor.cancel_gather(); actor.stop_roll(); actor.invulnerable = maxf(actor.invulnerable,.7)
 	actor.input_queue.clear(); actor.roll_intents.clear()
 	sessions[next] = capture()
-	if source!=Vector2i.ZERO and not world.avatars.values().any(func(a): return a.region_coord==source):
+	if source!=Vector2i.ZERO and not world.avatars.values().any(func(a): return a.region_coord==source) and not (world.game_mode=="rescue" and world.rescue16.defending() and world.rescue16.goal_coord()==source):
 		load_state(sessions[source]); world.remember_sector(); world.clear_region_hazards(SectorGenerator.key(source))
 		var old: Node3D = world.field_root
 		if is_instance_valid(old): world.remove_child(old); old.queue_free()

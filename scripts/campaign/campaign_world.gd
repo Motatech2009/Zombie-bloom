@@ -32,7 +32,7 @@ var field_queue: Array[int] = []
 var caches: Array[Node3D] = []
 
 func _ready() -> void:
-	game_mode = next_mode if next_mode in ["campaign","endless"] else "campaign"
+	game_mode = next_mode if next_mode in ["campaign","endless","rescue"] else "campaign"
 	Controls.setup()
 	GameSettings.load_settings()
 	sunlight = VisualFactory.lighting(self)
@@ -423,7 +423,7 @@ func valid_snapshot(data: Variant) -> bool:
 	if not bounded(data.max_hp,100,1000000) or not bounded(data.hp,1,data.max_hp) or not bounded(data.core_hp,1,600+250*(data.core_tier-1)) or not bounded(data.speed,.1,1000): return false
 	if not point_valid(data.position) or not data.stock is Dictionary or not data.upgrades is Dictionary: return false
 	for key in data.upgrades:
-		if key not in ["damage","rate","capacity","reload","speed","health","gather","engineering","efficiency","cargo"] or not bounded(data.upgrades[key],0,10000): return false
+		if key not in ["damage","rate","capacity","reload","speed","health","gather","engineering","efficiency","cargo"]+Catalog16.talent_ids() or not bounded(data.upgrades[key],0,10000): return false
 	for key in ["wood","parts"]:
 		if not data.stock.has(key) or not bounded(data.stock[key],0,10000000): return false
 	if not data.owned is Array or data.owned.size()!=5 or data.owned[0]!=true or not data.ammo is Array or data.ammo.size()!=5 or not bounded(data.slot,0,4): return false

@@ -127,7 +127,7 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	place_panel(close,Control.PRESET_TOP_RIGHT,Rect2(-140,10,116,48))
 	var close_style := compact_style(); close_style.content_margin_top = 2; close_style.content_margin_bottom = 2
 	close.add_theme_stylebox_override("normal",close_style); close.add_theme_font_size_override("font_size",17)
-	var heading := UI.label(modal,{"inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
+	var heading := UI.label(modal,{"post16":"POSTO DO FAROL","upgrade":"SUA EVOLUÇÃO","inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
 	heading.position = Vector2(26,21)
 	call_deferred("adapt_modal",box)
 	return box
@@ -149,6 +149,7 @@ func adapt_modal(node: Node) -> void:
 func show_inventory() -> void:
 	var box := open_modal("inventory",880)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",24,UI.LIME)
+	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
 	UI.label(box,"Toque dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"",14,UI.MUTED); inventory_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var grid := GridContainer.new(); grid.columns = 6; grid.add_theme_constant_override("h_separation",6); grid.add_theme_constant_override("v_separation",6)

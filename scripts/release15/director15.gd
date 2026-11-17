@@ -21,6 +21,7 @@ func initialize(owner_world: Node3D) -> void:
 	world.core.health.damaged.connect(func(_amount): core_alert())
 	if not restored15: apply_class(world.player,selected_class,true)
 	if not restored15: world.player.cosmetic = mini(selected_cosmetic,RankProgress.tier(int(world.get_node("/root/Account").local_summary.get("kills",0))))
+	world.player.outfit16 = world.get_node("/root/Meta16").outfit(world.player.specialization)
 	decorate(world.player)
 func campaign_completed() -> bool:
 	var cfg = ConfigFile.new(); return cfg.load("user://meta15.cfg")==OK and bool(cfg.get_value("meta","completed",false))
@@ -32,9 +33,10 @@ func apply_class(actor: Node3D,id: String,starter: bool = false) -> void:
 	if starter and actor.specialization=="shooter": actor.weapons.tuning[0] = maxi(1,actor.weapons.tuning[0])
 	world.upgrades.apply_actor(actor)
 func decorate(actor: Node3D) -> void:
+	Cosmetics16.decorate(actor.rig,actor.outfit16,actor)
 	var previous = actor.rig.get_node_or_null("EloCosmetic")
 	if previous!=null: actor.rig.remove_child(previous); previous.queue_free()
-	if actor.cosmetic<=0: return
+	if actor.cosmetic<=0 or (actor.cosmetic<=3 and not actor.outfit16.get("head","").is_empty()) or (actor.cosmetic>=4 and actor.cosmetic<=7 and not actor.outfit16.get("backpack","").is_empty()) or (actor.cosmetic>=8 and not actor.outfit16.get("effect","").is_empty()): return
 	var root = Node3D.new(); root.name = "EloCosmetic"; actor.rig.add_child(root)
 	var color = Color.from_hsv(.12 if actor.cosmetic<7 else .78,.35+actor.cosmetic*.035,.88+actor.cosmetic*.01)
 	if actor.cosmetic<=3: VisualFactory.cylinder(root,.38,.15,Vector3(0,2.0,0),color)
@@ -70,7 +72,8 @@ func fuse(actor: Node3D) -> bool:
 	if first==null or first==world.core or not FortressData.turret(first.spec.id) or first.get_meta("fused",false): return false
 	for other in world.get_tree().get_nodes_in_group("campaign_structure"):
 		if other==first or other.spec.id!=first.spec.id or other.tier!=first.tier or other.get_meta("fused",false) or other.health.dead or first.position.distance_to(other.position)>4: continue
-		first.set_meta("fused",true); first.spec.values.interval *= .55
+		first.set_meta("alloy16",maxf(float(first.get_meta("alloy16",0)),float(other.get_meta("alloy16",0))))
+		first.set_meta("fused",true); first.refresh_tier()
 		for key in other.invested: first.invested[key] = int(first.invested.get(key,0))+int(other.invested[key])
 		other.health.dead = true; other.collision_layer = 0; other.remove_from_group("campaign_structure"); other.remove_from_group("buildings"); other.queue_free()
 		world.built_this_round = maxi(0,world.built_this_round-1); world.layout_revision += 1
@@ -156,6 +159,7 @@ func update_events(delta: float) -> void:
 		if actor.region_coord==Vector2i.ZERO and node.global_position.distance_to(actor.global_position)<4:
 			state.complete = true; world.credit("parts",12); node.queue_free(); world.notify("ESCOLTA CONCLUÍDA · +12 componentes no Núcleo.")
 func tick_sector_event(delta: float) -> void:
+	if world.descriptor.get("special16","normal")!="normal": return
 	if world.descriptor.is_empty() or not is_instance_valid(world.field_root): return
 	var key = sector_event_key()
 	if not event_states.has(key):

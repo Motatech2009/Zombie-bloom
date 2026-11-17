@@ -44,10 +44,10 @@ static func capture(world: Node3D) -> Dictionary:
 	for house in world.get_tree().get_nodes_in_group("raid_houses"):
 		if world.field_root.is_ancestor_of(house): state.houses.append(house.dump())
 	for enemy in world.get_tree().get_nodes_in_group("enemies"):
-		if not world.field_root.is_ancestor_of(enemy) or enemy.health.dead: continue
+		if not world.field_root.is_ancestor_of(enemy) or enemy.health.dead or enemy.get_meta("titan16",false): continue
 		state.enemies.append({"summon_token":str(enemy.get_meta("summon_token","")),"summoner_token":str(enemy.get_meta("summoner_token","")),"night_hp":enemy.get_meta("night_hp",1.0),"night_damage":enemy.get_meta("night_damage",1.0),"nest_speed":enemy.get_meta("nest_speed",false),"growth15":enemy.growth,"swarm15":enemy.swarm_threshold,"kind":enemy.enemy_kind,"stage":int(enemy.get_meta("boss_stage",0)),"index":enemy.encounter_index,"pos":vector(enemy.position),"hp":enemy.health.current,"max":enemy.health.maximum,"damage":enemy.spec.values.damage,"speed":enemy.spec.values.speed,"enraged":enemy.enraged,"shield":enemy.shield_left,"ability":.3 if enemy.windup>0 else clampf(enemy.ability_left,-1,100),"summons":enemy.summon_casts,"house":int(enemy.get_meta("house_id",-1)),"guard":int(enemy.get_meta("house_guard",-1)),"event":int(enemy.get_meta("supply_event",-1)),"supply_index":int(enemy.get_meta("supply_index",-1))})
 	for loot in world.get_tree().get_nodes_in_group("survival_loot"):
-		if loot.get_parent()!=world.field_root or loot.is_queued_for_deletion(): continue
+		if loot.get_parent()!=world.field_root or loot.is_queued_for_deletion() or loot.get_meta("special16",false): continue
 		state.loose.append({"pos":vector(loot.position),"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":str(loot.get_meta("power","")),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false)),"origin":bool(loot.get_meta("world_origin",false))})
 	return state
 
@@ -107,7 +107,7 @@ static func valid_layout(d,key: String) -> bool:
 		if not d.has(field): return false
 	if not number(d.seed,1,2147483647,true) or not number(d.visit,1,10000000,true) or not number(d.risk,0,4,true) or not number(d.biome,0,4,true) or not number(d.count,0,1120,true) or not number(d.rare,-1,8,true): return false
 	if not d.coord is Array or d.coord.size()!=2 or not d.coord.all(func(v): return number(v,-4096,4096,true)) or SectorGenerator.key(Vector2i(d.coord[0],d.coord[1]))!=key or key=="0:0": return false
-	if not d.blocks is Array or d.blocks.size()>24 or not d.spawns is Array or d.spawns.size()>44 or not d.caches is Array or d.caches.size()!=3 or not vec(d.rare_pos) or not contents(d.reward) or not d.houses is Array or d.houses.size()>4: return false
+	if not d.blocks is Array or d.blocks.size()>24 or not d.spawns is Array or d.spawns.size()>44 or not d.caches is Array or d.caches.size()!=(0 if d.get("special16","")=="post" else 3) or not vec(d.rare_pos) or not contents(d.reward) or not d.houses is Array or d.houses.size()>4: return false
 	for block in d.blocks:
 		if not block is Dictionary or not vec(block.get("pos")) or not vec(block.get("size"),12) or not number(block.get("style"),0,2,true): return false
 	for pos in d.spawns+d.caches:
@@ -124,7 +124,7 @@ static func valid(memory,elapsed: float) -> bool:
 		if not key is String: return false
 		var s = memory[key]
 		if not s is Dictionary or not number(s.get("expires"),0,elapsed+LIFETIME+.01) or not valid_layout(s.get("layout"),key): return false
-		if not indices(s.get("claimed"),4) or not indices(s.get("dead"),1120) or not s.get("caches") is Array or s.caches.size() not in [3,4] or not s.caches.all(func(c): return contents(c)): return false
+		if not indices(s.get("claimed"),4) or not indices(s.get("dead"),1120) or not s.get("caches") is Array or s.caches.size() not in ([0] if s.layout.get("special16","")=="post" else [3,4]) or not s.caches.all(func(c): return contents(c)): return false
 		if not s.get("houses") is Array or s.houses.size()>4 or not s.get("enemies") is Array or s.enemies.size()>72 or not s.get("loose") is Array or s.loose.size()>128: return false
 		for house in s.houses:
 			if not house is Dictionary or not number(house.get("id"),0,3,true) or not indices(house.get("dead"),96) or not house.get("activated") is bool or not number(house.get("total"),1,96,true) or not contents(house.get("contents")): return false

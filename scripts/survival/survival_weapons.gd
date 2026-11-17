@@ -44,7 +44,7 @@ func _process(delta: float) -> void:
 
 func reload() -> bool:
 	if actor.roll_left>0 or hand_weapon<0 or reload_left>0 or ammo[slot]>=capacity() or actor.bag.count(ItemBag.AMMO_IDS[slot])<=0: return false
-	reload_total = maxf(.3,float(spec().values.reload)*reload_multiplier*pow(.92,tuning[slot]))
+	reload_total = maxf(float(spec().values.reload)*.5,float(spec().values.reload)*reload_multiplier*pow(.92,tuning[slot]))
 	reload_left = reload_total
 	return true
 
@@ -56,12 +56,12 @@ func capacity(index: int = -1) -> int:
 	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier*(1+.1*tuning[chosen])))
 
 func shoot(direction: Vector3) -> bool:
-	if world.combat_paused(): return false
+	if world.combat_paused() or world.exp16.safe(actor.global_position): return false
 	if actor.bag.hand()=="bat": return swing(direction)
 	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
 	world.damage_origin15 = actor.global_position
-	world.critical15 = world.world_rng.randf()<.1
+	world.critical15 = world.world_rng.randf()<.1+Catalog16.bonus(actor,"shot_aim")
 	actor.combat_left = 6
 	var ammo_before: int = ammo[slot]
 	var original_damage := damage_multiplier
@@ -101,7 +101,7 @@ func special_shot(direction: Vector3) -> bool:
 		if not hit.collider.is_in_group("enemies"): break
 		var victim: Node3D = hit.collider
 		victims.append(victim)
-		victim.take_damage(damage*pow(.8,step))
+		world.hit_enemy16(victim,hit.position,damage*pow(.8,step))
 		excludes.append(victim.get_rid())
 		previous = hit.position
 	if slot==8 and not victims.is_empty(): end = previous
@@ -145,7 +145,7 @@ func rebuild_model() -> void:
 	ClayStyle.apply_tree(model)
 
 func swing(direction: Vector3) -> bool:
-	if world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
+	if world.exp16.safe(actor.global_position) or world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
 	cooldown = .65; swing_left = .32; actor.cancel_gather()
 	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
 	var victims: Array = []

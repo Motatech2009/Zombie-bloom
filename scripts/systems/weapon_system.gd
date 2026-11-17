@@ -62,7 +62,8 @@ func shoot(direction: Vector3) -> bool:
 		if not hit.is_empty():
 			end = hit.position
 			if hit.collider.is_in_group("enemies"):
-				hit.collider.take_damage(float(data.damage) * damage_multiplier)
+				if world.has_method("hit_enemy16"): world.hit_enemy16(hit.collider,hit.position,float(data.damage)*damage_multiplier)
+				else: hit.collider.take_damage(float(data.damage) * damage_multiplier)
 			world.effects.burst(end, Color("b4cd8c"), 2)
 		world.effects.tracer(origin + direction * .65, end, spec().color)
 	world.effects.flash(origin + direction * .9)
