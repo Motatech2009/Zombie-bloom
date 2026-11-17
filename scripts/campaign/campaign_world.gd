@@ -605,12 +605,12 @@ func air_aim(origin: Vector3,direction: Vector3,range_limit: float) -> Vector3:
 	var nearest: Node3D
 	var distance := range_limit
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.spec.id not in ["hound","flyer"]: continue
+		if enemy.spec.id not in ["hound","flyer","titan16"]: continue
 		var offset: Vector3 = enemy.global_position-origin
 		offset.y = 0
 		var forward := offset.dot(direction)
 		if forward<=0 or forward>=distance: continue
-		if (offset-direction*forward).length()>.85: continue
+		if (offset-direction*forward).length()>(.4 if enemy.spec.id=="titan16" else .85): continue
 		nearest = enemy
 		distance = forward
 	if nearest==null: return direction

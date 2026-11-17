@@ -10,7 +10,7 @@ parser.add_argument("--players", type=int, choices=[2, 3, 4], default=4)
 parser.add_argument("--script", choices=["release16_coop_test.gd", "release16_rescue_coop_test.gd"], default="release16_coop_test.gd")
 args = parser.parse_args()
 players = args.players
-out = root / "builds" / f"release16-{args.script.removesuffix(".gd")}-{players}"
+out = root / "builds" / f"release16-{args.script.removesuffix('.gd')}-{players}"
 out.mkdir(parents=True, exist_ok=True)
 jobs = []
 try:

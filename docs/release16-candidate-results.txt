@@ -21,7 +21,7 @@ Suítes individuais (última execução válida por suíte):
 - rank_combat: 34 verificações, 0 falhas.
 - release15: 35 verificações, 0 falhas.
 - release15_encounters: 27 verificações, 0 falhas.
-- release16_content: 73 verificações, 0 falhas.
+- release16_content: 76 verificações, 0 falhas.
 - release16_meta: 11 verificações, 0 falhas.
 - release16_progression: 52 verificações, 0 falhas.
 - release16_ui: 14 verificações, 0 falhas.
@@ -32,7 +32,7 @@ Suítes individuais (última execução válida por suíte):
 - session: 16 verificações, 0 falhas.
 - survival: 81 verificações, 0 falhas.
 
-Subtotal das suítes individuais: 1345 verificações, sem duplicar reexecuções.
+Subtotal das suítes individuais: 1348 verificações, sem duplicar reexecuções.
 
 Cooperativo / rede:
 - Evolução individual, 2 jogadores: 20 verificações, 0 falhas, somando host/clientes.
@@ -66,3 +66,4 @@ Correções de integração verificadas:
 - Posto não pausa relógio no solo; estoque resiste ao retorno após 181 segundos.
 - Vida/loot do Titã persistem e ponto fraco acompanha rotação real do peito.
 - Save de setor aceita posto sem caixas comuns; campanha permanece separada do resgate.
+- Mira vertical do Titã validada com raio real de pistola: coração alcançável, bônus 1,5x exato e braço excluído. Campanha (127), arsenal (99) e mira mobile (35) passaram após a correção.

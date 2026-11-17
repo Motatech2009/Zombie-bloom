@@ -90,6 +90,20 @@ func run() -> void:
 	boss.take_damage(100); check(is_equal_approx(boss.health.current,19750),"unlocated or ordinary damage does not get weak-point multiplier")
 	boss.rig.rotation.y = PI/2; w.hit_enemy16(boss,boss.rig.to_global(Vector3(0,1.22,-.36)),100)
 	check(is_equal_approx(boss.health.current,19600),"weak point follows the rotated clay chest instead of a fixed world direction")
+	w.hit_enemy16(boss,boss.rig.to_global(Vector3(.5,1.22,-.36)),100)
+	check(is_equal_approx(boss.health.current,19500),"an exposed arm at chest height never receives the heart multiplier")
+	var old_boss_pos: Vector3 = boss.global_position; var old_player_pos: Vector3 = w.player.global_position
+	boss.global_position = Vector3(500,0,500); boss.rig.rotation.y = 0; w.player.global_position = Vector3(500,0,492)
+	await physics_frame; await physics_frame
+	var origin: Vector3 = w.player.global_position+Vector3(0,1.15,0)
+	check(w.air_aim(origin,Vector3.BACK,30).y>.1,"normal top-down aiming reaches the Titan chest height")
+	w.player.bag.selected = 0; w.player.weapons.sync_hand(); w.player.weapons.cooldown = 0; w.player.weapons.ammo[0] = 3
+	var random_state: int = w.world_rng.state
+	var crit: bool = w.world_rng.randf()<.1+Catalog16.bonus(w.player,"shot_aim"); w.world_rng.state = random_state
+	var expected: float = float(w.player.weapons.spec().values.damage)*w.player.weapons.damage_multiplier*(1.5 if crit else 1.0)*1.5
+	var before_shot: float = boss.health.current
+	check(w.player.weapons.shoot(Vector3.BACK) and is_equal_approx(before_shot-boss.health.current,expected),"a real pistol ray hits the exposed chest and applies exactly 1.5x weak-point damage")
+	boss.global_position = old_boss_pos; w.player.global_position = old_player_pos
 	boss.health.current = 10000; w.exp16.remember()
 	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[2]; w.travel_cooldown = 0; w.step_sector(2)
 	w.elapsed = 400; w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)

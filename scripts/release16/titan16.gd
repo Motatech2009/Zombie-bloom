@@ -56,7 +56,7 @@ func take_damage(amount: float) -> void:
 	var point: Vector3 = world.damage_point16
 	if exposed>0 and point.is_finite() and not world.explosive15:
 		var local := rig.to_local(point)
-		if absf(local.y-1.22)<.28 and local.z<-.12: amount *= 1.5
+		if absf(local.x)<.26 and absf(local.y-1.22)<.28 and local.z<-.12: amount *= 1.5
 	super.take_damage(amount)
 func clear_roots() -> void:
 	for node in world.get_tree().get_nodes_in_group("titan_root_warnings"):

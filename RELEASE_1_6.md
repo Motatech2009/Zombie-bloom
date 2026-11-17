@@ -65,7 +65,7 @@ A etapa A mudou o protocolo de 17 para 18; a integração completa usa **19**, p
 - Cosméticos têm representação nativa em massinha, somente visual; prévia em mundo 3D isolado, rotação e partículas limitadas/desativadas no mobile. Slots de elo são preservados; visual comprado sobrepõe o slot escolhido, sem revogar a conquista.
 - Talentos e melhorias são individuais. Liga Reforçada marca a maior melhoria da estrutura sem empilhamento infinito; fusão mantém o maior bônus. Bolsa funcional não depende do visual da conta.
 - Sorteio especial usa uma decisão por coordenada: 5% Titã / 10% posto / 85% normal. Somente o normal recebe os eventos 1.5 de 75%. Saves antigos marcam coordenadas já exploradas como normais, sem transformar visita histórica em descoberta nova.
-- Vida do Titã normalizada pelo fator noturno e recompensa parcial sobrevivem a expiração de 180 s. O ponto fraco segue o peito e a rotação reais. Fúria própria abaixo de 25%, sem aplicar a genérica de 40%.
+- Vida do Titã normalizada pelo fator noturno e recompensa parcial sobrevivem a expiração de 180 s. O ponto fraco segue o peito e a rotação reais; mira vertical alcança o peito e impactos nos braços não recebem o bônus. Fúria própria abaixo de 25%, sem aplicar a genérica de 40%.
 - Posto usa materiais carregados. A negociação não pausa nem no solo; na horda os comerciantes se abrigam. Segurança bloqueia dano recebido e ataques de saída. Não é segunda base construível.
 - Resgate desativa encontros especiais/airdrop nesta tabela de modo, usa sinal em (1,1), estação em (2,1), duas defesas e extração no Núcleo. Só três hordas completas são elegíveis à moeda; buscar sinal não paga. Não salva missão intermediária nem sobrescreve campanha. Objetivo e resultado são replicados.
 
