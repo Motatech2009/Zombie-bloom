@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.3**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.4**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -128,3 +128,11 @@ A troca para o menu e o reinício aguardam o fim do callback do botão e ignoram
 Validação local: 48 verificações de transição em cada execução desktop, toque e Windows com vídeo/áudio reais; 35 verificações de isca/troféu/defesas; 13 de sincronização; 127 da campanha; quatro processos ENet reais com saída do convidado e encerramento pelo anfitrião (56 verificações). Os logs não registraram erros de script nem vazamentos ObjectDB. O teste ENet ainda registra o aviso anterior de snapshot acima do MTU, sem falhar as verificações.
 
 Candidata: Android 1603, versão 1.6.0-rc.3; protocolo de rede 20 preservado. A execução completa no GitHub e os pacotes desta revisão serão registrados no PR #5 quando concluídos. O Firebase real e Android físico continuam pendentes conforme as limitações já registradas.
+
+## RC4 — modelos Tripo da torreta básica
+
+Os três modelos enviados pelo criador substituem as cenas da torreta básica nos níveis 1, 2 e 3. Cada nível possui base fixa, cabeça com giro e elevação, bocas de cano e escala compatível com a colisão existente. A mira considera a rotação da fundação; a troca de nível preserva a orientação e o cooperativo replica os dois eixos. Os níveis 2 e 3 alternam as bocas sem duplicar dano ou cadência.
+
+São preservados os 9.608 triângulos do arquivo original: 2.410 / 3.368 / 3.830 por nível, com apenas duas malhas e um material compartilhado em cada cena. O atlas de produção tem limite de 1K com mipmaps. Originais e reconstrução ficam em art_source/basic_turret e tools/art, excluídos dos pacotes.
+
+Validação local: 37 verificações novas com tiros reais, alvo elevado, base rotacionada, troca de nível, snapshots e compatibilidade; 35 das adições RC2 e 101 de defesas; quatro processos ENet reais com 116 verificações, incluindo três confirmações dos convidados sobre modelo N3 e orientação. Prévia desktop e toque renderizada no Windows/OpenGL. APK 1604, versão 1.6.0-rc.4, protocolo 20; código anterior de salvamento preservado. Pacotes e CI serão vinculados no PR #5 ao concluir.

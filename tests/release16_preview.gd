@@ -38,6 +38,12 @@ func run() -> void:
 			scene.builder.active = true; scene.builder.selected = FortressData.pieces().size()-1; scene.builder.location = Vector3(10,0,0); scene.builder.set_physics_process(false)
 			scene.set_process(false); scene.camera.size = 24; scene.camera.position = Vector3(28,23,22); scene.camera.look_at(Vector3(10,0,-1))
 			scene.truce16.left = 600; scene.truce16.pending = true
+		if view=="turret-models":
+			for tier in range(1,4):
+				var piece := StaticBody3D.new(); piece.set_script(load("res://scripts/fortress/fortress_structure.gd")); piece.world = scene; piece.piece_index = 1; piece.tier = tier; piece.position = Vector3(5+tier*5,0,16); piece.rotation.y = tier*.5; scene.base_root.add_child(piece); piece.set_physics_process(false)
+				piece.aim_at(piece.global_position+Vector3(0,1.45,-20)); piece.label.visible = true; piece.label.text = "TORRETA · NV. "+str(tier)
+			scene.player.position = Vector3(14,0,19); scene.player.set_physics_process(false)
+			scene.set_process(false); scene.camera.size = 12; scene.camera.position = Vector3(27,16,32); scene.camera.look_at(Vector3(15,.6,16))
 		if view=="diversion":
 			scene.player.bag.add("decoy16",1); scene.hud.show_inventory()
 			scene.spawn_loot(Vector3(3,0,1),{"decoy16":1})

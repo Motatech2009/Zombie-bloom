@@ -132,6 +132,13 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
           if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
           grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
+      - name: Validate imported basic turret models and real firing
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/basic_turret_models_tests.gd 2>&1 | tee basic-turret-models.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' basic-turret-models.log; then exit 1; fi
+          grep -E 'BASIC TURRET MODELS RESULT: [0-9]+ checks, 0 failures' basic-turret-models.log
       - name: Validate scene transitions on desktop and touch
         shell: bash
         run: |
@@ -204,7 +211,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy; do
+          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy turret-models; do
             for platform in desktop mobile; do
               args=(--view="$view")
               if [ "$platform" = mobile ]; then args+=(--mobile); fi

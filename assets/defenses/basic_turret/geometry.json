@@ -1,0 +1,26 @@
+{
+  "levels": [
+    {
+      "base_triangles": 810,
+      "head_triangles": 1600,
+      "muzzles": 1,
+      "tier": 1,
+      "total_triangles": 2410
+    },
+    {
+      "base_triangles": 1178,
+      "head_triangles": 2190,
+      "muzzles": 2,
+      "tier": 2,
+      "total_triangles": 3368
+    },
+    {
+      "base_triangles": 1164,
+      "head_triangles": 2666,
+      "muzzles": 2,
+      "tier": 3,
+      "total_triangles": 3830
+    }
+  ],
+  "triangles": 9608
+}

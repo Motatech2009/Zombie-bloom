@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/defenses/basic_turret/atlas.jpg" id="1_tiyk4"]
+
+[resource]
+albedo_texture = ExtResource("1_tiyk4")
+metallic = 0.04
+roughness = 0.88

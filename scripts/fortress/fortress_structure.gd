@@ -1,5 +1,6 @@
 extends "res://scripts/campaign/campaign_structure.gd"
 var visual_tier: int = -1
+var muzzle_cycle := 0
 
 func _ready() -> void:
 	var data: Dictionary = FortressData.pieces()[piece_index]
@@ -27,6 +28,7 @@ func refresh_tier() -> void:
 func refresh_visual() -> void:
 	if visual_tier==tier: return
 	visual_tier = tier
+	var previous_aim := aim_pose()
 	for child in model.get_children(): model.remove_child(child); child.queue_free()
 	if spec.id=="raised_turret":
 		build_raised_visual(); return
@@ -35,6 +37,7 @@ func refresh_visual() -> void:
 	visual.name = "Visual"; model.add_child(visual)
 	ClayStyle.apply_tree(visual)
 	head = visual.get_node_or_null("Head")
+	apply_aim_pose(previous_aim)
 	set_open_visual()
 
 func set_open_visual() -> void:
@@ -70,6 +73,29 @@ func _physics_process(delta: float) -> void:
 			if building.global_position.distance_to(global_position)<6: building.health.heal(3*tier)
 		cooldown = 2
 
+func aim_pose() -> Vector2:
+	if not is_instance_valid(head): return Vector2.ZERO
+	var pitch := head.get_node_or_null("Pitch")
+	return Vector2(head.rotation.y,pitch.rotation.x if pitch!=null else 0.0)
+
+func apply_aim_pose(pose: Vector2) -> void:
+	if not is_instance_valid(head): return
+	head.rotation.y = pose.x
+	var pitch := head.get_node_or_null("Pitch")
+	if pitch!=null: pitch.rotation.x = pose.y
+
+func aim_at(point: Vector3) -> void:
+	var direction: Vector3 = head.get_parent().global_basis.inverse()*(point-head.global_position)
+	apply_aim_pose(Vector2(atan2(-direction.x,-direction.z),atan2(direction.y,Vector2(direction.x,direction.z).length())))
+
+func muzzle_origin() -> Vector3:
+	if is_instance_valid(head):
+		var pitch := head.get_node_or_null("Pitch")
+		if pitch!=null:
+			var muzzles := pitch.get_children().filter(func(node): return node is Marker3D)
+			if not muzzles.is_empty(): return muzzles[muzzle_cycle%muzzles.size()].global_position
+	return global_position+Vector3.UP*FortressData.muzzle_height(spec.id)
+
 func fire_turret() -> void:
 	if disabled_left>0 or health.dead: return
 	var candidates: Array[Node3D] = []
@@ -82,7 +108,12 @@ func fire_turret() -> void:
 	if candidates.is_empty(): return
 	candidates.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
 	var point: Vector3 = candidates[0].global_position+Vector3(0,candidates[0].aim_height,0)
-	head.rotation.y = atan2(-(point-origin).x,-(point-origin).z)
+	aim_at(point)
+	if spec.id=="turret":
+		var actual_origin := muzzle_origin()
+		var muzzle_hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(actual_origin,point,1|4|8,[get_rid()]))
+		if muzzle_hit.is_empty() or muzzle_hit.collider!=candidates[0]: cooldown = .15; return
+		origin = actual_origin
 	if spec.id=="cannon":
 		if world.defense_shell(origin,point,float(spec.values.damage),3.8)==null: cooldown = .25; return
 	else:
@@ -94,6 +125,7 @@ func fire_turret() -> void:
 			world.damage_origin15 = Vector3.INF
 			if spec.id=="shock": enemy.stun_left = maxf(enemy.stun_left,.35)
 			world.shot_visual(origin,target_point,Color("79d4e5"))
+	muzzle_cycle += 1
 	cooldown = float(spec.values.interval)
 
 func toggle() -> bool:

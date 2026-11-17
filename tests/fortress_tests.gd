@@ -38,7 +38,7 @@ func run() -> void:
 		for tier in range(1,4):
 			var id: String = FortressData.pieces()[piece].id
 			var model: Node3D = load("res://assets/fortress/"+id+"_"+str(tier)+".tscn").instantiate()
-			check(model.get_meta("tier")==tier and model.get_child_count()>2 and first_mesh(model)!=null,"editable defense model imports: %s N%d" % [id,tier])
+			check(model.get_meta("tier")==tier and first_mesh(model)!=null and ((model.has_node("Base") and model.has_node("Head/Pitch")) if id=="turret" else model.get_child_count()>2),"editable defense model imports: %s N%d" % [id,tier])
 			model.free()
 	for tier in range(1,5):
 		var model: Node3D = load("res://assets/fortress/core_"+str(tier)+".tscn").instantiate()

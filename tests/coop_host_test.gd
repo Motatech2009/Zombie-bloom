@@ -80,6 +80,8 @@ func run() -> void:
 	var wire := StaticBody3D.new(); wire.set_script(world.structure_script())
 	wire.world = world; wire.piece_index = 6; wire.tier = 2; wire.position = Vector3(20,0,20)
 	world.base_root.add_child(wire)
+	var turret := StaticBody3D.new(); turret.set_script(world.structure_script()); turret.world = world; turret.piece_index = 1; turret.tier = 3; turret.position = Vector3(18,0,15); turret.rotation.y = .4
+	world.base_root.add_child(turret); turret.set_physics_process(false); turret.apply_aim_pose(Vector2(.7,.13))
 	world.airdrops.left = .01; world.airdrops.tick(.02)
 	world.airdrops.state.coord = [0,-1]
 	await create_timer(5).timeout

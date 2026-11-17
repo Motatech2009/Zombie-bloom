@@ -1112,7 +1112,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var structures: Array = []
 	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
-		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left})
+		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left,"aim16":s.aim_pose()})
 	var loot: Array = []
 	for s in (get_tree().get_nodes_in_group("survival_sources") if include_bulk else []):
 		if regions.enabled() and coord_at(s.global_position)!=sector_coord: continue
@@ -1288,6 +1288,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var s: Node3D = client_structures[id]
 		s.tier = int(state.tier)
 		if s.has_method("refresh_visual"): s.refresh_visual()
+		if s.has_method("apply_aim_pose"): s.apply_aim_pose(state.get("aim16",Vector2.ZERO))
 		s.health.maximum = state.max
 		s.health.current = state.hp
 		s.opened = state.open
