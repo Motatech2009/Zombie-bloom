@@ -28,6 +28,8 @@ func run() -> void:
 			saved.erase("preparation_policy"); saved.horde_left = 599
 			w.apply_snapshot(saved)
 			check(w.horde_left==mini(599,expected),"legacy fixed timer clamps to upcoming wave budget")
+	# This suite continues with isolated combat checks after the horde tests.
+	if not w.upgrades.current(w.player).is_empty(): w.upgrades.defer_for(w.player,w.upgrades.current(w.player).id)
 	w.waves.wave = 0
 	w.player.position = Vector3(0,0,12)
 	var loot = w.spawn_loot(w.player.position,{"scrap":5})

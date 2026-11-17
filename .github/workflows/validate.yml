@@ -102,6 +102,19 @@ jobs:
           godot --headless --path . --script res://tests/release15_encounters_tests.gd 2>&1 | tee release15-encounters-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release15-encounters-tests.log; then exit 1; fi
           grep -E 'RELEASE15 ENCOUNTERS RESULT: [0-9]+ checks, 0 failures' release15-encounters-tests.log
+          godot --headless --path . --script res://tests/release16_progression_tests.gd 2>&1 | tee release16-progression-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-progression-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 PROGRESSION RESULT: [0-9]+ checks, 0 failures' release16-progression-tests.log
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            godot --headless --path . --script res://tests/release16_ui_tests.gd "${args[@]}" 2>&1 | tee "release16-ui-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release16-ui-${platform}.log"; then exit 1; fi
+            grep -E 'RELEASE16 UI RESULT: [0-9]+ checks, 0 failures' "release16-ui-${platform}.log"
+          done
+          for players in 2 3 4; do
+            python3 tests/run_release16_coop_test.py --players "$players" 2>&1 | tee "release16-coop-${players}.log"
+          done
           python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
           python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
           python3 tests/run_split_test.py 2>&1 | tee split-tests.log
@@ -238,3 +251,4 @@ jobs:
             builds/coop-test/*.log
             builds/motion-test/*.log
             builds/split-test/*.log
+            builds/release16-coop-*/*.log

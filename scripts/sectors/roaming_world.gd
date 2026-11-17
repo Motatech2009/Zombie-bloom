@@ -118,7 +118,7 @@ func travel(direction: int) -> bool:
 	return step_sector(direction)
 
 func step_sector(direction: int) -> bool:
-	if direction<0 or direction>=4 or phase=="ended" or travel_cooldown>0 or resources.pending>0: return false
+	if direction<0 or direction>=4 or phase=="ended" or travel_cooldown>0 or (call("combat_paused") if has_method("combat_paused") else resources.pending>0): return false
 	if local_player().distance_to(SectorGenerator.EXITS[direction])>=3.7:
 		notify("Vá até a saída "+SectorGenerator.NAMES[direction]+" e pressione E. M mostra o caminho.")
 		return false

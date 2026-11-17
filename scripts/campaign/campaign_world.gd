@@ -376,7 +376,7 @@ func return_to_base() -> bool:
 
 func save_checkpoint(show_notice: bool = true) -> bool:
 	if not checkpoint_enabled: return false
-	if area_index!=-1 or phase!="prep" or resources.pending>0:
+	if area_index!=-1 or phase!="prep" or (resources.pending>0 and not upgrades is IndividualProgression16):
 		if show_notice: notify("Salve no refúgio entre hordas, após escolher as melhorias de XP.")
 		return false
 	var data := snapshot()

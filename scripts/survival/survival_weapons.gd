@@ -77,7 +77,7 @@ func shoot(direction: Vector3) -> bool:
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
-	if result and world.world_rng.randf()<.25*int(world.upgrades.levels.get("efficiency",0))/12.0: ammo[slot] = ammo_before
+	if result and world.world_rng.randf()<.25*world.upgrades.level_for(actor,"efficiency")/12.0: ammo[slot] = ammo_before
 	damage_multiplier = original_damage; rate_multiplier = original_rate
 	world.shot_owner = 0; world.critical15 = false; world.damage_origin15 = Vector3.INF
 	return result

@@ -174,8 +174,9 @@ func _process(delta: float) -> void:
 	if mode=="upgrade" and world.resources.pending==0: close_modal()
 	super._process(delta)
 	var actor: Node3D = world.player
+	xp_text.text = "CARTAS %d" % world.resources.pending if world.resources.pending>0 else "EVOLUÇÃO %d" % (actor.weapons.level-1)
 	notice_text.text = world.notice_for(actor.peer_id); notice_text.visible = not notice_text.text.is_empty()
-	if world.combat_paused(): wave_detail.text = "MELHORIA DO GRUPO · COMBATE PAUSADO"
+	if world.combat_paused(): wave_detail.text = "ALIADOS ESCOLHENDO · COMBATE PAUSADO"
 	for i in range(9):
 		var item: Dictionary = actor.bag.slots[i]
 		hotbar[i].set_item(item.id,int(item.qty),actor.bag.selected==i)
@@ -289,6 +290,7 @@ func show_shop() -> void:
 
 func request_upgrade() -> void:
 	if choice_cooldown>0: return
+	if world.upgrades.state(world.player).deferred or world.waves.running: return
 	super.request_upgrade()
 
 func show_upgrade() -> void:
@@ -296,12 +298,26 @@ func show_upgrade() -> void:
 	if offers.is_empty():
 		if world.is_client: return
 		offers = world.upgrades.roll()
-	var box := open_modal("upgrade",1000)
-	UI.label(box,"EVOLUÇÃO DO GRUPO",30,UI.LIME)
-	UI.label(box,"A primeira escolha válida beneficia todos. Inimigos, perigos e relógio ficam pausados durante a escolha.",16,UI.MUTED)
+	if offers.is_empty() or world.waves.running: return
+	var choice_id: String = world.upgrades.current(world.player).get("id","")
+	var box := open_modal("upgrade",900)
+	var tint: Color = {"engineer":Color("edbd72"),"scout":UI.LIME,"shooter":Color("92c9ef")}.get(world.player.specialization,UI.LIME)
+	UI.label(box,"SUA EVOLUÇÃO",28,tint)
+	UI.label(box,"Escolha 1 carta para seu sobrevivente. Cada aliado tem sua própria escolha.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for i in range(offers.size()):
 		var index := i
-		UI.button(box,offers[i].title+" · "+offers[i].text,func(): world.send_action("choice",{"index":index}); choice_cooldown = .5; close_modal())
+		var card := UI.panel(box)
+		var body := UI.vbox(card,6)
+		var entry: Dictionary = offers[i]
+		var heading := UI.hbox(body,10)
+		var icon_id: String = {"damage":"pistol","rate":"smg","capacity":"light","reload":"rifle_ammo","speed":"map","health":"health","gather":"wood","engineering":"build","efficiency":"parts","cargo":"bag"}.get(entry.id,"wave")
+		ItemIcons.image(heading,icon_id,Vector2(30,30))
+		UI.label(heading,str(entry.get("tag","SOBREVIVÊNCIA"))+" · NÍVEL %d → %d / %d" % [int(entry.get("level",0)),int(entry.get("level",0))+1,int(entry.get("maximum",2))],13,tint)
+		UI.label(body,entry.title,21)
+		UI.label(body,entry.text,16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.button(body,"ESCOLHER "+entry.title,func(): world.send_action("choice",{"index":index,"choice_id":choice_id}); choice_cooldown = .5; close_modal())
+	UI.label(box,"O combate aguarda as escolhas ativas. Você pode guardar a sua para a preparação.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.button(box,"ESCOLHER DEPOIS",func(): world.send_action("defer_choice",{"choice_id":choice_id}); choice_cooldown = .5; close_modal(),true)
 
 func show_result() -> void:
 	if world.won and world.game_mode=="campaign": world.v15.unlock_campaign()
@@ -335,7 +351,7 @@ func show_pause() -> void:
 	UI.button(box,"CONTINUAR",close_modal,true)
 	if not world.is_client:
 		var save := UI.button(box,"SALVAR REFÚGIO",func(): world.save_checkpoint(); close_modal())
-		save.disabled = world.area_index!=-1 or world.phase!="prep" or world.resources.pending>0
+		save.disabled = world.area_index!=-1 or world.phase!="prep"
 	UI.button(box,"CONEXÃO / AMIGOS",func(): close_modal(); show_connection())
 	UI.button(box,"ESTATÍSTICAS DO SAVE",func(): close_modal(); show_run_records())
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
@@ -472,6 +488,8 @@ func show_systems15() -> void:
 	if not mode.is_empty(): return
 	var box := open_modal("systems15",700)
 	UI.label(box,"REFÚGIO E EXPLORAÇÃO",24,UI.LIME)
+	if world.resources.pending>0 and not world.waves.running:
+		UI.button(box,"SUAS EVOLUÇÕES PENDENTES · %d" % world.resources.pending,func(): close_modal(); show_upgrade())
 	UI.label(box,"Classe: "+{"engineer":"Engenheiro","scout":"Batedor","shooter":"Atirador"}.get(world.player.specialization,"Engenheiro")+" · obras interrompidas por dano ou movimento.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(box,"FUNDIR DUAS TORRES IDÊNTICAS PRÓXIMAS",func(): world.send_action("fuse",{}); close_modal())
 	UI.button(box,"RECICLAR ARMA SELECIONADA / 20 MADEIRA",func(): world.send_action("recycle",{}); close_modal())

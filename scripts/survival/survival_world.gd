@@ -115,7 +115,8 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("bat",1)
 
 func _ready() -> void:
-	upgrades.free(); upgrades = Progression15.new(); channel15.world = self; v15.world = self; v15.day.world = self
+	resources.free(); resources = HordeResources16.new()
+	upgrades.free(); upgrades = IndividualProgression16.new(); channel15.world = self; v15.world = self; v15.day.world = self
 	account_run_id = Crypto.new().generate_random_bytes(16).hex_encode()
 	account_identity = Account.user_id
 	regions.world = self
@@ -133,6 +134,7 @@ func _ready() -> void:
 	stock = {"wood":6,"parts":2}
 	super._ready()
 	v15.initialize(self)
+	upgrades.state(player); upgrades.refresh_local()
 	if MobilePlatform.enabled():
 		MobilePlatform.configure(get_tree().root)
 		camera.size = 27
@@ -200,7 +202,7 @@ func _process(delta: float) -> void:
 		notice_left = maxf(0,notice_left-delta)
 		return
 	if combat_paused():
-		if upgrades.offers.is_empty(): upgrades.roll()
+		if resources.pending>0 and upgrades.offers.is_empty(): upgrades.roll()
 		return
 	super._process(delta)
 	regions.tick(delta)
@@ -262,13 +264,13 @@ func send_action(action: String,data: Dictionary) -> void:
 	else: perform_action(1,action,data)
 
 func perform_action(peer: int,action: String,data: Dictionary) -> bool:
-	if combat_paused() and action!="choice": return false
+	if combat_paused() and action not in ["choice","defer_choice"]: return false
 	if regions.enabled() and avatars.has(peer):
 		if action=="travel": return regions.travel(avatars[peer],int(data.get("direction",-1)))
 		if avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return perform_action(peer,action,data))==true
 	if is_client or not avatars.has(peer) or phase=="ended": return false
 	var actor: Node3D = avatars[peer]
-	if actor.health.dead: return false
+	if actor.health.dead and action not in ["choice","defer_choice"]: return false
 	var saved: CharacterBody3D = player
 	player = actor
 	var result := false
@@ -310,7 +312,9 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 			var target := nearest_structure()
 			if target!=null and target!=core: result = target.dismantle()
 		"choice":
-			if data.get("index") is int: result = choose_team_upgrade(data.index)
+			if data.get("index") is int and data.get("choice_id") is String: result = upgrades.choose_for(actor,data.index,data.choice_id)
+		"defer_choice":
+			if data.get("choice_id") is String: result = upgrades.defer_for(actor,data.choice_id)
 		"build":
 			var pos = data.get("pos")
 			var piece = data.get("piece")
@@ -327,6 +331,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 				builder.selected = previous.selected
 				builder.angle = previous.angle
 	player = saved
+	if result and action in ["choice","defer_choice"] and area_index==-1 and phase=="prep": save_checkpoint(false)
 	return result
 
 func load_individual_sector(direction: int) -> bool:
@@ -589,8 +594,8 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			if enemy.global_position.distance_to(target.global_position)<4.5: actor.cancel_gather(); return
 	var duration := collect_seconds(actor.gather_kind,actor.gather_base_duration)
-	if actor.gather_kind=="loot": duration /= 1+.5*int(upgrades.levels.get("gather",0))/12.0
-	if actor.gather_kind=="repair": duration *= 1-.4*int(upgrades.levels.get("engineering",0))/12.0
+	if actor.gather_kind=="loot": duration /= 1+.5*upgrades.level_for(actor,"gather")/12.0
+	if actor.gather_kind=="repair": duration *= 1-.4*upgrades.level_for(actor,"engineering")/12.0
 	if not is_equal_approx(duration,actor.gather_duration):
 		actor.gather_progress = actor.gather_progress/maxf(.01,actor.gather_duration)*duration
 		actor.gather_duration = duration
@@ -816,6 +821,7 @@ func snapshot() -> Dictionary:
 	var data := super.snapshot()
 	data.format = 6
 	data.systems15 = v15.dump()
+	data.progression16 = upgrades.dump()
 	data.horde_interval = HORDE_INTERVAL
 	data.preparation_policy = 2
 	data.records = records.dump()
@@ -838,6 +844,7 @@ func snapshot() -> Dictionary:
 	return data
 
 func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("progression16") and not IndividualProgression16.valid(data.progression16): return false
 	if data is Dictionary and data.has("systems15") and not Director15.valid(data.systems15): return false
 	if data is Dictionary and data.has("weapon_tuning"):
 		if not data.weapon_tuning is Array or data.weapon_tuning.size()!=9 or not data.weapon_tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
@@ -908,7 +915,6 @@ func apply_snapshot(data: Dictionary) -> void:
 	if data.has("systems15"): v15.restore(data.systems15)
 	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
 	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
-	for actor in avatars.values(): upgrades.apply_actor(actor)
 	records.restore(data.get("records",{}))
 	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
 	account_baseline = true
@@ -918,6 +924,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	depot_items = data.depot_items.duplicate()
 	built_this_round = int(data.built)
 	profiles = data.profiles.duplicate(true)
+	upgrades.restore(data.get("progression16",{}),upgrades.levels,profiles)
 	# World supplies and every connected bag must rewind together.
 	for peer in avatars:
 		var actor: Node3D = avatars[peer]
@@ -932,6 +939,7 @@ func apply_snapshot(data: Dictionary) -> void:
 		restore_profile(actor,profile)
 		actor.position = player.position+Vector3(peer%2*1.2,0,1.2)
 		actor.weapons.cooldown = .2; actor.weapons.reload_left = 0
+	for actor in avatars.values(): upgrades.apply_actor(actor)
 	airdrops.restore(data.airdrops)
 	sector_memory = data.get("sector_memory",{}).duplicate(true)
 	prune_sector_memory()
@@ -978,7 +986,7 @@ func use_medkit(actor: Node3D) -> bool:
 	return true
 
 func attach_peer(peer: int,identity: String,nickname: String) -> bool:
-	if is_client or avatars.has(peer) or avatars.size()>=4 or (not profiles.has(identity) and profiles.size()>=64) or phase=="ended": return false
+	if is_client or avatars.has(peer) or avatars.values().any(func(a): return a.profile_id==identity) or avatars.size()>=4 or (not profiles.has(identity) and profiles.size()>=64) or phase=="ended": return false
 	var actor := CharacterBody3D.new()
 	actor.set_script(load("res://scripts/survival/survivor.gd"))
 	actor.world = self
@@ -996,6 +1004,7 @@ func attach_peer(peer: int,identity: String,nickname: String) -> bool:
 	else:
 		v15.apply_class(actor,Director15.selected_class,true)
 		actor.weapons.sync_hand()
+	upgrades.state(actor); upgrades.apply_actor(actor)
 	actor.invulnerable = 3
 	waves.rescale()
 	rescale_regions()
@@ -1074,7 +1083,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		if enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
-	return {"visuals15":v15.visuals() if include_bulk else [],"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":resources.pending,"offers":upgrades.offers.duplicate(true),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+	return {"visuals15":v15.visuals() if include_bulk else [],"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":upgrades.pending_for(avatars[peer]),"offers":upgrades.current(avatars[peer]).get("offers",[]).duplicate(true),"progression16":upgrades.private_state(avatars[peer]),"paused16":combat_paused(),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
 	if data.has("systems15"): v15.restore(data.systems15)
@@ -1108,6 +1117,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	resources.xp = int(data.xp)
 	resources.pending = int(data.pending)
 	upgrades.offers = data.offers.duplicate(true)
+	upgrades.remote_paused = bool(data.get("paused16",false))
+	var private_progress: Dictionary = data.get("progression16",{})
+	player.profile_id = str(private_progress.get("identity",player.profile_id))
+	upgrades.players[player.profile_id] = {"levels":private_progress.get("levels",{}).duplicate(),"queue":[private_progress.choice.duplicate(true)] if not private_progress.get("choice",{}).is_empty() else [],"through":waves.wave,"deferred":bool(private_progress.get("deferred",false))}
+	upgrades.levels = private_progress.get("levels",{}).duplicate()
 	field_dead = int(data.dead)
 	discovered = data.discovered.duplicate(true)
 	remote_sector_times = data.get("sector_times",{}).duplicate()
@@ -1419,7 +1433,7 @@ func allow_enemy_think(enemy: Node3D) -> bool:
 	return true
 
 func combat_paused() -> bool:
-	return resources.pending>0 and phase!="ended"
+	return upgrades.paused() and phase!="ended"
 
 func coord_at(point: Vector3) -> Vector2i:
 	return Vector2i(roundi(point.x/120),roundi(point.z/120))
