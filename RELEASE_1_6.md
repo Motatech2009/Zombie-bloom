@@ -146,3 +146,15 @@ Validação local: 40 verificações novas com tiros reais, inimigos encostados 
 - Campanha/infinito: ceil(total anterior×1,25), inclusive crescimento após a horda 20. Primeira horda 18→23, quinta 48→60, vigésima 240→300; fatores cooperativos e isca continuam acumulados sobre o novo total. Resgate: 12/15/19 inimigos solo nas três hordas. Limite simultâneo de 36 preservado, sem aumentar velocidade/dano nem retirar força da pistola.
 - APK 1605, protocolo 21: atualizar todos os participantes para a mesma candidata. Saves anteriores preservados.
 - Validação específica: 37 verificações de regras/concorrência, 17 de integração Godot/Firestore, 10 de balanceamento; regressões existentes de jogo e interface. Novos pacotes serão vinculados ao PR ao concluir o CI.
+
+
+### Pacotes RC.5 validados — 17/11/2026
+
+Código f6d90c7514dac9217e3b8c5be3a242bfaab2851d: [CI integral aprovado](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44155874484).
+
+| Plataforma | Pacote | SHA-256 do ZIP |
+|---|---|---|
+| Windows x64 | [Baixar RC5](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44155874484/artifacts/14360449226) | b3aaeaadfb0626284fa09b1f465aecc4ad9ce6b4fd95639ca178cdf7279658a4 |
+| Android | [Baixar APK em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44155874484/artifacts/14361486821) | d4e823e2e19083ccceb092f701390c76e4180e43c131171f66eeaf02dfd67b00 |
+
+Os artefatos exigem login GitHub. Hashes recalculados após download. Evidências detalhadas e limites da abertura Windows em [resultados RC5](docs/release16-spark-results.txt). Android físico permanece pendente. Publicar as [regras](backend/firebase/firestore.rules) pelo console e conferir a conta real para ativar a economia; sem dependência do deploy de Functions na configuração atual.
