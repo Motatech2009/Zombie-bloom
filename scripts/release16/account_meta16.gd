@@ -41,8 +41,27 @@ func identity_changed() -> void:
 			clock.total = maxf(0,float(data.get("total",0))); clock.longest = maxf(0,float(data.get("longest",0)))
 	session_id = Crypto.new().generate_random_bytes(16).hex_encode(); clock.last_ms = Time.get_ticks_msec(); sync_left = 2
 	changed.emit()
+func has_live_world() -> bool:
+	return is_instance_valid(world) and world.is_inside_tree() and not world.is_queued_for_deletion() and is_instance_valid(world.player)
+func observe_progress() -> void:
+	if world.is_client and not world.client_scene_ready: return
+	if bound_run!=world.account_run_id: bound_run = world.account_run_id; registered.erase(bound_run)
+	if str(world.player.get_meta("titan_owner16","!"))==uid:
+		titan_victory(bound_run,str(world.player.get_meta("titan_victory16","")))
+	var reward_wave: int = int(world.upgrades.state(world.player).get("through",world.waves.wave))
+	var prior := int(observed_hordes.get(bound_run,reward_wave))
+	if reward_wave>prior:
+		for wave in range(prior+1,reward_wave+1): horde(bound_run,wave)
+	observed_hordes[bound_run] = maxi(prior,reward_wave)
+func release_world(previous: Node3D) -> void:
+	if world!=previous: return
+	# Capture the final reward watermark before the old scene's children are freed.
+	if is_instance_valid(world) and is_instance_valid(world.player): observe_progress()
+	world = null; activity = false
+	clock.step(Time.get_ticks_msec(),false)
+	persist()
 func _input(event: InputEvent) -> void:
-	if not is_instance_valid(world): return
+	if not has_live_world(): return
 	if event is InputEventKey or event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventJoypadButton: activity = true
 	if event is InputEventMouseMotion and event.relative.length()>2: activity = true
 func _notification(what: int) -> void:
@@ -50,16 +69,8 @@ func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_FOCUS_IN,NOTIFICATION_APPLICATION_RESUMED]: clock.focused = true; clock.last_ms = Time.get_ticks_msec()
 	if what==NOTIFICATION_WM_CLOSE_REQUEST: persist()
 func _process(delta: float) -> void:
-	if is_instance_valid(world) and (not world.is_client or world.client_scene_ready):
-		if bound_run!=world.account_run_id: bound_run = world.account_run_id; registered.erase(bound_run)
-		if str(world.player.get_meta("titan_owner16","!"))==uid:
-			titan_victory(bound_run,str(world.player.get_meta("titan_victory16","")))
-		var reward_wave: int = int(world.upgrades.state(world.player).get("through",world.waves.wave))
-		var prior := int(observed_hordes.get(bound_run,reward_wave))
-		if reward_wave>prior:
-			for wave in range(prior+1,reward_wave+1): horde(bound_run,wave)
-		observed_hordes[bound_run] = maxi(prior,reward_wave)
-	var eligible: bool = is_instance_valid(world) and world.phase!="ended" and not get_tree().paused and not world.combat_paused() and (not world.is_client or world.client_scene_ready)
+	if has_live_world(): observe_progress()
+	var eligible: bool = has_live_world() and world.phase!="ended" and not get_tree().paused and not world.combat_paused() and (not world.is_client or world.client_scene_ready)
 	if eligible and world.network!=null and world.network.mode not in ["offline","host","client"]: eligible = false
 	if eligible:
 		var frame: Dictionary = world.local_input(world.player)
@@ -91,7 +102,7 @@ func request(action: String,data: Dictionary = {}) -> Dictionary:
 func sync() -> void:
 	sync_left = 120
 	if busy or api_url.is_empty() or uid.is_empty(): return
-	var needs_registration: bool = is_instance_valid(world) and not registered.has(world.account_run_id)
+	var needs_registration: bool = has_live_world() and not registered.has(world.account_run_id)
 	var equip_pending := trophy_sync_pending()
 	if sessions.is_empty() and pending.is_empty() and titan_pending.is_empty() and profile_loaded and not needs_registration and not equip_pending: return
 	busy = true; var owner := uid
@@ -101,7 +112,7 @@ func sync() -> void:
 		confirmed = reply.profile; profile_loaded = true; status = "Perfil sincronizado."
 		for id in reply.get("ack_sessions",[]): sessions.erase(id)
 	else: status = str(reply.get("error","Sincronização pendente."))
-	if reply.ok and is_instance_valid(world):
+	if reply.ok and has_live_world():
 		var run: String = world.account_run_id
 		if not registered.has(run):
 			var registration := await request("start",{"match_id":run,"mode":world.game_mode,"baseline":int(world.upgrades.state(world.player).get("through",0))})

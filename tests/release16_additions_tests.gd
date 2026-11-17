@@ -76,7 +76,13 @@ func run() -> void:
 	check(is_equal_approx(tower.spec.values.range,19) and is_equal_approx(tower.head.position.y,3.6),"upgraded raised model and actual firing height agree")
 	w.player.position = Vector3(35,0,18)
 	var overlay := DefenseRange16.new(); overlay.world = w; w.add_child(overlay); overlay._process(.3)
-	check(overlay.visible and overlay.drawing.mesh!=null and overlay.last_count>0,"nearby structure produces bounded ground coverage")
+	check(not overlay.visible,"proximity to a defense never displays coverage outside construction")
+	w.builder.active = true; w.builder.selected = FortressData.pieces().size()-1; w.builder.location = Vector3(30,0,15)
+	overlay._process(.3)
+	check(overlay.visible and overlay.drawing.mesh!=null and overlay.last_count>0,"selected defense displays bounded coverage during construction")
+	w.builder.active = false; overlay._process(.001)
+	check(not overlay.visible,"leaving construction hides coverage immediately without waiting for a mesh update")
+	w.builder.active = true
 	MobilePlatform.force_touch = true; overlay._process(.3)
 	check(overlay.last_count==96,"mobile range preview uses 32 bounded sectors")
 	MobilePlatform.force_touch = false

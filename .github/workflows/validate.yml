@@ -132,6 +132,17 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
           if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
           grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
+      - name: Validate scene transitions on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/scene_transition_tests.gd "${args[@]}" 2>&1 | tee "scene-transition-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "scene-transition-${platform}.log"; then exit 1; fi
+            grep -E 'SCENE TRANSITION RESULT: [0-9]+ checks, 0 failures' "scene-transition-${platform}.log"
+          done
       - uses: actions/setup-node@v4
         with:
           node-version: '24'

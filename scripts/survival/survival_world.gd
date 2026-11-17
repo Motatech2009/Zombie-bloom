@@ -1550,6 +1550,7 @@ func sync_account_progress() -> void:
 	account_baseline = false
 
 func _exit_tree() -> void:
+	Meta16.release_world(self)
 	sync_account_progress()
 	Account.persist()
 	Account.flush_progress()

@@ -6,6 +6,7 @@ var caption: Label3D
 var delay := 0.0
 var last_count := 0
 func _ready() -> void:
+	visible = false
 	add_child(drawing)
 	caption = VisualFactory.health_label(self,.4); caption.font_size = 22
 	var mat := StandardMaterial3D.new()
@@ -16,21 +17,16 @@ func _ready() -> void:
 	mat.no_depth_test = false
 	drawing.material_override = mat
 func _process(delta: float) -> void:
+	# Check before throttling so leaving construction hides coverage this frame.
+	if not is_instance_valid(world) or not world.is_inside_tree() or not is_instance_valid(world.player) or not world.builder.active or world.phase=="ended":
+		visible = false; delay = 0; return
 	delay -= delta
 	if delay>0: return
 	delay = .2
-	if not is_instance_valid(world.player) or world.phase=="ended": visible = false; return
-	var structure: Node3D
-	var index := -1; var tier := 1; var point := Vector3.ZERO; var angle := 0.0
-	if world.builder.active:
-		index = world.builder.selected; point = world.builder.location; angle = world.builder.angle
-	else:
-		var distance := 5.0
-		for node in get_tree().get_nodes_in_group("campaign_structure"):
-			if not "piece_index" in node or node.health.dead: continue
-			var d: float = node.global_position.distance_to(world.player.global_position)
-			if d<distance: structure = node; distance = d
-		if structure!=null: index = structure.piece_index; tier = structure.tier; point = structure.global_position; angle = structure.rotation.y
+	var index: int = world.builder.selected
+	var tier := 1
+	var point: Vector3 = world.builder.location
+	var angle: float = world.builder.angle
 	if index<0 or index>=FortressData.pieces().size(): visible = false; return
 	var piece: Dictionary = FortressData.pieces()[index]
 	visible = FortressData.turret(piece.id) or piece.id in ["station","spikes","wire"]
@@ -51,9 +47,7 @@ func _process(delta: float) -> void:
 		for i in range(count+1):
 			var v := Vector3(cos(TAU*i/count),0,sin(TAU*i/count))*radius
 			if FortressData.turret(piece.id):
-				var excludes: Array[RID] = []
-				if structure!=null: excludes.append(structure.get_rid())
-				var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,point+v+Vector3.UP*1.15,1|8,excludes))
+				var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,point+v+Vector3.UP*1.15,1|8))
 				if not hit.is_empty(): v = (hit.position-point)*Vector3(1,0,1)
 			points.append(v)
 		for i in range(count):

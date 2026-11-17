@@ -23,7 +23,13 @@ func run() -> void:
 	var link: Node = root.get_node("Coop")
 	if role=="host": await host(link)
 	else: await client(link)
-	link.close_session()
+	if is_instance_valid(current_scene) and current_scene.has_method("sync_account_progress"):
+		var closing: Node3D = current_scene
+		closing.hud.menu(); closing.hud.menu()
+		await create_timer(.3).timeout
+		check(current_scene.scene_file_path=="res://scenes/main/MainMenu.tscn" and not paused,"connected participant returns to menu after repeated clicks")
+		check(not is_instance_valid(closing) and root.get_node("Meta16").world==null and link.world==null and link.mode=="offline","connected scene releases gameplay, account and transport references")
+	else: link.close_session()
 	if is_instance_valid(current_scene): current_scene.queue_free()
 	await create_timer(.4).timeout
 	print("RELEASE16 COOP %s-%s RESULT: %d checks, %d failures" % [role,tag,checks,failures]); quit(1 if failures else 0)
@@ -105,4 +111,4 @@ func client(link: Node) -> void:
 	check(w.truce16.left>590 and w.truce16.pending,"private network snapshots carry team diversion and upcoming penalty")
 	await create_timer(.3).timeout
 	check(root.get_node("Meta16").has_cosmetic("COS-TITAN-01")== (tag=="1"),"only the designated contributor receives the private Titan trophy")
-	await create_timer(4).timeout
+	await create_timer(2 if tag=="1" else 4).timeout

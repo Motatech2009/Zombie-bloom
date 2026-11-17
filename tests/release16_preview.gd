@@ -35,6 +35,7 @@ func run() -> void:
 			for entry in [[FortressData.pieces().size()-1,Vector3(10,0,0)],[0,Vector3(10,0,-3.5)],[7,Vector3(14,0,-6)]]:
 				var piece := StaticBody3D.new(); piece.set_script(load("res://scripts/fortress/fortress_structure.gd")); piece.world = scene; piece.piece_index = entry[0]; piece.position = entry[1]; scene.base_root.add_child(piece)
 			scene.player.position = Vector3(10,0,3)
+			scene.builder.active = true; scene.builder.selected = FortressData.pieces().size()-1; scene.builder.location = Vector3(10,0,0); scene.builder.set_physics_process(false)
 			scene.set_process(false); scene.camera.size = 24; scene.camera.position = Vector3(28,23,22); scene.camera.look_at(Vector3(10,0,-1))
 			scene.truce16.left = 600; scene.truce16.pending = true
 		if view=="diversion":

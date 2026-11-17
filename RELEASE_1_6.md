@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.2**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.3**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -118,3 +118,13 @@ Revisão de código: `5fd7232d3fb6f8686ef08cef4a4c04b1be9c1760`. [CI aprovado](h
 - [Android — APK em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44088324771/artifacts/14331171272)
 
 Extraia o ZIP. Atualize PC e Android para esta mesma RC.2/protocolo 20. Os hashes e a verificação de abertura do executável exportado estão em `docs/release16-additions-results.txt`. Os links do histórico RC.1 acima não incluem as novas adições. A sincronização real ainda exige publicação do Firebase; os testes físicos do Android e entre aparelhos permanecem necessários.
+
+## RC3 — retorno ao menu e alcance na construção
+
+O alcance da defesa selecionada aparece exclusivamente durante a construção e some imediatamente ao sair desse modo. A aproximação de uma defesa fora da construção não exibe mais a área.
+
+A troca para o menu e o reinício aguardam o fim do callback do botão e ignoram acionamentos repetidos. Ao sair, o progresso captura o último resultado, persiste as filas e libera a referência à partida. O relógio e os pedidos assíncronos não consultam cenas já removidas da árvore. A base só recebe liberação manual quando foi de fato desanexada; os filhos da cena são liberados pelo próprio motor.
+
+Validação local: 48 verificações de transição em cada execução desktop, toque e Windows com vídeo/áudio reais; 35 verificações de isca/troféu/defesas; 13 de sincronização; 127 da campanha; quatro processos ENet reais com saída do convidado e encerramento pelo anfitrião (56 verificações). Os logs não registraram erros de script nem vazamentos ObjectDB. O teste ENet ainda registra o aviso anterior de snapshot acima do MTU, sem falhar as verificações.
+
+Candidata: Android 1603, versão 1.6.0-rc.3; protocolo de rede 20 preservado. A execução completa no GitHub e os pacotes desta revisão serão registrados no PR #5 quando concluídos. O Firebase real e Android físico continuam pendentes conforme as limitações já registradas.

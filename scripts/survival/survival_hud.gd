@@ -351,6 +351,7 @@ func show_result() -> void:
 	UI.button(box,"VOLTAR AO MENU",menu,true)
 
 func menu() -> void:
+	if scene_transition_pending: return
 	if world.network!=null: world.network.close_session()
 	super.menu()
 

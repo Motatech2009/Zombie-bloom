@@ -526,7 +526,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	if not hud.mode.is_empty(): hud.close_modal()
 
 func _exit_tree() -> void:
-	if not base_root.is_inside_tree(): base_root.free()
+	if is_instance_valid(base_root) and base_root.get_parent()==null: base_root.free()
 
 func migrate_snapshot(data: Variant) -> Variant:
 	if not data is Dictionary or data.get("format")!=1: return data
