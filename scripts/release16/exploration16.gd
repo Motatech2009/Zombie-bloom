@@ -48,8 +48,8 @@ func load_sector() -> void:
 		world.enemy_index[boss.net_id] = boss; var id: int = boss.net_id; boss.tree_exiting.connect(func(): world.enemy_index.erase(id)); nodes[key].boss = boss
 		world.notify("AMEAÇA COLOSSAL · Titã Enraizado · combate opcional; as saídas permanecem livres.")
 	if s.kind=="titan" and s.dead and not s.reward.is_empty():
-		var loot: Node3D = world.spawn_loot(world.field_root.to_global(Vector3(15,0,3)),s.reward.duplicate(),0,"",0,false,true)
-		if loot!=null: loot.set_meta("special16",true); world.mark_boss_drop(loot); nodes[key].loot = loot
+		var loot: Node3D = world.spawn_loot(world.field_root.to_global(Vector3(15,0,3)),s.reward.duplicate(),0,"",0,false,true,true)
+		if loot!=null: loot.set_meta("special16",true); loot.set_meta("encounter16",key); world.mark_boss_drop(loot); nodes[key].loot = loot
 func build_post(root: Node3D) -> void:
 	VisualFactory.cylinder(root,13,.12,Vector3(0,.02,0),Color("62684d"))
 	for i in range(32):
@@ -110,9 +110,12 @@ func defeated(boss: Node3D) -> void:
 	var rng := RandomNumberGenerator.new(); rng.seed = hash(boss.encounter_key+str(world.world_seed)+"loot16")
 	s.reward = {"scrap":rng.randi_range(250,400),"parts":rng.randi_range(8,12),"rifle_ammo":60,"medkit":1}
 	s.loot_created = true
-	var loot: Node3D = world.spawn_loot(boss.global_position+Vector3(0,0,3),s.reward.duplicate(),0,"",0,false,true)
-	if loot!=null: loot.set_meta("special16",true); world.mark_boss_drop(loot); nodes[boss.encounter_key].loot = loot
+	var loot: Node3D = world.spawn_loot(boss.global_position+Vector3(0,0,3),s.reward.duplicate(),0,"",0,false,true,true)
+	if loot!=null: loot.set_meta("special16",true); loot.set_meta("encounter16",boss.encounter_key); world.mark_boss_drop(loot); nodes[boss.encounter_key].loot = loot
 	world.notify("TITÃ DERROTADO · suprimentos raros compartilhados. Nenhuma moeda é concedida por este abate.")
+func loot_changed(loot: Node3D) -> void:
+	var key := str(loot.get_meta("encounter16",""))
+	if sectors.has(key): sectors[key].reward = loot.contents.duplicate()
 func tick(delta: float) -> void:
 	if world.is_client: return
 	tick_left -= delta

@@ -31,94 +31,94 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          timeout 120s godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
-          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
+          timeout 120s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
           grep -E 'RESULT: [0-9]+ checks, 0 failures' tests.log
-          godot --headless --path . --script res://tests/campaign_tests.gd 2>&1 | tee campaign-tests.log
+          timeout 120s godot --headless --path . --script res://tests/campaign_tests.gd 2>&1 | tee campaign-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' campaign-tests.log; then exit 1; fi
           grep -E 'CAMPAIGN RESULT: [0-9]+ checks, 0 failures' campaign-tests.log
-          godot --headless --path . --script res://tests/defense_tests.gd 2>&1 | tee defense-tests.log
+          timeout 120s godot --headless --path . --script res://tests/defense_tests.gd 2>&1 | tee defense-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' defense-tests.log; then exit 1; fi
           grep -E 'DEFENSE RESULT: [0-9]+ checks, 0 failures' defense-tests.log
-          godot --headless --path . --script res://tests/sectors_tests.gd 2>&1 | tee sectors-tests.log
+          timeout 120s godot --headless --path . --script res://tests/sectors_tests.gd 2>&1 | tee sectors-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' sectors-tests.log; then exit 1; fi
           grep -E 'SECTORS RESULT: [0-9]+ checks, 0 failures' sectors-tests.log
-          godot --headless --path . --script res://tests/survival_tests.gd 2>&1 | tee survival-tests.log
+          timeout 120s godot --headless --path . --script res://tests/survival_tests.gd 2>&1 | tee survival-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' survival-tests.log; then exit 1; fi
           grep -E 'SURVIVAL RESULT: [0-9]+ checks, 0 failures' survival-tests.log
-          godot --headless --path . --script res://tests/arsenal_tests.gd 2>&1 | tee arsenal-tests.log
+          timeout 120s godot --headless --path . --script res://tests/arsenal_tests.gd 2>&1 | tee arsenal-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' arsenal-tests.log; then exit 1; fi
           grep -E 'ARSENAL RESULT: [0-9]+ checks, 0 failures' arsenal-tests.log
-          godot --headless --path . --script res://tests/fortress_tests.gd 2>&1 | tee fortress-tests.log
+          timeout 120s godot --headless --path . --script res://tests/fortress_tests.gd 2>&1 | tee fortress-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' fortress-tests.log; then exit 1; fi
           grep -E 'FORTRESS RESULT: [0-9]+ checks, 0 failures' fortress-tests.log
-          godot --headless --path . --script res://tests/roll_tests.gd 2>&1 | tee roll-tests.log
+          timeout 120s godot --headless --path . --script res://tests/roll_tests.gd 2>&1 | tee roll-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' roll-tests.log; then exit 1; fi
           grep -E 'ROLL RESULT: [0-9]+ checks, 0 failures' roll-tests.log
-          godot --headless --path . --script res://tests/clay_tests.gd 2>&1 | tee clay-tests.log
+          timeout 120s godot --headless --path . --script res://tests/clay_tests.gd 2>&1 | tee clay-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' clay-tests.log; then exit 1; fi
           grep -E 'CLAY RESULT: [0-9]+ checks, 0 failures' clay-tests.log
-          godot --headless --path . --script res://tests/internet_tests.gd 2>&1 | tee internet-tests.log
+          timeout 120s godot --headless --path . --script res://tests/internet_tests.gd 2>&1 | tee internet-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' internet-tests.log; then exit 1; fi
           grep -E 'INTERNET RESULT: [0-9]+ checks, 0 failures' internet-tests.log
-          godot --headless --path . --script res://tests/mobile_tests.gd 2>&1 | tee mobile-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_tests.gd 2>&1 | tee mobile-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-tests.log; then exit 1; fi
           grep -E 'MOBILE RESULT: [0-9]+ checks, 0 failures' mobile-tests.log
-          godot --headless --path . --script res://tests/mobile_targeting_tests.gd 2>&1 | tee targeting-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_targeting_tests.gd 2>&1 | tee targeting-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' targeting-tests.log; then exit 1; fi
           grep -E 'TARGETING RESULT: [0-9]+ checks, 0 failures' targeting-tests.log
-          godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-performance-tests.log; then exit 1; fi
           grep -E 'MOBILE PERFORMANCE RESULT: [0-9]+ checks, 0 failures' mobile-performance-tests.log
-          godot --headless --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
+          timeout 120s godot --headless --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' progression-tests.log; then exit 1; fi
           grep -E 'PROGRESSION RESULT: [0-9]+ checks, 0 failures' progression-tests.log
-          godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-experience-tests.log; then exit 1; fi
           grep -E 'MOBILE EXPERIENCE RESULT: [0-9]+ checks, 0 failures' mobile-experience-tests.log
-          godot --headless --path . --script res://tests/frontier_features_tests.gd 2>&1 | tee frontier-features-tests.log
+          timeout 120s godot --headless --path . --script res://tests/frontier_features_tests.gd 2>&1 | tee frontier-features-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' frontier-features-tests.log; then exit 1; fi
           grep -E 'FRONTIER FEATURES RESULT: [0-9]+ checks, 0 failures' frontier-features-tests.log
-          godot --headless --path . --script res://tests/online_preparation_tests.gd 2>&1 | tee online-preparation-tests.log
+          timeout 120s godot --headless --path . --script res://tests/online_preparation_tests.gd 2>&1 | tee online-preparation-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' online-preparation-tests.log; then exit 1; fi
           grep -E 'ONLINE PREPARATION RESULT: [0-9]+ checks, 0 failures' online-preparation-tests.log
-          godot --headless --path . --script res://tests/account_tests.gd 2>&1 | tee account-tests.log
+          timeout 120s godot --headless --path . --script res://tests/account_tests.gd 2>&1 | tee account-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-tests.log; then exit 1; fi
           grep -E 'ACCOUNT RESULT: [0-9]+ checks, 0 failures' account-tests.log
-          godot --headless --path . --script res://tests/session_tests.gd 2>&1 | tee session-tests.log
+          timeout 120s godot --headless --path . --script res://tests/session_tests.gd 2>&1 | tee session-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' session-tests.log; then exit 1; fi
           grep -E 'SESSION RESULT: [0-9]+ checks, 0 failures' session-tests.log
-          godot --headless --path . --script res://tests/account_world_tests.gd 2>&1 | tee account-world-tests.log
+          timeout 120s godot --headless --path . --script res://tests/account_world_tests.gd 2>&1 | tee account-world-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-world-tests.log; then exit 1; fi
           grep -E 'ACCOUNT WORLD RESULT: [0-9]+ checks, 0 failures' account-world-tests.log
-          godot --headless --path . --script res://tests/rank_combat_tests.gd 2>&1 | tee rank-combat-tests.log
+          timeout 120s godot --headless --path . --script res://tests/rank_combat_tests.gd 2>&1 | tee rank-combat-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' rank-combat-tests.log; then exit 1; fi
           grep -E 'RANK COMBAT RESULT: [0-9]+ checks, 0 failures' rank-combat-tests.log
-          godot --headless --path . --script res://tests/release15_tests.gd 2>&1 | tee release15-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release15_tests.gd 2>&1 | tee release15-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release15-tests.log; then exit 1; fi
           grep -E 'RELEASE15 RESULT: [0-9]+ checks, 0 failures' release15-tests.log
-          godot --headless --path . --script res://tests/release15_encounters_tests.gd 2>&1 | tee release15-encounters-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release15_encounters_tests.gd 2>&1 | tee release15-encounters-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release15-encounters-tests.log; then exit 1; fi
           grep -E 'RELEASE15 ENCOUNTERS RESULT: [0-9]+ checks, 0 failures' release15-encounters-tests.log
-          godot --headless --path . --script res://tests/release16_progression_tests.gd 2>&1 | tee release16-progression-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release16_progression_tests.gd 2>&1 | tee release16-progression-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-progression-tests.log; then exit 1; fi
           grep -E 'RELEASE16 PROGRESSION RESULT: [0-9]+ checks, 0 failures' release16-progression-tests.log
           for platform in desktop mobile; do
             args=()
             if [ "$platform" = mobile ]; then args=(-- --mobile); fi
-            godot --headless --path . --script res://tests/release16_ui_tests.gd "${args[@]}" 2>&1 | tee "release16-ui-${platform}.log"
+            timeout 120s godot --headless --path . --script res://tests/release16_ui_tests.gd "${args[@]}" 2>&1 | tee "release16-ui-${platform}.log"
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release16-ui-${platform}.log"; then exit 1; fi
             grep -E 'RELEASE16 UI RESULT: [0-9]+ checks, 0 failures' "release16-ui-${platform}.log"
           done
           for players in 2 3 4; do
             python3 tests/run_release16_coop_test.py --players "$players" 2>&1 | tee "release16-coop-${players}.log"
           done
-          godot --headless --path . --script res://tests/release16_content_tests.gd 2>&1 | tee release16-content-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release16_content_tests.gd 2>&1 | tee release16-content-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-content-tests.log; then exit 1; fi
           grep -E 'RELEASE16 CONTENT RESULT: [0-9]+ checks, 0 failures' release16-content-tests.log
-          godot --headless --path . --script res://tests/release16_meta_tests.gd 2>&1 | tee release16-meta-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release16_meta_tests.gd 2>&1 | tee release16-meta-tests.log
           if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-meta-tests.log; then exit 1; fi
           grep -E 'RELEASE16 META RESULT: [0-9]+ checks, 0 failures' release16-meta-tests.log
           python3 tests/run_release16_coop_test.py --players 4 --script release16_rescue_coop_test.gd 2>&1 | tee release16-rescue-coop.log
@@ -161,7 +161,7 @@ jobs:
               desktop-ranks) args=(--ranks) ;;
               mobile-ranks) args=(--mobile --ranks) ;;
             esac
-            xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release_preview.gd -- "${args[@]}" 2>&1 | tee "preview-${view}.log"
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release_preview.gd -- "${args[@]}" 2>&1 | tee "preview-${view}.log"
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "preview-${view}.log"; then exit 1; fi
             test -s "builds/${view}-1.0.png"
           done
@@ -179,7 +179,7 @@ jobs:
               systems-mobile) args=(--systems --mobile) ;;
               events) args=(--events) ;;
             esac
-            xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release15_preview.gd -- "${args[@]}" 2>&1 | tee "preview15-${view}.log"
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release15_preview.gd -- "${args[@]}" 2>&1 | tee "preview15-${view}.log"
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "preview15-${view}.log"; then exit 1; fi
           done
       - name: Render version 1.6 review images
@@ -190,7 +190,7 @@ jobs:
             for platform in desktop mobile; do
               args=(--view="$view")
               if [ "$platform" = mobile ]; then args+=(--mobile); fi
-              xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release16_preview.gd -- "${args[@]}" 2>&1 | tee "preview16-${platform}-${view}.log"
+              timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release16_preview.gd -- "${args[@]}" 2>&1 | tee "preview16-${platform}-${view}.log"
               if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "preview16-${platform}-${view}.log"; then exit 1; fi
             done
           done
@@ -226,7 +226,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p builds/windows
-          godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
+          timeout 120s godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
           test -s builds/windows/ZombieBloom.exe
           if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
           cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
@@ -257,7 +257,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p builds/android
-          godot --headless --path . --export-debug "Android" builds/android/ZombieBloom-Android.apk 2>&1 | tee android-export.log
+          timeout 120s godot --headless --path . --export-debug "Android" builds/android/ZombieBloom-Android.apk 2>&1 | tee android-export.log
           test -s builds/android/ZombieBloom-Android.apk
           if grep -E 'SCRIPT ERROR:|ERROR:' android-export.log; then exit 1; fi
           "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose builds/android/ZombieBloom-Android.apk | tee android-signature.log

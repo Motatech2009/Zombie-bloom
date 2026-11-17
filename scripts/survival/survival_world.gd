@@ -524,13 +524,13 @@ func mark_boss_drop(loot: Node3D) -> void:
 	if not loot.has_node("BossReward"):
 		var ring := VisualFactory.ring(loot,.7,Vector3(0,.08,0),Color("efc86d")); ring.name = "BossReward"
 
-func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true,world_origin: bool = true) -> Node3D:
+func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true,world_origin: bool = true,isolated: bool = false) -> Node3D:
 	var parent: Node3D = regions.root_at(coord_at(pos)) if regions.enabled() else base_root if region_at(pos)=="0:0" else field_root
 	if parent==null: return null
 	var items := get_tree().get_nodes_in_group("survival_loot").filter(func(pile): return pile.get_parent()==parent and not pile.is_queued_for_deletion())
-	if items.size()>=128:
+	if items.size()>=128 and not isolated:
 		for pile in items:
-			if bool(pile.get_meta("world_origin",false))==world_origin and bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and (int(pile.loaded)==0 or not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS)):
+			if not pile.get_meta("special16",false) and bool(pile.get_meta("world_origin",false))==world_origin and bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and (int(pile.loaded)==0 or not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS)):
 				for id in contents: pile.contents[id] = int(pile.contents.get(id,0))+int(contents[id])
 				pile.set_meta("xp",int(pile.get_meta("xp",0))+experience)
 				pile.show(); pile.refresh_model()
@@ -664,6 +664,7 @@ func transfer_source(actor: Node3D,source: Node3D) -> bool:
 		if source.has_meta("index") and not int(source.get_meta("index")) in claimed: claimed.append(int(source.get_meta("index")))
 		source.hide()
 		if source.get_meta("airdrop",false): airdrops.mark_collected()
+	exp16.loot_changed(source)
 	actor.weapons.sync_hand()
 	if not transferred: notify("Bolsa cheia ou arma já carregada. Deposite no Núcleo ou reorganize com I.")
 	return transferred
@@ -1352,6 +1353,7 @@ func collect_ground(actor: Node3D,source: Node3D) -> bool:
 	var power: String = source.get_meta("power","")
 	if not power.is_empty(): source.set_meta("power",""); actor.grant_power(power); moved = true
 	if contents.is_empty(): source.hide()
+	exp16.loot_changed(source)
 	actor.weapons.sync_hand()
 	return moved
 

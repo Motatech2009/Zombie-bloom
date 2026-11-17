@@ -113,6 +113,16 @@ func run() -> void:
 	check(w.exp16.sectors[key].dead and w.exp16.sectors[key].reward.scrap>=250,"defeat records once and creates one shared rare reward")
 	var reward: Dictionary = w.exp16.sectors[key].reward.duplicate(); w.exp16.defeated(boss)
 	check(w.exp16.sectors[key].reward==reward,"repeated defeat does not reroll or duplicate Titan loot")
+	var reward_loot: Node3D = w.exp16.nodes[key].loot
+	reward_loot.set_process(false); w.player.global_position = reward_loot.global_position
+	var attempts := 0
+	while not reward_loot.contents.is_empty() and attempts<200:
+		w.transfer_source(w.player,reward_loot); attempts += 1
+	check(reward_loot.contents.is_empty() and w.exp16.sectors[key].reward.is_empty(),"the final item updates persistent Titan loot immediately before its node disappears")
+	reward_loot.queue_free(); await process_frame
+	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[2]; w.travel_cooldown = 0; w.step_sector(2)
+	w.elapsed = 800; w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
+	check(not w.exp16.nodes[key].has("loot") and w.exp16.sectors[key].reward.is_empty(),"fully claimed Titan loot never respawns after cache expiry and sector reload")
 	w.queue_free(); await create_timer(.4).timeout
 	create_world("rescue")
 	check(w.game_mode=="rescue" and not w.checkpoint_enabled,"rescue mode uses separate session without overwriting campaign")
