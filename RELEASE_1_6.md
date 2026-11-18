@@ -166,4 +166,4 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - 19 cosméticos 3D no catálogo existente, incluindo o troféu do Titã; encaixes no personagem e atlas compartilhado. Mochilas continuam apenas visuais.
 - Base fixa, articulação e disparos pelas bocas reais; elevada respeita barricadas e muralhas. Correção de inicialização de material no modo leve sem texturas pré-aquecidas.
 - Defesas usam atlas 1K com mipmaps/compressão VRAM; cosméticos usam um atlas 2K compartilhado.
-- Candidata RC6/APK1606/protocolo21; regras Firebase reais continuam pendentes. Pacotes RC5 descritos nas evidências anteriores não contêm estes modelos. A validação completa RC6 será registrada em `docs/release16-models-results.txt`.
+- Candidata RC6/APK1606/protocolo21; regras Firebase reais continuam pendentes. Pacotes RC5 descritos nas evidências anteriores não contêm estes modelos. CI RC6 aprovado: 1.856 verificações Godot e pacotes PC/Android gerados. Evidências e hashes em `docs/release16-models-results.txt`.
