@@ -174,4 +174,4 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - Os 19 acessórios físicos vestem o novo corpo. Cabeça e tronco recebem ajustes locais por roupa, mantendo malhas e atlases compartilhados. Cosméticos não alteram colisão, dano, vida, mochila funcional ou progressão.
 - Quatro carros distintos na base; comboio com reboque; barraca fornecida com atlas único e Bento atrás do balcão. Eventos, recompensas e áreas bloqueadas preservados.
 - Canhão N2/N3 dispara uma salva de dois tiros retos mais grossos, um por cano, com dano total preservado. O cliente também reproduz os projéteis espessos. N1 mantém seu único cano.
-- Candidata RC7/APK1607, protocolo21. A ativação da economia no Firebase real permanece pendente. Evidências desta candidata serão registradas após a compilação.
+- Candidata RC7/APK1607, protocolo21. A ativação da economia no Firebase real permanece pendente. CI RC7 aprovado: 1.970 verificações Godot (1.928 na fonte e 42 no pacote Windows), cooperativo e serviços emulados aprovados. Pacotes gerados e copiados para Downloads/ZombieBloom_RC7. Evidências e hashes em `docs/release16-character-results.txt`.

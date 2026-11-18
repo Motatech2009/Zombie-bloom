@@ -1,0 +1,60 @@
+Zombie Bloom 1.6.0-rc.7 — personagem e objetos enviados pelo criador
+
+Código dos pacotes: 1d3f5ce5a8d7171b62ead42dc4b3f7355cb30367
+Árvore de código: 6ff55335c5d2f7b5aff30600939e54f13754cbd9
+Branch: feat/1.6-individual-progression; PR #5 continua candidata, sem merge/publicação final.
+CI: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44221938265
+Job 134525671445: completed / success.
+
+Mudanças:
+- Personagem estático em T recebeu esqueleto local de 15 ossos, skin normalizada e empunhadura de dois segmentos.
+- Braços abaixam sem item; recarga, coleta, caminhada e rolamento acionam o modelo.
+- 19 cosméticos físicos equipam no novo corpo; quatro variantes de malha compartilhadas ajustam só cabeça/tronco cobertos.
+- Nenhuma alteração de atributos, capacidade de mochila, regras de desbloqueio ou progressão.
+- Quatro carros distintos na base, comboio com reboque e barraca do vendedor. Bento mantém seu humano procedural.
+- Canhão N2/N3 emite dois projéteis retos e grossos, um por cano, com dano total anterior preservado; cliente reproduz o visual.
+
+Geometria:
+Personagem: 1.921.388 -> 15.010 triângulos; 15 ossos.
+Carros (kit completo): 1.951.766 -> 7.624 triângulos.
+Comboio/reboque: 1.926.440 -> 7.518 triângulos.
+Barraca: 12.616 triângulos; 35 superfícies reunidas em um atlas e uma superfície.
+Atlases: personagem/carros/comboio 1024; barraca 2048; VRAM comprimida e mipmaps.
+Hashes e procedência dos GLBs: art_source/tripo16/actors/sources.json.
+
+Validação:
+1.928 verificações Godot em 38 invocações de fonte, incluindo 52 do novo personagem no desktop e 52 no modo touch.
+42 verificações adicionais dentro do PCK incorporado ao EXE Windows: versão RC7, defesas, cosméticos, esqueleto, postura e novos objetos.
+Total destas verificações: 1.970, sem falhas.
+Canhão/Tesla/defesas: 112; cosméticos: 87 desktop + 87 touch.
+Transições: 48 desktop + 48 touch.
+Cooperativo ENet 1.6: 26/41/56 verificações com 2/3/4 processos; resgate com 4 processos: 31.
+Cooperativo legado: 116; movimento: 9; exploração separada: 20.
+Serviço emulado: Spark REST 37 + Godot 17; Auth anterior 15; Functions opcional REST 22 + Godot 7; testes Node 7.
+40 imagens de revisão 1.6, incluindo frente/costas dos kits no desktop e no modo touch.
+Inicialização do EXE Windows baixado: --headless --max-fps 60 --quit-after 300; exit 0, sem erros.
+APK versionCode 1607 / versionName 1.6.0-rc.7; assinatura v2/v3 válida; arm64-v8a e armeabi-v7a; INTERNET e ACCESS_NETWORK_STATE.
+Não houve teste físico Android ou de cooperação Windows/Android com aparelhos.
+Economia no Firebase real continua pendente, conforme escopo anterior.
+
+Artefatos deste mesmo código:
+Windows ZIP: artifact 14391257006; 70.002.851 bytes
+SHA-256: 8061e0042911c7ec5fca2a98b05224bef1f4ae07cb8a75b95669303219027cc8
+EXE extraído: 148.313.560 bytes
+SHA-256: 5eabd390aafdeae0703e6824ad8def40c7ef42ff8adb4a52421e17e3bde24e10
+Android ZIP: artifact 14390294508; 90.379.386 bytes
+SHA-256: dcb12c7331672d152fc807f76837c8c68cba99d98809e6cb50c5109088fd72ac
+APK extraído: 100.331.400 bytes
+SHA-256: 88cdf123b2cdbf9372efefd1a5e13cfdd4ef4d1a559db884b84b8820eb751e79
+Revisão 1.6 ZIP: artifact 14390694700
+SHA-256: e94b1999739bed24dde21ebaf9561645b26f4564ca81eb257092597a70a41d2b
+Logs ZIP: artifact 14390029534
+SHA-256: 7a60fc08c024261f935c5a557144c9248793484196a99a5920990acf3cd0c9f3
+
+Cópias locais confirmadas antes da desconexão do PC:
+F:/Download/ZombieBloom_RC7/ZombieBloom-RC7-Windows.zip
+F:/Download/ZombieBloom_RC7/Windows/ZombieBloom.exe
+F:/Download/ZombieBloom_RC7/ZombieBloom-Android.apk
+F:/Download/ZombieBloom_RC7/Personagem_Cosmeticos.png
+
+A conexão com o ambiente Windows terminou após a cópia dos pacotes e a inicialização validada. A sincronização do HEAD git local e a gravação local deste relatório não foram realizadas; o código e este relatório estão preservados no GitHub. Alterações não relacionadas em assets/meshy e docs/meshy-production foram preservadas e não foram incluídas.
