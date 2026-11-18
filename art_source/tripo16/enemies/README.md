@@ -9,3 +9,15 @@ Oito bosses estão separados. O kit comum possui 19 componentes, incluindo o Col
 O corpo anatômico do Titã tem 1,9 unidades antes da escala existente; os galhos chegam a 2,5. O marcador do coração permanece em y=1,22 e recebe profundidade calculada da superfície do peito. Colisões, dano e habilidades não dependem das malhas.
 
 Validação: enemy16_models_tests.gd desktop/touch; release16_content_tests.gd; rc8_combat_events_tests.gd; exported_models_smoke.gd no pacote. render_enemy_references16.gd -- --overview gera galerias reais; omitir --overview gera três vistas por criatura.
+
+## Zumbis separados e articulados — RC10
+
+O pacote de zumbis separados fornece os 19 GLBs individuais da RC10. Os GLBs de Errante, Blindado e Investidor no ZIP de correção têm os mesmos hashes dos modelos no pacote completo. Os nomes e hashes usados no jogo constam em `assets/enemies/tripo16/geometry.json`.
+
+Execute o seguinte comando na raiz do projeto para refazer as cenas e as malhas dos zumbis com o Godot 4.6.3.
+
+```sh
+godot --headless --path . --script res://tools/art/build_separated_zombies16.gd -- /caminho/ZombieBloom_Modelos_Separados
+```
+
+O preparo mantém o atlas da RC9 e limita cada malha a 3.000 triângulos. O preparo separa e fecha as superfícies internas das pernas fundidas na malha desses três modelos. Os pivôs de joelho e tornozelo de Errante, Blindado e Investidor são ajustados por lado. O jogo aplica a passada local aos esqueletos e controla os braços separadamente durante ataques. O Parasita usa uma versão reduzida do Cão Infectado e se transforma no Bruto. Use o preparo RC9 dos chefes para atualizar o kit de bosses.

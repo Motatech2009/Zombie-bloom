@@ -201,3 +201,9 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 Codigo 49b9eaa2b38d550afe8ecf7f5c13e2e5a573d16f: [CI completo aprovado](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836). Os logs registram 3.062 verificacoes com zero falhas, incluindo 490 dos novos modelos e 79 no pacote exportado. Apos download, mais 245 passaram usando o executavel Windows como pacote principal; o boot nativo tambem encerrou normalmente.
 
 [PC](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14421390863) · [Android em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14420248631). Downloads podem exigir login GitHub. APK1609 com assinatura v2/v3 e ABIs arm64-v8a/armeabi-v7a verificados. Hashes, escopo e limitacoes em [evidencias RC9](docs/release16-enemies-results.txt).
+
+### RC10 — modelos separados e pernas articuladas
+
+- 19 modelos individuais preparados para Godot, com até 3.000 triângulos por modelo e o atlas compartilhado da RC9.
+- Errante, Blindado e Investidor têm joelhos e tornozelos recalibrados, malha separada entre os pés e reposição da postura ao parar. A investida do Investidor usa a passada rápida no anfitrião e nos convidados.
+- A versão de teste é `1.6.0-rc.10`, com APK 1610 e protocolo cooperativo 21.

@@ -1,245 +1,264 @@
 [
   {
     "bones": 15,
-    "bounds": "[P: (-0.574637, 0.0, -0.313869), S: (1.149274, 1.9, 0.627738)]",
-    "component": 8199,
+    "bounds": "[P: (-0.715624, 0.0, -0.293317), S: (1.150063, 1.9, 0.632287)]",
     "id": "walker",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2738
+    "sha256": "ed4589b703c63a7375e262302022a4a151cf4adac459da148a4d51d72e6095e3",
+    "source": "errante.glb",
+    "triangles": 2952
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.614615, 0.0, -0.430618), S: (1.22923, 1.9, 0.861235)]",
-    "component": 19228,
+    "bounds": "[P: (-0.548791, 0.0, -0.307633), S: (1.229038, 1.9, 0.861971)]",
     "id": "runner",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2966
+    "sha256": "09de21dc5b36530674234f2cedff202e0b21565319de72158e67755ca241540c",
+    "source": "corredor.glb",
+    "triangles": 2742
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.781581, 0.0, -0.524401), S: (1.563161, 1.9, 1.048802)]",
-    "component": 33679,
+    "bounds": "[P: (-0.822519, 0.0, -0.526403), S: (1.565562, 1.9, 1.04929)]",
     "id": "brute",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 1708
+    "sha256": "e8bf5bb2771f605368dbecd1f9194a202be83609fb98d7b9cbb03aa7934c5f6b",
+    "source": "bruto.glb",
+    "triangles": 2112
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.576344, 0.0, -0.34304), S: (1.152687, 1.9, 0.686079)]",
-    "component": 44564,
+    "bounds": "[P: (-0.54301, 0.0, -0.316416), S: (1.154364, 1.9, 0.686414)]",
     "id": "armored",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 1882
+    "sha256": "7f1bb2770efaeaca4d7e7aa0172aff822ec7b056f9c034d37e46acbe89392dc4",
+    "source": "blindado.glb",
+    "triangles": 1858
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.655954, 0.0, -0.361736), S: (1.311908, 1.9, 0.723472)]",
-    "component": 53263,
+    "bounds": "[P: (-0.635835, 0.0, -0.326485), S: (1.314123, 1.9, 0.728574)]",
     "id": "demolisher",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2222
+    "sha256": "134bb255bc4ff9d10007f08b65381d5453fbb70e07f2b7f709a7e2bed13d5993",
+    "source": "demolidor.glb",
+    "triangles": 1746
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.537084, 0.0, -0.32584), S: (1.074168, 1.9, 0.65168)]",
-    "component": 64261,
+    "bounds": "[P: (-0.577352, 0.0, -0.303811), S: (1.076391, 1.9, 0.653402)]",
     "id": "spitter",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2862
+    "sha256": "e8d6f056b96a52c7c9e19cb8f3d0091fc73cc40b5fa59ae7a752cdca29faaab2",
+    "source": "corrosivo.glb",
+    "triangles": 2840
   },
   {
-    "bones": 7,
-    "bounds": "[P: (-0.32934, 0.0, -0.797797), S: (0.658681, 0.95, 1.595594)]",
-    "component": 75821,
+    "bones": 11,
+    "bounds": "[P: (-0.343042, 0.0, -0.69103), S: (0.660346, 0.95, 1.593832)]",
     "id": "hound",
     "kit": "zombies",
     "profile": "dog",
-    "triangles": 1952
+    "sha256": "46bebf54f9418cf3bc7fc7734e6806f720259288218e7bd6155f4317cd51f81d",
+    "source": "cao_infectado.glb",
+    "triangles": 2220
   },
   {
     "bones": 5,
-    "bounds": "[P: (-1.117492, 0.0, -0.609781), S: (2.234985, 0.75, 1.219561)]",
-    "component": 15596,
+    "bounds": "[P: (-0.974365, 0.0, -0.590536), S: (2.234156, 0.75, 1.221071)]",
     "id": "flyer",
     "kit": "zombies",
     "profile": "flyer",
-    "triangles": 1668
+    "sha256": "26c59cc180022af3c9f2cad1a84da9c3de8e7d1fa265c370200c5610368688ad",
+    "source": "asa_infectada.glb",
+    "triangles": 2584
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.904096, 0.0, -0.593795), S: (1.808192, 1.9, 1.187591)]",
-    "component": 32993,
+    "bounds": "[P: (-0.848776, 0.0, -0.641086), S: (1.808633, 1.9, 1.189911)]",
     "id": "alpha_legacy",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2430
+    "sha256": "75d583c8ac3ee137e168c2a71ef8a68ae9a499cca5ee15ae49a1b49cffd7835e",
+    "source": "colosso_alfa.glb",
+    "triangles": 2908
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.747485, 0.0, -0.615399), S: (1.494971, 1.9, 1.230799)]",
-    "component": 44542,
+    "bounds": "[P: (-0.775715, 0.0, -0.591051), S: (1.49461, 1.9, 1.239557)]",
     "id": "burster",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2250
+    "sha256": "a88773edd9481c6b10b9a72cd7119e2b5de0c7b65896402f0ef17957c8df3c40",
+    "source": "estourador.glb",
+    "triangles": 1592
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.515221, 0.0, -0.379469), S: (1.030442, 1.9, 0.758938)]",
-    "component": 52417,
+    "bounds": "[P: (-0.470496, 0.0, -0.408862), S: (1.032438, 1.9, 0.761915)]",
     "id": "screamer",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2446
+    "sha256": "3289eba8ba7854696f8ccaa1ae2572b68d50d5a2c7e1ee82d90db0169bedbb55",
+    "source": "berrador.glb",
+    "triangles": 2512
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.628941, 0.0, -0.362895), S: (1.257881, 1.9, 0.725789)]",
-    "component": 64085,
+    "bounds": "[P: (-0.57615, 0.0, -0.357948), S: (1.261143, 1.9, 0.729262)]",
     "id": "mender",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2628
+    "sha256": "7495b0643872b11d4c879d435a315459893b454999767201f78687d2acc90b31",
+    "source": "revestidor.glb",
+    "triangles": 2644
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.516297, 0.0, -0.383468), S: (1.032595, 1.9, 0.766936)]",
-    "component": 7186,
-    "id": "charger",
-    "kit": "zombies",
-    "profile": "human",
-    "triangles": 2390
-  },
-  {
-    "bones": 15,
-    "bounds": "[P: (-0.59428, 0.0, -0.322544), S: (1.188559, 1.9, 0.645087)]",
-    "component": 74766,
+    "bounds": "[P: (-0.588918, 0.0, -0.346543), S: (1.187123, 1.9, 0.647545)]",
     "id": "cryo",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2458
+    "sha256": "733a785a58f1361313f97c08a091654f2241248a45b7d99692d7871bf0037d9b",
+    "source": "criogenico.glb",
+    "triangles": 2338
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.580265, 0.0, -0.489666), S: (1.16053, 1.9, 0.979331)]",
-    "component": 18217,
+    "bounds": "[P: (-0.432871, 0.0, -0.411639), S: (1.034138, 1.9, 0.767434)]",
+    "id": "charger",
+    "kit": "zombies",
+    "profile": "human",
+    "sha256": "3b2de62ac1bd9c5f29e7f72ab05bf9a79f043dc845cd4f4a7a650749bed137a0",
+    "source": "investidor.glb",
+    "triangles": 2524
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.569253, 0.0, -0.46939), S: (1.160943, 1.9, 0.980423)]",
     "id": "saboteur",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2535
+    "sha256": "79c4c878dd78d265ddcb14d79761976f79ce99bf8a146ce6803716befe2c43af",
+    "source": "sabotador.glb",
+    "triangles": 1909
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.831811, 0.0, -0.605242), S: (1.663622, 1.9, 1.210483)]",
-    "component": 32011,
+    "bounds": "[P: (-0.789485, 0.0, -0.612581), S: (1.663569, 1.9, 1.21222)]",
     "id": "lobber",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 1990
+    "sha256": "271d1601fe920e5847665311de18cb7da1fd59290fdc7e8e58be92df2198478c",
+    "source": "lancador_de_esporos.glb",
+    "triangles": 1894
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.662986, 0.0, -0.639298), S: (1.325972, 1.9, 1.278596)]",
-    "component": 43798,
+    "bounds": "[P: (-0.910985, 0.0, -0.876078), S: (1.326007, 1.9, 1.278302)]",
     "id": "cleaver",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 1538
+    "sha256": "9795a489b9b3d7287af7babc6fe4e11f4259c5d19894ceb84f798fff8ce58568",
+    "source": "cutelo.glb",
+    "triangles": 2502
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.652351, 0.0, -0.43341), S: (1.304702, 1.9, 0.86682)]",
-    "component": 62087,
+    "bounds": "[P: (-0.714393, 0.0, -0.419503), S: (1.305312, 1.9, 0.867354)]",
     "id": "shieldbearer",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 1556
+    "sha256": "7abaea9553a5007f9e6f4647b716db4a418bd359f2b97d408944110c48386ee2",
+    "source": "escudeiro.glb",
+    "triangles": 2790
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.838552, 0.0, -0.628127), S: (1.677105, 1.9, 1.256255)]",
-    "component": 73315,
+    "bounds": "[P: (-0.886764, 0.0, -0.825038), S: (1.679496, 1.9, 1.255771)]",
     "id": "bridge",
     "kit": "zombies",
     "profile": "human",
-    "triangles": 2532
+    "sha256": "189a1d9b3eef564fae9f78ae1a2bb2a4c1508f5544ea487295f1aaf2c95d9c44",
+    "source": "ponte_de_carne.glb",
+    "triangles": 2848
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-0.89526, 0.0, -0.718046), S: (1.790521, 1.9, 1.436093)]",
-    "component": 18093,
+    "component": 18093.0,
     "id": "mauler",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 6812
+    "triangles": 6812.0
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-1.116181, 0.0, -0.874648), S: (2.232363, 1.9, 1.749297)]",
-    "component": 33545,
+    "component": 33545.0,
     "id": "mortar",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 7404
+    "triangles": 7404.0
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-0.644413, 0.0, -0.481911), S: (1.288826, 1.9, 0.963822)]",
-    "component": 51865,
+    "component": 51865.0,
     "id": "broodmother",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 5773
+    "triangles": 5773.0
   },
   {
-    "bones": 5,
+    "bones": 5.0,
     "bounds": "[P: (-1.002802, 0.0, -0.985099), S: (2.005603, 0.75, 1.970199)]",
-    "component": 74885,
+    "component": 74885.0,
     "id": "flyer",
     "kit": "bosses",
     "profile": "flyer",
-    "triangles": 4562
+    "triangles": 4562.0
   },
   {
-    "bones": 7,
+    "bones": 7.0,
     "bounds": "[P: (-0.501276, 0.0, -0.571972), S: (1.002551, 0.95, 1.143944)]",
-    "component": 18242,
+    "component": 18242.0,
     "id": "hound",
     "kit": "bosses",
     "profile": "dog",
-    "triangles": 4040
+    "triangles": 4040.0
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-0.804276, 0.0, -0.445578), S: (1.608552, 1.9, 0.891157)]",
-    "component": 31526,
+    "component": 31526.0,
     "id": "potter",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 4296
+    "triangles": 4296.0
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-0.934662, 0.0, -0.733767), S: (1.869325, 1.9, 1.467535)]",
-    "component": 52479,
+    "component": 52479.0,
     "id": "hive",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 5146
+    "triangles": 5146.0
   },
   {
-    "bones": 15,
+    "bones": 15.0,
     "bounds": "[P: (-0.969192, 0.0, -0.906319), S: (1.938384, 2.5, 1.812638)]",
-    "component": 74831,
+    "component": 74831.0,
     "id": "titan16",
     "kit": "bosses",
     "profile": "human",
-    "triangles": 6646
+    "triangles": 6646.0
   }
 ]

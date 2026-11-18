@@ -69,6 +69,9 @@ func _physics_process(delta: float) -> void:
 		velocity.y = -1
 		move_and_slide()
 		rig.rotation.y = atan2(-rush_direction.x,-rush_direction.z)
+		if rig.has_meta("separated_source16"):
+			clock += delta
+			animate_ground(clock * 1.55, 1.0, true)
 		var blocked := false
 		for i in range(get_slide_collision_count()):
 			if absf(get_slide_collision(i).get_normal().y)<.5: blocked = true
@@ -82,6 +85,8 @@ func _physics_process(delta: float) -> void:
 	if windup>0:
 		windup -= delta
 		velocity = Vector3.ZERO
+		if rig.has_meta("separated_source16"):
+			animate_ground(clock, 0.0)
 		if windup<=0:
 			if is_instance_valid(warning): warning.queue_free()
 			if enemy_kind==12:
@@ -211,9 +216,16 @@ func normal_step(delta: float) -> void:
 		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
 	elif spec.id=="hound":
 		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
-	else: VisualFactory.animate_human(rig,clock*speed/2,1.0 if speed>0 else .1,recoil,false)
+	else: animate_ground(clock * speed / 2, 1.0 if speed > 0 else 0.0)
 	animate_melee()
 	recoil = maxf(0,recoil-delta*3)
+
+func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
+	if rig.has_meta("separated_source16"):
+		rig.running = sprinting or spec.id == "runner"
+	elif not proxy and moving == 0.0:
+		moving = .1
+	VisualFactory.animate_human(rig, pose_clock, moving, recoil if not proxy else 0.0, false)
 
 func melee_reaches(victim: Node3D) -> bool:
 	var reach := .36*float(spec.values.scale)+.75
@@ -260,7 +272,8 @@ func animate_replica(delta: float) -> void:
 		rig.position.y = sin(clock*4)*.12
 	else:
 		rig.rotation.x = 0
-		VisualFactory.animate_human(rig,clock*float(spec.values.speed)/2,replica_motion,0,false)
+		var sprinting: bool = spec.id == "charger" and rush_left > 0.0
+		animate_ground(clock * (1.55 if sprinting else float(spec.values.speed) / 2), replica_motion, sprinting)
 		animate_cast()
 		animate_melee()
 

@@ -36,7 +36,13 @@ func run() -> void:
 	check(near.rig.get_node("Skeleton3D/Character").mesh==far.rig.get_node("Skeleton3D/Character").mesh,"equal infected reuse the same supplied skinned mesh")
 	near.rig.get_node("ArmR").rotation.x = .3; near.rig.get_node("LegL").rotation.x = .5; near.rig.sync_pose()
 	var sk: Skeleton3D = near.rig.get_node("Skeleton3D")
-	check(is_equal_approx(sk.get_bone_pose_rotation(6).get_euler().x,.3) and is_equal_approx(sk.get_bone_pose_rotation(9).get_euler().x,.5),"arms and legs retain independent poses in the shared skinned mesh")
+	var arm := sk.find_bone("ArmR")
+	var leg := sk.find_bone("LegL")
+	var stride := sk.get_bone_pose_rotation(leg).get_euler().x
+	near.rig.get_node("LegL").rotation.x = -.5; near.rig.sync_pose()
+	check(is_equal_approx(sk.get_bone_pose_rotation(arm).get_euler().x, .3) and
+		stride > .15 and is_equal_approx(sk.get_bone_pose_rotation(leg).get_euler().x, -stride),
+		"arms and legs retain independent poses in the shared skinned mesh")
 	check(world.hud.root.find_children("*","ProgressBar",true,false).size()<20,"infected do not create per-enemy health-bar Controls on mobile")
 	check(controls.buttons.fire.size.x>=110 and not controls.buttons.fire.intersects(controls.buttons.get("interact",Rect2())),"compact fire retains a large hit area without overlapping context controls")
 	touch(controls,1,controls.buttons.fire.get_center())
