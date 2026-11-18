@@ -51,6 +51,8 @@ func sync_pose() -> void:
 		else:
 			var bone := skeleton.find_bone("ArmL" if side<0 else "ArmR")
 			var swing := (control.rotation.x-1.1)*1.5
+			var tucked: bool = get_node("ArmL").rotation.x<.85 and get_node("ArmR").rotation.x<.85
+			if tucked or (side<0 and control.rotation.x<.85): swing = .9+control.rotation.x*.3
 			skeleton.set_bone_pose_rotation(bone,Quaternion.from_euler(Vector3(swing,0,-side*1.43)))
 			skeleton.set_bone_pose_rotation(bone+1,Quaternion.from_euler(Vector3(0,side*.12,0)))
 		var leg := skeleton.find_bone("LegL" if side<0 else "LegR")

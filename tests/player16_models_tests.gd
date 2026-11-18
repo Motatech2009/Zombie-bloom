@@ -51,6 +51,10 @@ func run() -> void:
 	check(absf(skeleton.get_bone_pose_rotation(9).x)>.1 and absf(skeleton.get_bone_pose_rotation(12).x)>.1,"walking rotates opposite weighted legs")
 	rig.get_node("Gun").hide(); rig.sync_pose(); var unarmed := posed_bounds(rig)
 	check(unarmed.size.x<1.15 and unarmed.position.y>-.1,"empty hands lower the arms without spreading them")
+	rig.get_node("ArmL").rotation.x = .65; rig.sync_pose()
+	check(skeleton.get_bone_global_pose(5).origin.z<-.3,"empty-handed gathering reaches forward")
+	rig.get_node("ArmL").rotation.x = .4; rig.get_node("ArmR").rotation.x = .4; rig.sync_pose()
+	check(skeleton.get_bone_global_pose(5).origin.z<-.3 and skeleton.get_bone_global_pose(8).origin.z<-.3,"empty-handed roll tucks both arms forward")
 	rig.get_node("Gun").show()
 	for item in Catalog16.data().cosmetics:
 		if item.slot=="effect": continue
