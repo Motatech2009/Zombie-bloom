@@ -40,6 +40,7 @@ func run() -> void:
 		check(mesh.mesh.surface_get_array_index_len(0)/3<=(10000 if enemy.is_boss else 3000),"triangle budget is respected by "+id)
 		var material: StandardMaterial3D = mesh.get_surface_override_material(0)
 		check(material.albedo_texture.get_width()==2048 and material.normal_texture.get_width()==2048,"shared 2K clay atlas is present for "+id)
+		check(material.normal_enabled==not MobilePlatform.lightweight() and not material.uv1_triplanar,"material quality matches desktop/touch mode for "+id)
 		var kit := "bosses" if enemy.is_boss else "zombies"
 		if materials.has(kit): check(material==materials[kit],"atlas material is shared within "+kit+" for "+id)
 		else: materials[kit] = material
