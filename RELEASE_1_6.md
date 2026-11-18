@@ -174,4 +174,14 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - Os 19 acessórios físicos vestem o novo corpo. Cabeça e tronco recebem ajustes locais por roupa, mantendo malhas e atlases compartilhados. Cosméticos não alteram colisão, dano, vida, mochila funcional ou progressão.
 - Quatro carros distintos na base; comboio com reboque; barraca fornecida com atlas único e Bento atrás do balcão. Eventos, recompensas e áreas bloqueadas preservados.
 - Canhão N2/N3 dispara uma salva de dois tiros retos mais grossos, um por cano, com dano total preservado. O cliente também reproduz os projéteis espessos. N1 mantém seu único cano.
-- Candidata RC7/APK1607, protocolo21. A ativação da economia no Firebase real permanece pendente. CI RC7 aprovado: 1.970 verificações Godot (1.928 na fonte e 42 no pacote Windows), cooperativo e serviços emulados aprovados. Pacotes gerados e copiados para Downloads/ZombieBloom_RC7. Evidências e hashes em `docs/release16-character-results.txt`.
+- Candidata RC7/APK1607, protocolo21. A ativação da economia no Firebase real permanece pendente. Evidências desta candidata serão registradas após a compilação.
+
+## RC8 — braço, elos, combate e encontros de exploração
+
+- Braço direito usa o mesmo plano de articulação no ombro e cotovelo, com empunhadura à frente do corpo. Ajustes conferidos nas sete roupas, nove armas e taco, incluindo recarga e golpe.
+- Dez recompensas de elo agora vestem peças em 3D: acessórios importados nos sete primeiros e medalhões/cristais de massinha nos três últimos. Escolhas do catálogo mantêm prioridade no mesmo espaço. Atributos e capacidade não mudam.
+- Taco: até três alvos por golpe, dano base 18, intervalo 0,90 s e alcance 2,15 m. Não aplica mais paralisia repetida; zumbis em contato continuam atacando.
+- Ninho produz guardas com limite de seis vivos, respeita presença do jogador e aceita tiros, explosões e corpo a corpo. Vida e vínculo dos guardas ficam no salvamento; destruir interrompe a geração e remove o bônus regional.
+- Posto seguro aparece também para convidados. Botão NEGOCIAR no toque abre a troca correta; compras continuam validadas pelo anfitrião e usam materiais da mochila.
+- Novos Titãs só são sorteados fora do quadrado central de nove setores: max(|x|,|y|) >= 2. Chance de 5% nas áreas elegíveis e 10% do posto preservadas. Encontros já salvos continuam. Aviso do Titã inclui setor e aparece depois do aviso de entrada.
+- Candidata RC8/APK1608/protocolo21. Testes específicos: 61 de apresentação e 22 de combate/eventos, cada um em desktop e toque. CI integral e pacotes desta revisão serão registrados após a execução. Economia Firebase real e Android físico continuam pendentes.

@@ -7,7 +7,7 @@ func check(ok: bool,text: String) -> void:
 	if ok: print("PASS: "+text)
 	else: failures += 1; push_error("FAIL: "+text)
 func run() -> void:
-	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.7","actual exported package reports RC7")
+	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.8","actual exported package reports RC8")
 	for id in ["cannon","shock","raised_turret","core"]:
 		for tier in range(1,5 if id=="core" else 4):
 			var scene: Node3D = load("res://assets/fortress/"+id+"_"+str(tier)+".tscn").instantiate()
@@ -25,5 +25,11 @@ func run() -> void:
 	for path in ["carros/car_1","carros/car_2","carros/car_3","carros/car_4","comboio/convoy","vendedor/stall"]:
 		var prop: Node3D = load("res://assets/scenery/tripo16/"+path+".tscn").instantiate(); holder.add_child(prop)
 		check(prop.get_node("Model").get_surface_override_material(0).albedo_texture!=null,"export contains textured "+path)
+	for tier in range(1,11):
+		rig.set_rank16(tier); Cosmetics16.decorate(rig,{})
+		var previous := rig.get_node_or_null("EloCosmetic")
+		if previous!=null: rig.remove_child(previous); previous.queue_free()
+		preload("res://scripts/presentation/rank_cosmetics16.gd").decorate(rig,tier)
+		check(rig.get_node("EloCosmetic").get_meta("rank_tier")==tier,"export contains the 3D rank "+str(tier))
 	holder.queue_free(); await process_frame; await process_frame
 	print("EXPORTED MODELS RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

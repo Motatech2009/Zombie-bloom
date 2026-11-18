@@ -104,7 +104,7 @@ func select_target(point: Vector2) -> void:
 		if hit!=null: free_aim = ((hit-world.player.position)*Vector3(1,0,1)).normalized()
 		return
 	var best := 38.0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy) or world.camera.is_position_behind(MobileTargeting.point(enemy)): continue
 		var target_center: Vector2 = world.camera.unproject_position(MobileTargeting.point(enemy))
 		var feet: Vector2 = world.camera.unproject_position(enemy.global_position)
@@ -155,6 +155,7 @@ func _input(event: InputEvent) -> void:
 		fingers[event.index] = role
 		if role in ["interact","repair","revive"]: fire_held = false; clear_target()
 		if role=="move": drag_stick(role,event.position)
+		elif role=="interact" and context.get("post16",false): reset_fingers(); world.open_shop()
 		elif role in ["interact","repair","revive"]: interact_held = true
 		elif role=="reload": reload_held = true
 		elif role=="fire": start_fire()
@@ -242,7 +243,7 @@ func _draw() -> void:
 		for angle in range(4): draw_arc(target_center,27,angle*PI/2+.15,angle*PI/2+1.15,12,color,3,true)
 		var title := "ALVO" if color==UI.LIME else "SEM TIRO"
 		draw_string(ThemeDB.fallback_font,target_center+Vector2(-45,-36),title,HORIZONTAL_ALIGNMENT_CENTER,90,12,color)
-	var names := {"build":"CONSTRUIR","map":"MAPA","inventory":"BOLSA","upgrade":"MELHORAR","shop":"VENDEDOR","gate":"PORTÃO","travel":"VIAJAR","repair":"REPARAR","revive":"REANIMAR","roll":"ROLAR","interact":interaction_text,"reload":"RECARGA","pause":"Ⅱ","rotate":"GIRAR","place":"COLOCAR","cancel":"CANCELAR","fire":"ATIRAR"}
+	var names := {"build":"CONSTRUIR","map":"MAPA","inventory":"BOLSA","upgrade":"MELHORAR","shop":"NEGOCIAR" if context.get("post16",false) else "VENDEDOR","gate":"PORTÃO","travel":"VIAJAR","repair":"REPARAR","revive":"REANIMAR","roll":"ROLAR","interact":interaction_text,"reload":"RECARGA","pause":"Ⅱ","rotate":"GIRAR","place":"COLOCAR","cancel":"CANCELAR","fire":"ATIRAR"}
 	for role in buttons:
 		var rect: Rect2 = buttons[role]
 		var active := fingers.values().has(role)
@@ -276,8 +277,8 @@ func assist_target() -> void:
 	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0 and world.player.bag.hand()!="bat": return
 	var candidates: Array = []
 	var weapon: int = ItemBag.WEAPON_IDS.find(world.player.bag.hand())
-	var range_squared: float = pow(2.6 if world.player.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range),2)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var range_squared: float = pow(2.15 if world.player.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range),2)
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy): continue
 		var distance: float = enemy.global_position.distance_squared_to(world.player.global_position)
 		if distance>range_squared or world.camera.is_position_behind(MobileTargeting.point(enemy)): continue

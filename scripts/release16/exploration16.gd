@@ -8,7 +8,7 @@ static func roll(seed_value: int,coord: Vector2i) -> String:
 	if coord==Vector2i.ZERO: return "normal"
 	var rng := RandomNumberGenerator.new(); rng.seed = hash("special16:%d:%s" % [seed_value,SectorGenerator.key(coord)])
 	var n := rng.randi_range(0,99)
-	return "titan" if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
+	return ("titan" if maxi(absi(coord.x),absi(coord.y))>=2 else "normal") if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
 func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 	if coord==Vector2i.ZERO: return d
 	if world.game_mode=="rescue":
@@ -31,14 +31,18 @@ func safe(point: Vector3) -> bool:
 	var coord: Vector2i = world.coord_at(point)
 	return kind_at(coord)=="post" and (point-world.sector_offset(coord)).length()<14
 func load_sector() -> void:
-	if world.is_client or world.field_root==null: return
+	if world.field_root==null: return
 	var key := SectorGenerator.key(world.sector_coord)
 	var s: Dictionary = sectors.get(key,{})
 	if s.is_empty() or s.kind=="normal": return
+	var existing: Node3D = nodes.get(key,{}).get("root")
+	if is_instance_valid(existing) and existing.is_inside_tree() and not existing.is_queued_for_deletion(): return
 	var root := Node3D.new(); root.name = "Special16"; world.field_root.add_child(root)
 	nodes[key] = {"root":root}
-	if s.kind=="post": build_post(root)
-	elif not s.dead:
+	if s.kind=="post":
+		build_post(root); return
+	if world.is_client: return
+	if not s.dead:
 		var boss := CharacterBody3D.new(); boss.set_script(load("res://scripts/release16/titan16.gd")); boss.world = world
 		boss.spec = CampaignData.enemy_spec(2).duplicate(true); boss.spec.id = "titan16"; boss.spec.title = "Titã Enraizado"
 		boss.spec.values.scale = 3.0; boss.spec.values.speed = 1.5; boss.spec.values.damage = 25
@@ -46,10 +50,17 @@ func load_sector() -> void:
 		boss.aim_height = 3.4; boss.position = Vector3(float(s.pos[0]),0,float(s.pos[1])); boss.set_meta("titan16",true); boss.encounter_key = key
 		world.field_root.add_child(boss); boss.health.setup(20000); boss.health.current = float(s.hp); boss.set_meta("night_hp",1.0); boss.set_meta("night_damage",1.0); world.v15.day.apply_enemy(boss)
 		world.enemy_index[boss.net_id] = boss; var id: int = boss.net_id; boss.tree_exiting.connect(func(): world.enemy_index.erase(id)); nodes[key].boss = boss
-		world.notify("AMEAÇA COLOSSAL · Titã Enraizado · combate opcional; as saídas permanecem livres.")
+		call_deferred("announce_titan",key)
 	if s.kind=="titan" and s.dead and not s.reward.is_empty():
 		var loot: Node3D = world.spawn_loot(world.field_root.to_global(Vector3(15,0,3)),s.reward.duplicate(),0,"",0,false,true,true)
 		if loot!=null: loot.set_meta("special16",true); loot.set_meta("encounter16",key); world.mark_boss_drop(loot); nodes[key].loot = loot
+func announce_titan(key: String) -> void:
+	var boss = nodes.get(key,{}).get("boss")
+	if not is_instance_valid(boss) or boss.health.dead: return
+	var message := "TITÃ ENRAIZADO APARECEU · SETOR "+key+" · combate opcional; saídas livres."
+	world.notify(message)
+	for actor in world.avatars.values():
+		if SectorGenerator.key(actor.region_coord)==key: world.private_notice(actor.peer_id,message)
 func build_post(root: Node3D) -> void:
 	VisualFactory.cylinder(root,13,.12,Vector3(0,.02,0),Color("62684d"))
 	for i in range(32):

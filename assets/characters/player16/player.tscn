@@ -63,7 +63,7 @@ size = Vector3(0.14, 0.14, 0.6)
 [node name="ClayPlayer16" type="Node3D" unique_id=773033650]
 script = ExtResource("rig")
 metadata/source = "Tripo/user submission"
-metadata/weapon_origin16 = Vector3(0.2, 1.15, -0.36)
+metadata/weapon_origin16 = Vector3(0.2, 1.15, -0.44)
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=536161969]
 bones/0/name = "Pelvis"

@@ -80,7 +80,7 @@ normal_texture = ExtResource("2")
 			surface.add_vertex(position(p,variant.begins_with("covered"),variant.ends_with("head")))
 		surface.index(); surface.generate_normals(); surface.generate_tangents(); var mesh := surface.commit(); mesh.surface_set_material(0,StandardMaterial3D.new())
 		assert(ResourceSaver.save(mesh,OUT+variant+".res",ResourceSaver.FLAG_COMPRESS)==OK)
-	var scene := Node3D.new(); scene.name = "ClayPlayer16"; scene.set_meta("source","Tripo/user submission"); scene.set_meta("weapon_origin16",Vector3(.20,1.15,-.36))
+	var scene := Node3D.new(); scene.name = "ClayPlayer16"; scene.set_meta("source","Tripo/user submission"); scene.set_meta("weapon_origin16",Vector3(.20,1.15,-.44))
 	var skeleton := Skeleton3D.new(); skeleton.name = "Skeleton3D"; scene.add_child(skeleton); skeleton.owner = scene
 	var names := ["Pelvis","Spine","Head","ArmL","ForearmL","HandL","ArmR","ForearmR","HandR","LegL","ShinL","FootL","LegR","ShinR","FootR"]
 	var parents := [-1,0,1,1,3,4,1,6,7,0,9,10,0,12,13]
@@ -93,7 +93,7 @@ normal_texture = ExtResource("2")
 	for name in ["ArmL","ArmR","LegL","LegR","Body16","DefaultHat16","DefaultPack16"]:
 		var control := Node3D.new(); control.name = name; scene.add_child(control); control.owner = scene
 		if name.begins_with("Arm"): control.rotation.x = 1.1
-	var gun := MeshInstance3D.new(); gun.name = "Gun"; gun.position = Vector3(.20,1.15,-.36); var gun_mesh := BoxMesh.new(); gun_mesh.size = Vector3(.14,.14,.6); gun.mesh = gun_mesh; var gun_material := StandardMaterial3D.new(); gun_material.albedo_color = Color("17272d"); gun_material.roughness = .95; gun.material_override = gun_material; scene.add_child(gun); gun.owner = scene
+	var gun := MeshInstance3D.new(); gun.name = "Gun"; gun.position = Vector3(.20,1.15,-.44); var gun_mesh := BoxMesh.new(); gun_mesh.size = Vector3(.14,.14,.6); gun.mesh = gun_mesh; var gun_material := StandardMaterial3D.new(); gun_material.albedo_color = Color("17272d"); gun_material.roughness = .95; gun.material_override = gun_material; scene.add_child(gun); gun.owner = scene
 	var packed := PackedScene.new(); assert(packed.pack(scene)==OK); assert(ResourceSaver.save(packed,OUT+"player.tscn")==OK)
 	text = FileAccess.get_file_as_string(OUT+"player.tscn"); var at := text.find("[sub_resource")
 	text = text.insert(at,'[ext_resource type="Script" path="res://scripts/presentation/clay_player16.gd" id="rig"]

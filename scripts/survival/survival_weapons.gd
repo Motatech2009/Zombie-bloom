@@ -98,6 +98,8 @@ func special_shot(direction: Vector3) -> bool:
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,excludes))
 		if hit.is_empty(): break
 		end = hit.position if not hit.collider.is_in_group("enemies") else origin+aim*float(spec().values.range)
+		if hit.collider.is_in_group("enemy_nests"):
+			hit.collider.take_damage(damage*pow(.8,step)); end = hit.position; break
 		if not hit.collider.is_in_group("enemies"): break
 		var victim: Node3D = hit.collider
 		victims.append(victim)
@@ -146,21 +148,20 @@ func rebuild_model() -> void:
 
 func swing(direction: Vector3) -> bool:
 	if world.exp16.safe(actor.global_position) or world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
-	cooldown = .65; swing_left = .32; actor.cancel_gather()
+	cooldown = .90; swing_left = .32; actor.cancel_gather()
 	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
 	var victims: Array = []
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy): continue
 		var offset: Vector3 = MobileTargeting.point(enemy)-origin
-		if offset.length()>2.6 or offset.normalized().dot(direction.normalized())<.3: continue
+		if offset.length()>2.15 or offset.normalized().dot(direction.normalized())<.45: continue
 		var ray := PhysicsRayQueryParameters3D.create(origin,MobileTargeting.point(enemy),1|8,[actor.get_rid()])
 		if not actor.get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): continue
 		victims.append(enemy)
 	victims.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
 	world.shot_owner = actor.peer_id
 	for enemy in victims.slice(0,3):
-		enemy.take_damage(32*damage_multiplier)
-		enemy.stun_left = maxf(enemy.stun_left,.12 if enemy.is_boss else .2)
+		enemy.take_damage(18*damage_multiplier)
 		world.effects.burst(MobileTargeting.point(enemy),Color("d6b077"),3)
 	world.shot_owner = actor.peer_id
 	world.shot_visual(origin,origin+direction.normalized()*2,Color("d6b077"))

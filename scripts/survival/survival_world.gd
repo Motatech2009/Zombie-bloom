@@ -93,7 +93,11 @@ func sector_times() -> Dictionary:
 	return times
 
 func target_enemy(id: int) -> Node3D:
-	return client_enemies.get(id) if is_client else enemy_index.get(id)
+	var enemy: Node3D = client_enemies.get(id) if is_client else enemy_index.get(id)
+	if enemy!=null: return enemy
+	for nest in get_tree().get_nodes_in_group("enemy_nests"):
+		if nest.net_id==id: return nest
+	return null
 
 static func survival_path(mode: String) -> String:
 	return "user://zombie_bloom_"+mode+"_v6.json"
@@ -1395,7 +1399,7 @@ func defense_blast(point: Vector3,radius: float,power: float) -> void:
 	explosive15 = true
 	effects.burst(point,Color("e8b675"),16)
 	if network!=null and network.mode=="host": network.blast_event(point,radius)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		var target: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
 		if target.distance_to(point)>radius: continue
 		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(point+Vector3.UP*.25,target,1|8))
@@ -1428,6 +1432,12 @@ func _notification(what: int) -> void:
 func apply_mobile_quality() -> void:
 	MobilePlatform.apply_quality(self)
 
+func open_shop() -> void:
+	if exp16.interact(player) or (is_client and local_mobile_context().get("post16",false)):
+		if hud.mode.is_empty(): hud.show_post16()
+		return
+	super.open_shop()
+
 func interaction_hint(actor: Node3D) -> String:
 	if v15.event_interactable(actor): return "COLETAR"
 	for i in range(4):
@@ -1445,7 +1455,8 @@ func mobile_context(actor: Node3D) -> Dictionary:
 	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return mobile_context(actor))
 	if actor.health.dead or phase=="ended": return {}
 	var preparing := sector_coord==Vector2i.ZERO and area_index==-1 and phase=="prep" and not waves.running
-	var collect := "COLETAR" if v15.event_interactable(actor) else ""
+	var at_post := exp16.interact(actor)
+	var collect := "NEGOCIAR" if at_post else "COLETAR" if v15.event_interactable(actor) else ""
 	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): collect = "GUARDAR"
 	elif nearest_source(actor)!=null: collect = "COLETAR"
 	var nearest: Node3D
@@ -1462,7 +1473,8 @@ func mobile_context(actor: Node3D) -> Dictionary:
 		if tier<(4 if nearest==core else 3):
 			upgrade = {"title":nearest.spec.title,"tier":tier,"cost":{"scrap":75*tier,"wood":10*tier,"parts":5*tier} if nearest==core else nearest.upgrade_cost()}
 	var hint := interaction_hint(actor)
-	return {"build":preparing,"collect":collect,"upgrade":upgrade,"shop":preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5,"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
+	if at_post: collect = "NEGOCIAR"
+	return {"post16":at_post,"build":preparing,"collect":collect,"upgrade":upgrade,"shop":at_post or (preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5),"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
 
 func local_mobile_context() -> Dictionary:
 	if is_client: return remote_mobile_context if client_scene_ready else {}

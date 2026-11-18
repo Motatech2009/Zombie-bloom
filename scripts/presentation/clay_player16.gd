@@ -1,6 +1,6 @@
 extends Node3D
 ## Shared skinned clay model; controllers preserve the existing gameplay animation API.
-const HOME := Vector3(.20,1.15,-.36)
+const HOME := Vector3(.20,1.15,-.44)
 var skeleton: Skeleton3D
 var skin_mesh: MeshInstance3D
 var outfit_key := ""
@@ -12,10 +12,16 @@ func _ready() -> void:
 	sync_pose()
 func _process(_delta: float) -> void:
 	if is_visible_in_tree(): sync_pose()
+func set_rank16(tier: int) -> void:
+	set_meta("rank_cosmetic16",clampi(tier,0,10))
 func set_outfit16(outfit: Dictionary) -> void:
 	var covered := not str(outfit.get("outfit","")).is_empty()
+	var mount := HOME+Vector3(0,0,-.04 if covered else 0)
+	set_meta("weapon_origin16",mount)
+	get_node("Gun").position = mount
 	var head := str(outfit.get("head",""))
-	var fitted_head := head in ["COS-ENG-01","COS-ENG-02","COS-BAT-01","COS-ATI-02","COS-UNI-01","COS-TITAN-01"]
+	var rank := int(get_meta("rank_cosmetic16",0))
+	var fitted_head: bool = (head.is_empty() and rank>=1 and rank<=3) or head in ["COS-ENG-01","COS-ENG-02","COS-BAT-01","COS-ATI-02","COS-UNI-01","COS-TITAN-01"]
 	var key := ("covered" if covered else "base")+("_head" if fitted_head else "")
 	if key!=outfit_key:
 		get_node("Skeleton3D/Character").mesh = load("res://assets/characters/player16/"+key+".res")
@@ -30,21 +36,33 @@ func arm_pose(side: int,target: Vector3) -> void:
 	var direction := delta.normalized()
 	var upper_length := .30; var lower_length := .30
 	var along := (upper_length*upper_length-lower_length*lower_length+reach*reach)/(2*reach)
-	var bend := Vector3(side*.75,-1,.12)
+	var bend := Vector3(.95,-.55,-.7) if side>0 else Vector3(side*.75,-1,.12)
 	bend = (bend-direction*bend.dot(direction)).normalized()
 	var elbow := shoulder+direction*along+bend*sqrt(maxf(0,upper_length*upper_length-along*along))
 	var first := Quaternion(Vector3(side,0,0),(elbow-shoulder).normalized())
 	var second := Quaternion(Vector3(side,0,0),(shoulder+direction*reach-elbow).normalized())
+	if side>0:
+		# Both segments share one hinge plane; separate shortest-arc rotations twist the elbow.
+		var hinge := (elbow-shoulder).cross(shoulder+direction*reach-elbow).normalized()
+		if hinge.z<0: hinge = -hinge
+		first = segment_rotation((elbow-shoulder).normalized(),hinge)
+		second = segment_rotation((shoulder+direction*reach-elbow).normalized(),hinge)
 	skeleton.set_bone_pose_rotation(upper,first)
 	skeleton.set_bone_pose_rotation(lower,first.inverse()*second)
 	skeleton.set_bone_pose_rotation(hand,Quaternion.IDENTITY)
+func segment_rotation(direction: Vector3,hinge: Vector3) -> Quaternion:
+	var y := hinge.cross(direction).normalized()
+	return Basis(direction,y,direction.cross(y).normalized()).get_rotation_quaternion()
 func sync_pose() -> void:
 	if skeleton==null: return
 	var gun: Node3D = get_node("Gun")
 	for side in [-1,1]:
 		var control: Node3D = get_node("ArmL" if side<0 else "ArmR")
 		if gun.visible:
-			var target := gun.transform*Vector3(0,-.14,.08) if side>0 else gun.transform*Vector3(-.09,-.10,.10)
+			var target := gun.transform*Vector3(.10,-.14,-.03) if side>0 else gun.transform*Vector3(-.09,-.10,.10)
+			if side>0:
+				target.x = maxf(target.x,.30)
+				target.z = minf(target.z,-.47 if outfit_key.begins_with("covered") else -.43)
 			if side<0 and (control.rotation.z>.3 or control.rotation.x<.85):
 				target = Vector3(-.21,.96,-.18)+Vector3(0,sin(control.rotation.x*4)*.06,-control.rotation.x*.10)
 			arm_pose(side,target)

@@ -38,7 +38,7 @@ func run() -> void:
 	clock.step(1503000,true,true); check(not clock.afk and is_equal_approx(clock.total,901),"relevant input resumes time once")
 	check(PlayClock16.display(37380)=="10h 23min","hour formatting never rounds minutes incorrectly")
 	var counts := {"normal":0,"post":0,"titan":0}
-	for i in range(10000): counts[Exploration16.roll(500+i,Vector2i(1,-1))] += 1
+	for i in range(10000): counts[Exploration16.roll(500+i,Vector2i(2,-1))] += 1
 	check(counts.titan>420 and counts.titan<580,"ten thousand eligible sectors yield approximately five percent Titans: "+str(counts.titan))
 	check(counts.post>880 and counts.post<1120,"ten thousand eligible sectors yield approximately ten percent posts: "+str(counts.post))
 	check(counts.normal+counts.post+counts.titan==10000,"special rolls are mutually exclusive and unconditional")

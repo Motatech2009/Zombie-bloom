@@ -82,7 +82,7 @@ func animate_pose(moving: float) -> void:
 		gun.rotation.x = .5
 	if bag.hand()=="bat":
 		var swing: float = 1-weapons.swing_left/.32
-		gun.position = Vector3(.34,1.1,-.25)
+		gun.position = rig.get_meta("weapon_origin16",Vector3(.34,1.1,-.25))+Vector3(.12,-.05,.03)
 		gun.rotation.y = lerpf(-1.2,1.4,swing) if weapons.swing_left>0 else -.45
 		gun.rotation.z = -.25
 		rig.get_node("ArmR").rotation.x = 1.1

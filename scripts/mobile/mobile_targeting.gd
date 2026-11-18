@@ -3,7 +3,7 @@ extends RefCounted
 static var ray_checks: int = 0
 
 static func alive(target) -> bool:
-	return is_instance_valid(target) and not target.is_queued_for_deletion() and target.is_in_group("enemies") and not target.health.dead
+	return is_instance_valid(target) and not target.is_queued_for_deletion() and (target.is_in_group("enemies") or target.is_in_group("enemy_nests")) and not target.health.dead
 
 static func point(target: Node3D) -> Vector3:
 	return target.global_position+Vector3(0,target.aim_height,0)
@@ -16,11 +16,11 @@ static func can_fire(actor: Node3D,target: Node3D) -> bool:
 	var weapon := ItemBag.WEAPON_IDS.find(actor.bag.hand())
 	if weapon<0 and actor.bag.hand()!="bat": return false
 	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
-	if origin.distance_to(point(target))>(2.6 if actor.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range)): return false
+	if origin.distance_to(point(target))>(2.15 if actor.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range)): return false
 	ray_checks += 1
 	var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,point(target),1|4|8,[actor.get_rid()]))
 	# A zombie in front can receive the shot; solid cover cannot.
-	return not hit.is_empty() and hit.collider.is_in_group("enemies") and alive(hit.collider)
+	return not hit.is_empty() and alive(hit.collider)
 
 static func resolve(world: Node3D,actor: Node3D,frame: Dictionary) -> Dictionary:
 	if not frame.has("target"): return frame

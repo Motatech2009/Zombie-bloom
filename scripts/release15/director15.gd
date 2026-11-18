@@ -33,16 +33,12 @@ func apply_class(actor: Node3D,id: String,starter: bool = false) -> void:
 	if starter and actor.specialization=="shooter": actor.weapons.tuning[0] = maxi(1,actor.weapons.tuning[0])
 	world.upgrades.apply_actor(actor)
 func decorate(actor: Node3D) -> void:
+	if actor.rig.has_method("set_rank16"): actor.rig.set_rank16(int(actor.cosmetic))
 	Cosmetics16.decorate(actor.rig,actor.outfit16,actor)
 	var previous = actor.rig.get_node_or_null("EloCosmetic")
 	if previous!=null: actor.rig.remove_child(previous); previous.queue_free()
 	if actor.cosmetic<=0 or (actor.cosmetic<=3 and not actor.outfit16.get("head","").is_empty()) or (actor.cosmetic>=4 and actor.cosmetic<=7 and not actor.outfit16.get("backpack","").is_empty()) or (actor.cosmetic>=8 and not actor.outfit16.get("effect","").is_empty()): return
-	var root = Node3D.new(); root.name = "EloCosmetic"; actor.rig.add_child(root)
-	var color = Color.from_hsv(.12 if actor.cosmetic<7 else .78,.35+actor.cosmetic*.035,.88+actor.cosmetic*.01)
-	if actor.cosmetic<=3: VisualFactory.cylinder(root,.38,.15,Vector3(0,2.0,0),color)
-	elif actor.cosmetic<=7: VisualFactory.box(root,Vector3(.55,.7,.25),Vector3(0,1.2,.32),color)
-	else: VisualFactory.ring(root,.6,Vector3(0,.1,0),color)
-	for i in range(actor.cosmetic): VisualFactory.box(root,Vector3(.07,.09,.05),Vector3(-.25+i*.055,1.6,-.28),color)
+	preload("res://scripts/presentation/rank_cosmetics16.gd").decorate(actor.rig,int(actor.cosmetic))
 func tick(delta: float) -> void:
 	alert_left = maxf(0,alert_left-delta); alert_clock = maxf(0,alert_clock-delta)
 	if world.is_client: day.apply_light(); return
@@ -125,6 +121,7 @@ static func valid(data: Variant) -> bool:
 		var entry = data.events[key]
 		if entry is bool: continue
 		if not entry is Dictionary or entry.get("type") not in ["convoy","nest","escort"] or not entry.get("complete") is bool or not entry.get("started") is bool or not entry.get("bonus") is bool or not SectorMemory.number(entry.get("left"),0,45) or not SectorMemory.number(entry.get("spawn"),0,4) or not entry.get("owner") is String: return false
+		if not SectorMemory.number(entry.get("hp",240.0),0,240) or not SectorMemory.number(entry.get("brood15",0),0,1000000,true): return false
 	for id in data.mutators:
 		if id not in ["darkness","no_vendor","double_hordes"]: return false
 	return true
@@ -176,6 +173,7 @@ func tick_sector_event(delta: float) -> void:
 		if state.type=="escort" and not world.descriptor.get("houses",[]).is_empty(): node.position = world.descriptor.houses[0].pos+Vector3(0,0,1)
 		world.field_root.add_child(node); active_events[key] = node
 	if state.type=="nest":
+		tick_nest(node,state,key,delta)
 		if not state.bonus:
 			for house in world.get_tree().get_nodes_in_group("raid_houses"):
 				if world.field_root.is_ancestor_of(house):
@@ -200,6 +198,28 @@ func tick_sector_event(delta: float) -> void:
 				actor.weapons.tuning[2] = maxi(1,actor.weapons.tuning[2])
 				if actor.bag.add("rifle",1)==0 and actor.bag.count("rifle")==0: world.spawn_loot(node.global_position+Vector3(0,0,5),{"rifle":1})
 			world.notify("COMBOIO ABERTO · Rifle Reforçado e munição."); node.queue_free()
+func tick_nest(node: Node3D,state: Dictionary,key: String,delta: float) -> void:
+	if world.is_client or world.combat_paused(): return
+	var guards := world.get_tree().get_nodes_in_group("enemies").filter(func(e): return not e.health.dead and str(e.get_meta("nest_owner15",""))==key)
+	node.label.text = "NINHO DE ESPOROS · %d/240 · %d/6 infectados" % [ceili(node.health.current),guards.size()]
+	var present: bool = world.avatars.values().any(func(a): return not a.health.dead and a.region_coord==world.sector_coord and a.global_position.distance_to(node.global_position)<30)
+	if not present: return
+	state.spawn = maxf(0,float(state.spawn)-delta)
+	if state.spawn>0 or guards.size()>=6 or world.get_tree().get_nodes_in_group("enemies").size()>=72: return
+	var sphere := SphereShape3D.new(); sphere.radius = .6
+	var query := PhysicsShapeQueryParameters3D.new(); query.shape = sphere; query.collision_mask = 1|2|4|8; query.exclude = [node.get_rid()]
+	for i in range(16):
+		var angle := i*TAU/8; var radius := 3.5 if i<8 else 5.0
+		var point := node.global_position+Vector3(cos(angle)*radius,0,sin(angle)*radius)
+		if world.avatars.values().any(func(a): return a.global_position.distance_to(point)<3): continue
+		query.transform = Transform3D(Basis.IDENTITY,point+Vector3.UP)
+		if not world.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(): continue
+		var serial := int(state.get("brood15",0)); state.brood15 = serial+1
+		var enemy: Node3D = world.make_enemy(1 if serial%3==2 else 0,world.field_root.to_local(point),true,-1)
+		enemy.set_meta("nest_owner15",key); enemy.spec.values.speed *= 1.2; enemy.set_meta("nest_speed",true)
+		state.spawn = 4.0; world.effects.burst(node.global_position+Vector3.UP,Color("a278c5"),2)
+		return
+	state.spawn = 1.0
 func interact_event(actor: Node3D) -> bool:
 	for key in active_events:
 		var node = active_events[key]
@@ -285,6 +305,7 @@ func apply_visuals(rows: Array) -> void:
 			world.add_child(node); client_visuals[row.id] = node
 		var node: Node3D = client_visuals[row.id]; node.global_position = row.p
 		if row.kind in ["nest","escort","convoy"]: node.label.text = row.text
+		if row.kind=="nest": node.net_id = int(row.id)
 	for id in client_visuals.keys():
 		if not seen.has(id): client_visuals[id].queue_free(); client_visuals.erase(id)
 
