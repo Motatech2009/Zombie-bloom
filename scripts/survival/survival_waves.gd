@@ -29,6 +29,8 @@ func complete() -> void:
 	world.checkpoint_enabled = false
 	super.complete()
 	world.checkpoint_enabled = enabled
+	if wave == FortressData.BUILD_LIMIT_UNLOCK_WAVE and world.phase != "ended":
+		world.notify("HORDA %d VENCIDA · A equipe pode ultrapassar os limites por tipo." % wave)
 	world.built_this_round = 0
 	for survivor in world.avatars.values():
 		if survivor.health.dead: survivor.revive(40)

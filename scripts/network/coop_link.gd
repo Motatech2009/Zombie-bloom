@@ -1,6 +1,6 @@
 extends Node
 
-const PROTOCOL_VERSION := 22
+const PROTOCOL_VERSION := 23
 const VERSION_MESSAGE := "Versões incompatíveis. Atualize o Zombie Bloom no PC e no Android para jogar juntos."
 
 signal status_changed(message: String)

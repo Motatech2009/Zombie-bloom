@@ -95,8 +95,26 @@ func check_build_limits() -> void:
 	world.apply_snapshot(old_save)
 	builder.selected = 1
 	actor.position = Vector3(42, 0, 24)
+	world.waves.wave = 19
 	check(builder.piece_usage("turret") == Vector2i(13, 12) and not builder.can_place(spot, false),
-		"existing turrets are restored and a save over the cap cannot add another")
+		"a restored base above the cap cannot add another turret after nineteen hordes")
+	world.game_mode = "endless"
+	world.phase = "combat"
+	world.waves.wave = 20
+	world.waves.running = true
+	check(builder.piece_usage("turret") == Vector2i(13, 12), "starting the twentieth horde leaves the existing limits active")
+	world.waves.complete()
+	world.resources.scrap = 1000
+	world.stock.parts = 100
+	check(world.phase == "prep" and builder.piece_usage("turret") == Vector2i.ZERO,
+		"winning the twentieth horde unlocks every per-type construction limit")
+	check(builder.commit_channel({"pos": spot, "piece": 1, "angle": 0.0}) != null,
+		"a real construction can exceed the prior turret maximum after horde twenty")
+	var qualified: Dictionary = world.snapshot()
+	check(world.valid_snapshot(qualified), "an endless save after horde twenty validates")
+	world.apply_snapshot(qualified)
+	check(builder.piece_usage("turret") == Vector2i.ZERO, "restoring a save after horde twenty stays unlocked")
+	world.game_mode = initial.mode
 	world.apply_snapshot(initial)
 	world.profiles.erase("7".repeat(32))
 	await frames()

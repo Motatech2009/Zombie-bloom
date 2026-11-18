@@ -52,6 +52,9 @@ func _physics_process(delta: float) -> void:
 	ghost.material_override = good_material if valid else bad_material
 
 func piece_usage(id: String) -> Vector2i:
+	var completed_hordes := int(world.waves.wave) - int(world.waves.running)
+	if completed_hordes >= FortressData.BUILD_LIMIT_UNLOCK_WAVE:
+		return Vector2i.ZERO
 	var limit := int(FortressData.BUILD_LIMITS.get(id, 0))
 	if limit == 0:
 		return Vector2i.ZERO
@@ -70,7 +73,8 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	elif pos.distance_to(world.player.global_position)>12: reason = "Aproxime-se: alcance de 12 m."
 	elif get_tree().get_nodes_in_group("campaign_structure").size()>=120: reason = "Limite de 120 estruturas."
 	elif usage.y > 0 and usage.x >= usage.y:
-		reason = "Limite de %s na base (%d/%d)." % [piece.title, usage.x, usage.y]
+		reason = "Limite de %s (%d/%d). Libera após vencer a horda %d." % [
+			piece.title, usage.x, usage.y, FortressData.BUILD_LIMIT_UNLOCK_WAVE]
 	elif not world.can_pay(piece.cost): reason = "Materiais insuficientes."
 	elif pos.distance_to(world.vendor_pos)<3.5: reason = "Mantenha o vendedor livre."
 	for exit in world.exit_positions():

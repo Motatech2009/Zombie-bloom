@@ -172,7 +172,7 @@ func show_build_catalog() -> void:
 		UI.label(card,descriptions[i],15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.label(card,CampaignData.cost_text(data.cost),14).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var usage: Vector2i = world.builder.piece_usage(data.id)
-		if usage.y > 0: UI.label(card, "%d/%d na base" % [usage.x, usage.y], 14, UI.MUTED)
+		if usage.y > 0: UI.label(card, "%d/%d na base · até vencer a horda %d" % [usage.x, usage.y, FortressData.BUILD_LIMIT_UNLOCK_WAVE], 14, UI.MUTED)
 		var capped := usage.y > 0 and usage.x >= usage.y
 		var button := UI.button(card,"LIMITE ATINGIDO" if capped else "SELECIONAR",func():
 			close_modal()

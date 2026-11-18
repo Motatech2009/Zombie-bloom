@@ -224,3 +224,9 @@ Teto de estruturas ativas por tipo na base da equipe
 Postos de apoio, muros e demais peças seguem a cota por preparação e o teto geral de 120 estruturas. O anfitrião confere a ocupação antes de iniciar e antes de instalar. Destruir ou desmontar uma peça libera uma vaga do tipo. Saves acima do teto do tipo preservam o que já foi construído.
 
 A RC11 usa APK 1611 e protocolo cooperativo 22. A conexão entre RC11 e versões anteriores é recusada nos dois sentidos. Versões antigas já baixadas ainda executam localmente e podem se comunicar com outras cópias antigas compatíveis.
+
+### RC12 — expansão da base após a 20ª horda
+
+Os limites por tipo da tabela são aplicados até a conclusão da horda 20. Na preparação seguinte, a equipe pode passar dessas quantidades. O desbloqueio acompanha o save e a partida cooperativa. A cota por preparação e o teto geral da base continuam sendo aplicados.
+
+A RC12 usa APK 1612 e protocolo cooperativo 23.

@@ -279,7 +279,7 @@ func refresh_browser() -> void:
 	if mode=="catalog":
 		var usage: Vector2i = world.builder.piece_usage(entry.id)
 		browser_capacity.visible = usage.y > 0
-		browser_capacity.text = "%d/%d na base" % [usage.x, usage.y]
+		browser_capacity.text = "%d/%d na base · até vencer a horda %d" % [usage.x, usage.y, FortressData.BUILD_LIMIT_UNLOCK_WAVE]
 		if usage.y > 0 and usage.x >= usage.y: reason = "LIMITE DESTE TIPO ATINGIDO"
 		elif world.built_this_round>=world.build_quota(): reason = "COTA DESTA HORDA ESGOTADA"
 	else:

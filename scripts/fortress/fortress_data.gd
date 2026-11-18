@@ -1,6 +1,7 @@
 class_name FortressData
 extends RefCounted
 
+const BUILD_LIMIT_UNLOCK_WAVE := 20
 const BUILD_LIMITS := {
 	"turret": 12,
 	"cannon": 5,
