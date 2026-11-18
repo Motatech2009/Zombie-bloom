@@ -195,3 +195,9 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - Vida, dano, colisões, habilidades, drops, IA e regras das hordas continuam nos atores existentes. O corpo do Titã considera os galhos acima da cabeça para manter o coração na altura correta do peito.
 - Inclui integralmente as correções RC8: braço direito, elos 3D, taco com três alvos e sem paralisia, ninho ativo, negociação por toque e Titã apenas em novos setores da camada 2 em diante, com aviso.
 - Validação local específica: 245 verificações por execução desktop/toque; 81 de encontros e resgate; 24 de combate/negociação por toque. RC9/APK1609/protocolo21. CI integral e pacotes desta revisão serão vinculados ao concluir. Android físico e ativação do Firebase real permanecem pendentes.
+
+### Pacotes RC9 validados — 18/11/2026
+
+Codigo 49b9eaa2b38d550afe8ecf7f5c13e2e5a573d16f: [CI completo aprovado](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836). Os logs registram 3.062 verificacoes com zero falhas, incluindo 490 dos novos modelos e 79 no pacote exportado. Apos download, mais 245 passaram usando o executavel Windows como pacote principal; o boot nativo tambem encerrou normalmente.
+
+[PC](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14421390863) · [Android em ZIP](https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14420248631). Downloads podem exigir login GitHub. APK1609 com assinatura v2/v3 e ABIs arm64-v8a/armeabi-v7a verificados. Hashes, escopo e limitacoes em [evidencias RC9](docs/release16-enemies-results.txt).
