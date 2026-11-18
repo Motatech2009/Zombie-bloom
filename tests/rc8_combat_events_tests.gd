@@ -84,7 +84,10 @@ func run() -> void:
 	w.exp16.load_sector(); var post: Node3D = w.exp16.nodes["2:0"].root; var child_count := post.get_child_count(); w.exp16.load_sector()
 	check(post.find_children("*","MeshInstance3D",true,false).size()>10 and post.get_child_count()==child_count,"client builds the safe-post visual exactly once")
 	if MobilePlatform.enabled():
-		w.touch_controls.context = context; w.touch_controls.layout_controls(); w.touch_controls.trigger("shop")
+		w.touch_controls.context = context; w.touch_controls.interaction_text = "NEGOCIAR"; w.touch_controls.layout_controls()
+		check(w.touch_controls.buttons.has("interact") and not w.touch_controls.buttons.has("shop"),"safe post shows one negotiation button instead of duplicated actions")
+		var tap := InputEventScreenTouch.new(); tap.index = 4; tap.pressed = true; tap.position = w.touch_controls.buttons.interact.get_center(); w.touch_controls._input(tap)
+		check(w.touch_controls.fingers.is_empty() and not w.touch_controls.interact_held,"negotiation touch clears held fingers and opens immediately")
 	else: w.open_shop()
 	check(w.hud.mode=="post16","the shop action opens the safe-post trading screen on the client")
 	w.hud.close_modal(); w.is_client = false

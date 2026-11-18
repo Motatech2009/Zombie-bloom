@@ -48,6 +48,7 @@ func layout_controls() -> void:
 	if not interaction_text.is_empty(): contextual.append("interact")
 	for role in ["upgrade","shop","revive","repair","gate","travel"]:
 		var available: bool = not context.get("upgrade",{}).is_empty() if role=="upgrade" else context.get(role,false)
+		if role=="shop" and context.get("post16",false) and not interaction_text.is_empty(): continue
 		if available: contextual.append(role)
 	for i in range(contextual.size()): buttons[contextual[i]] = Rect2(size.x-140-i*124,158,116,62)
 	if is_instance_valid(world) and is_instance_valid(world.builder) and world.builder.active:
