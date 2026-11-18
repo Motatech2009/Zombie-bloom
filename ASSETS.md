@@ -55,3 +55,7 @@ Três SVGs em assets/mobile formam o ícone do aplicativo e as camadas adaptativ
 ## Tripo — modelos do criador (RC6)
 
 Canhão, torre Tesla, torreta elevada, quatro níveis do Núcleo e 19 cosméticos foram fornecidos em GLB pelo criador. A preparação offline, os hashes e os limites estão em [art_source/tripo16/README.md](art_source/tripo16/README.md). As malhas/texturas de produção ficam em `assets/defenses/` e `assets/cosmetics/tripo16/`; os originais não são distribuídos no executável.
+
+## Modelos do criador — personagem e objetos RC7
+
+Personagem, quatro carros, comboio com reboque e barraca: Tripo, arquivos enviados pelo criador. Procedência e hashes em art_source/tripo16/actors/sources.json. Recursos de produção em assets/characters/player16 e assets/scenery/tripo16. O personagem recebeu rig e ajustes locais; não havia animações na origem. Bento conserva o modelo procedural. Texturas compartilhadas limitadas a 1K (barraca 2K), com compressão VRAM e mipmaps.

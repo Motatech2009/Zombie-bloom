@@ -1,0 +1,15 @@
+{
+  "bones": 15,
+  "prepared_sha256": "d81154adb92f6a96cac31bd0536b04125044527f3c5b03d39fde435caf8005cb",
+  "rig": "local offline weighted skeleton",
+  "source_animations": 0,
+  "source_sha256": "1167ad3717da35c5a1a04a2f0cd1c20ccd9b282ed01b22ed37cc5ec17e9d351b",
+  "texture_limit": 1024,
+  "triangles": 15010,
+  "variants": [
+    "base",
+    "covered",
+    "base_head",
+    "covered_head"
+  ]
+}

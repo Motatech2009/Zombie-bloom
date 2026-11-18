@@ -12,7 +12,7 @@ func _ready() -> void:
 		for i in range(4): VisualFactory.cylinder(self,.6,1.5,Vector3((i%2-.5)*1.1,.7,(i/2-.5)*1.1),Color("a278c5"))
 	elif kind=="convoy":
 		collision_layer = 1; VisualFactory.collider(self,Vector3(3,2,5),Vector3(0,1,0))
-		VisualFactory.box(self,Vector3(3,2,5),Vector3(0,1,0),Color("697c81")); VisualFactory.box(self,Vector3(2.8,1.2,1.2),Vector3(0,1,-3),Color("9eab7b"))
+		add_child(preload("res://assets/scenery/tripo16/comboio/convoy.tscn").instantiate())
 	else:
 		collision_layer = 0
 		VisualFactory.human(self,Color("a5b897"),true)

@@ -118,7 +118,14 @@ func fire_turret() -> void:
 	if muzzle_hit.is_empty() or muzzle_hit.collider!=candidates[0]: cooldown = .15; return
 	origin = actual_origin
 	if spec.id=="cannon":
-		if world.defense_shell(origin,point,float(spec.values.damage),3.8)==null: cooldown = .25; return
+		var markers := head.get_node("Pitch").get_children().filter(func(node): return node is Marker3D)
+		if get_tree().get_nodes_in_group("campaign_projectiles").size()+markers.size()>48: cooldown = .25; return
+		for marker in markers:
+			var query := PhysicsRayQueryParameters3D.create(marker.global_position,point,1|4|8,[get_rid()]); query.hit_from_inside = true
+			var obstruction := get_world_3d().direct_space_state.intersect_ray(query)
+			if obstruction.is_empty() or obstruction.collider!=candidates[0]: cooldown = .15; return
+		for marker in markers:
+			world.defense_shell(marker.global_position,point,float(spec.values.damage)/markers.size(),3.8)
 	else:
 		for i in range(mini(3 if spec.id=="shock" else 1,candidates.size())):
 			var enemy: Node3D = candidates[i]

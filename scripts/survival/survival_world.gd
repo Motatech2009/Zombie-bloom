@@ -1123,7 +1123,10 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 		for node in get_tree().get_nodes_in_group(group):
 			if regions.enabled() and coord_at(node.global_position)!=sector_coord: continue
 			if not node.has_meta("uid"): node.set_meta("uid",next_id())
-			hazards.append({"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius})
+			var visual := {"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius}
+			if group=="campaign_projectiles" and node.kind=="defense_shell":
+				visual.shell16 = true; visual.direction16 = (node.destination-node.start).normalized()
+			hazards.append(visual)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
 		if enemy.spec.id=="titan16" and enemy.windup>0 and enemy.cast16=="roots":
@@ -1324,9 +1327,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var id := int(state.id)
 		seen[id] = true
 		if not client_hazards.has(id):
-			if state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
+			if state.get("shell16",false): client_hazards[id] = VisualFactory.box(self,Vector3(.38,.38,.84),Vector3.ZERO,Color("e1af64"),true)
+			elif state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
 			else: client_hazards[id] = VisualFactory.cylinder(self,state.radius if state.pool else .15,.04 if state.pool else .25,Vector3.ZERO,Color("9dc45f") if state.pool else Color("e1af64"))
 		client_hazards[id].position = state.p
+		if state.get("shell16",false) and state.get("direction16",Vector3.ZERO).length_squared()>.001: client_hazards[id].look_at(state.p+state.direction16)
 	for id in client_hazards.keys():
 		if not seen.has(id): client_hazards[id].queue_free(); client_hazards.erase(id)
 	if data.get("_bulk",true): client_scene_ready = true
@@ -1381,7 +1386,7 @@ func defense_shell(from: Vector3,to: Vector3,power: float,radius: float) -> Node
 	if is_client or get_tree().get_nodes_in_group("campaign_projectiles").size()>=48: return null
 	var shell := Node3D.new(); shell.set_script(load("res://scripts/fortress/defense_shell.gd"))
 	shell.world = self; shell.kind = "defense_shell"; shell.start = from; shell.destination = to
-	shell.damage = power; shell.radius = radius; shell.life = .6; shell.set_meta("uid",next_id())
+	shell.damage = power; shell.radius = radius; shell.life = .24; shell.set_meta("uid",next_id())
 	add_child(shell)
 	return shell
 

@@ -48,11 +48,13 @@ func run() -> void:
 	for tier in range(1,4):
 		cannon.tier = tier; cannon.refresh_tier(); cannon.muzzle_cycle = 0; await frames(); var hp: float = target.health.current
 		cannon.fire_turret(); var shells := get_nodes_in_group("campaign_projectiles").filter(func(node): return node.kind=="defense_shell")
-		check(shells.size()==1,"cannon N"+str(tier)+" creates one shell even with twin barrels")
-		if shells.size()==1:
+		check(shells.size()==(1 if tier==1 else 2),"cannon fires once from each visible barrel")
+		if not shells.is_empty():
 			var shell: Node3D = shells[0]; shell.set_physics_process(false); cannon.muzzle_cycle = 0
 			check(shell.start.is_equal_approx(cannon.muzzle_origin()),"cannon N"+str(tier)+" shell starts at the visible barrel")
-			shell._physics_process(.61); await frames()
+			for projectile in shells:
+				projectile.set_physics_process(false); projectile._physics_process(.61)
+			await frames()
 			check(is_equal_approx(hp-target.health.current,float(cannon.spec.values.damage)),"cannon N"+str(tier)+" explosion preserves the existing damage")
 		var pose: Vector2 = cannon.aim_pose(); cannon.tier = 1 if tier==3 else tier+1; cannon.refresh_tier()
 		check(cannon.aim_pose().is_equal_approx(pose),"cannon upgrade keeps the aiming pose")
@@ -72,8 +74,14 @@ func run() -> void:
 	for piece in [8,9,11]:
 		for tier in range(1,4):
 			var value := tower(w,piece,tier); value.position.x = 20+piece*4; value.position.z = tier*5; value.aim_at(value.global_position+Vector3(-3,2,-10))
+	var bolt: Node3D = w.defense_shell(Vector3(35,1.8,16),Vector3(35,1.8,5),10,2); bolt.set_physics_process(false)
+	var half: Vector3 = bolt.start.lerp(bolt.destination,.5); bolt._physics_process(bolt.life*.5)
+	check(bolt.position.is_equal_approx(half) and bolt.model.scale==Vector3(1.65,1.65,2.1),"cannon bolt is thick and follows a straight path")
 	w.core_tier = 4; w.refresh_core_model(); var packet: Dictionary = w.net_state(1,true)
 	w.is_client = true; w.client_scene_ready = true; w.last_scene_revision = int(packet.rev); w.apply_net_state(packet,1)
+	var bolt_state: Dictionary = packet.hazards.filter(func(h): return h.get("shell16",false))[0]
+	var replica_bolt: MeshInstance3D = w.client_hazards[int(bolt_state.id)]
+	check(replica_bolt.mesh.get_aabb().size.is_equal_approx(Vector3(.38,.38,.84)) and (-replica_bolt.global_basis.z).dot(bolt_state.direction16)>.999,"client reproduces the thicker oriented cannon bolt")
 	for entry in packet.structures:
 		if int(entry.piece) not in [8,9,11]: continue
 		var replica: Node3D = w.client_structures[int(entry.id)]

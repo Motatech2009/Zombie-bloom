@@ -16,6 +16,7 @@ static func decorate(rig: Node3D,outfit: Dictionary,actor: Node3D = null) -> voi
 		if default_part!=null: default_part.show()
 	var torso := rig.get_node_or_null("Body16")
 	if torso!=null: torso.scale = Vector3.ONE
+	if rig.has_method("set_outfit16"): rig.set_outfit16(outfit)
 	var root := Node3D.new(); root.name = "Atelier16"; rig.add_child(root)
 	for slot in outfit:
 		var item := Catalog16.cosmetic(str(outfit[slot]))

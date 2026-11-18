@@ -1,6 +1,6 @@
 class_name VisualFactory
 extends RefCounted
-## All geometry is original and generated locally. No external assets required.
+## Procedural scenery and the user-supplied, locally rigged clay survivor.
 static var materials: Dictionary = {}
 static var clay_enabled: bool = true
 
@@ -48,6 +48,13 @@ static func collider(parent: CollisionObject3D, size: Vector3, pos: Vector3) -> 
 	return node
 
 static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
+	if armed:
+		var player: Node3D = preload("res://assets/characters/player16/player.tscn").instantiate()
+		parent.add_child(player)
+		var gun: MeshInstance3D = player.get_node("Gun")
+		gun.mesh = null
+		gun.add_child(preload("res://assets/models/weapon_pistol.tscn").instantiate())
+		return player
 	var rig := Node3D.new()
 	parent.add_child(rig)
 	var torso := box(rig, Vector3(.65, .75, .38), Vector3(0, 1.05, 0), color); torso.name = "Body16"

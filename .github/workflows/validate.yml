@@ -160,6 +160,17 @@ jobs:
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "tripo16-cosmetics-${platform}.log"; then exit 1; fi
             grep -E 'COSMETIC MODELS RESULT: [0-9]+ checks, 0 failures' "tripo16-cosmetics-${platform}.log"
           done
+      - name: Validate weighted player and actor props
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/player16_models_tests.gd "${args[@]}" 2>&1 | tee "player-models-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "player-models-${platform}.log"; then exit 1; fi
+            grep -E 'PLAYER MODELS RESULT: [0-9]+ checks, 0 failures' "player-models-${platform}.log"
+          done
       - name: Validate scene transitions on desktop and touch
         shell: bash
         run: |
@@ -243,6 +254,16 @@ jobs:
               timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release16_preview.gd -- "${args[@]}" 2>&1 | tee "preview16-${platform}-${view}.log"
               if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "preview16-${platform}-${view}.log"; then exit 1; fi
             done
+          done
+      - name: Render weighted player closeups
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/player16_preview.gd "${args[@]}" 2>&1 | tee "player-preview-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "player-preview-${platform}.log"; then exit 1; fi
           done
       - uses: actions/upload-artifact@v4
         with:

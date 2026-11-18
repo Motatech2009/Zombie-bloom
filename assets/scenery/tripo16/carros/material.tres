@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/scenery/tripo16/carros/atlas.jpg" id="atlas"]
+
+[resource]
+roughness = 0.94
+texture_repeat = false
+albedo_texture = ExtResource("atlas")

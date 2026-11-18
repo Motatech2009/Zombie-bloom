@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/scenery/tripo16/carros/car_4.res" id="1_awvs0"]
+
+[ext_resource type="Material" path="res://assets/scenery/tripo16/carros/material.tres" id="material"]
+
+[node name="car_4" type="Node3D" unique_id=763619499]
+metadata/source = "Tripo/user submission"
+
+[node name="Model" type="MeshInstance3D" parent="." unique_id=1766551879]
+mesh = ExtResource("1_awvs0")
+surface_material_override/0 = ExtResource("material")

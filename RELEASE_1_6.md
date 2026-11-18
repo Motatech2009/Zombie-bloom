@@ -1,6 +1,6 @@
 # Zombie Bloom 1.6 — controle de implementação
 
-Estado: candidata **1.6.0-rc.6**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
+Estado: candidata **1.6.0-rc.7**, implementação integrada em validação; **não é lançamento final da 1.6**. Base de código: `0b8856c`, equivalente à árvore da revisão remota `90c3c50` da 1.5. A versão distribuída permanece separada desta branch.
 
 Fonte do escopo: [handoff original](docs/design/GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.txt). Seus nomes, preços, talentos e novo modo marcados como proposta continuam propostas. Este registro não significa aprovação criativa nem autorização de promoção.
 
@@ -167,3 +167,11 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - Base fixa, articulação e disparos pelas bocas reais; elevada respeita barricadas e muralhas. Correção de inicialização de material no modo leve sem texturas pré-aquecidas.
 - Defesas usam atlas 1K com mipmaps/compressão VRAM; cosméticos usam um atlas 2K compartilhado.
 - Candidata RC6/APK1606/protocolo21; regras Firebase reais continuam pendentes. Pacotes RC5 descritos nas evidências anteriores não contêm estes modelos. CI RC6 aprovado: 1.856 verificações Godot e pacotes PC/Android gerados. Evidências e hashes em `docs/release16-models-results.txt`.
+
+## RC7 — personagem articulado e objetos de massinha
+
+- Personagem enviado pelo criador integrado com esqueleto local de 15 ossos e 15.010 triângulos, reduzido a partir de 1.921.388. Braços abaixados sem item e empunhadura em frente ao corpo com arma; caminhada, recarga, coleta e rolamento usam a animação existente.
+- Os 19 acessórios físicos vestem o novo corpo. Cabeça e tronco recebem ajustes locais por roupa, mantendo malhas e atlases compartilhados. Cosméticos não alteram colisão, dano, vida, mochila funcional ou progressão.
+- Quatro carros distintos na base; comboio com reboque; barraca fornecida com atlas único e Bento atrás do balcão. Eventos, recompensas e áreas bloqueadas preservados.
+- Canhão N2/N3 dispara uma salva de dois tiros retos mais grossos, um por cano, com dano total preservado. O cliente também reproduz os projéteis espessos. N1 mantém seu único cano.
+- Candidata RC7/APK1607, protocolo21. A ativação da economia no Firebase real permanece pendente. Evidências desta candidata serão registradas após a compilação.

@@ -97,12 +97,10 @@ func create_vendor() -> void:
 	base_arena.mark_solid(vendor_pos,Vector2(4,4))
 	stand.collision_layer = 1
 	VisualFactory.collider(stand,Vector3(2.6,1.4,1.6),Vector3(0,.7,0))
-	VisualFactory.box(stand,Vector3(2.6,1,1.6),Vector3(0,.5,0),Color("596b62"))
-	VisualFactory.box(stand,Vector3(3,.16,2),Vector3(0,2.6,0),Color("b6aa70"))
-	for x in [-1.3,1.3]: VisualFactory.box(stand,Vector3(.12,2.5,.12),Vector3(x,1.25,0),Color("384c51"))
+	stand.add_child(preload("res://assets/scenery/tripo16/vendedor/stall.tscn").instantiate())
 	var person := Node3D.new()
 	stand.add_child(person)
-	person.position = Vector3(0,0,-1.6)
+	person.position = Vector3(0,0,-.45)
 	person.rotation.y = PI
 	vendor_rig = VisualFactory.human(person,Color("a5966b"),false)
 	var tag := VisualFactory.health_label(stand,3.5)

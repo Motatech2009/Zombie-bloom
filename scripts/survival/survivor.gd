@@ -71,7 +71,7 @@ func animate_pose(moving: float) -> void:
 	rig.position = presentation_offset
 	VisualFactory.animate_human(rig,clock*(1.35 if moving>1.1 else 1.0),moving,recoil,true)
 	var gun: Node3D = rig.get_node("Gun")
-	gun.position = Vector3(.34,1.1,-.64+recoil*.12)
+	gun.position = rig.get_meta("weapon_origin16",Vector3(.34,1.1,-.64))+Vector3(0,0,recoil*.12)
 	gun.rotation = Vector3.ZERO
 	if weapons.reload_left>0:
 		var progress := 1-weapons.reload_left/maxf(.01,weapons.reload_total)
