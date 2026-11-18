@@ -7,6 +7,11 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	return super.can_place(pos,check_access)
 
 func place() -> Node3D:
+	if not active: return null
+	if not can_place(location, false):
+		if world.is_client: world.private_notice(world.player.peer_id, reason)
+		else: world.notify(reason)
+		return null
 	if world.is_client:
 		world.send_action("build",{"pos":location,"angle":angle,"piece":selected})
 		return null

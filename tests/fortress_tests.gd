@@ -32,6 +32,75 @@ func first_mesh(node: Node) -> MeshInstance3D:
 		var found := first_mesh(child)
 		if found!=null: return found
 	return null
+func check_build_limits() -> void:
+	var builder: Node3D = world.builder
+	var actor: Node3D = world.player
+	var initial: Dictionary = world.snapshot()
+	var pieces := FortressData.pieces()
+	var ceilings := {"turret": 12, "cannon": 5, "raised_turret": 5, "shock": 5, "wire": 30, "spikes": 30}
+	var spot := Vector3(42, 0, 20)
+	actor.position = Vector3(42, 0, 24)
+	world.resources.scrap = 10000
+	world.stock = {"wood": 1000, "parts": 1000}
+	for i in range(pieces.size()):
+		var type: String = pieces[i].id
+		if not ceilings.has(type):
+			check(builder.piece_usage(type) == Vector2i.ZERO, type + " has no per-type limit")
+			continue
+		var ceiling: int = ceilings[type]
+		var pieces_at_limit: Array[Node3D] = []
+		for n in range(ceiling):
+			pieces_at_limit.append(structure(i, Vector3(-40 + (n % 6) * 5, 0, -40 + (n / 6) * 5)))
+		builder.selected = i
+		check(builder.piece_usage(type) == Vector2i(ceiling, ceiling), type + " counts live installations in the base")
+		var before: int = world.resources.scrap
+		var quota: int = world.built_this_round
+		check(not world.perform_action(1, "build", {"pos": spot, "piece": i, "angle": 0.0}) and world.channel15.jobs.is_empty(),
+			type + " rejects a new construction request at its cap")
+		check(builder.commit_channel({"pos": spot, "piece": i, "angle": 0.0}) == null and world.resources.scrap == before and world.built_this_round == quota,
+			type + " commit rechecks the limit without charging materials or wave quota")
+		var fixture := pieces_at_limit.pop_back() as Node3D
+		check(fixture.dismantle() and builder.piece_usage(type) == Vector2i(ceiling - 1, ceiling),
+			type + " dismantling reopens a slot")
+		for piece in pieces_at_limit:
+			piece.free()
+		await frames()
+
+	var last_slot := 8
+	for n in range(4):
+		structure(last_slot, Vector3(-40 + n * 5, 0, -40))
+	var second_spot := Vector3(42, 0, 28)
+	check(world.attach_peer(77, "7".repeat(32), "Builder"), "a guest shares the host's construction limits")
+	var guest: Node3D = world.avatars[77]
+	guest.set_physics_process(false)
+	guest.position = Vector3(44, 0, 25)
+	await frames()
+	var first := {"pos": spot, "piece": last_slot, "angle": 0.0}
+	var second := {"pos": second_spot, "piece": last_slot, "angle": 0.0}
+	var before: int = world.resources.scrap
+	check(world.perform_action(1, "build", first) and world.perform_action(77, "build", second),
+		"host and guest can request the last cannon slot before either finishes")
+	world.channel15.tick(4.0)
+	check(builder.piece_usage("cannon") == Vector2i(5, 5) and world.built_this_round == 1 and
+		world.resources.scrap == before - int(pieces[last_slot].cost.scrap),
+		"only one of two simultaneous builds can spend the last slot")
+	world.detach_peer(77)
+	for piece in get_nodes_in_group("campaign_structure"):
+		piece.free()
+	var old_save: Dictionary = initial.duplicate(true)
+	for i in range(13):
+		old_save.structures.append({"piece": 1, "tier": 1, "hp": 180.0, "pos": [-42 + (i % 6) * 5, -42 + (i / 6) * 5],
+			"angle": 0.0, "open": false, "invested": pieces[1].cost.duplicate()})
+	check(world.valid_snapshot(old_save), "a legacy save above the new type cap still validates")
+	world.apply_snapshot(old_save)
+	builder.selected = 1
+	actor.position = Vector3(42, 0, 24)
+	check(builder.piece_usage("turret") == Vector2i(13, 12) and not builder.can_place(spot, false),
+		"existing turrets are restored and a save over the cap cannot add another")
+	world.apply_snapshot(initial)
+	world.profiles.erase("7".repeat(32))
+	await frames()
+
 func run() -> void:
 	check(FortressData.pieces().size()==12,"twelve defenses preserve existing indices and append the raised turret")
 	for piece in range(10):
@@ -53,6 +122,7 @@ func run() -> void:
 	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	await frames(); world.set_process(false); world.waves.set_physics_process(false)
 	var actor: Node3D = world.player; actor.set_physics_process(false)
+	await check_build_limits()
 	actor.position = Vector3(20,0,20)
 	var bag_before: int = actor.bag.count("scrap")
 	var bank_before: int = world.resources.scrap

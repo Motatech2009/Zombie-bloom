@@ -9,6 +9,7 @@ var browser_detail: VBoxContainer
 var browser_status: Label
 var browser_title: Label
 var browser_price: Label
+var browser_capacity: Label
 var browser_buy: Button
 var browser_tab: int = 0
 var browser_selection: int = -1
@@ -254,7 +255,9 @@ func select_browser_item(index: int) -> void:
 	ItemIcons.image(top,entry.id,Vector2(54,54))
 	browser_title = UI.label(top,entry.title.to_upper(),20,UI.LIME); browser_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; browser_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var description := UI.label(browser_detail,entry.description,14,UI.MUTED); description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if mode=="catalog": UI.label(browser_detail,"Integridade inicial: %d · até N3" % entry.health,14)
+	if mode=="catalog":
+		UI.label(browser_detail,"Integridade inicial: %d · até N3" % entry.health,14)
+		browser_capacity = UI.label(browser_detail, "", 14, UI.MUTED)
 	elif entry.index>=0:
 		var spec: Resource = Arsenal.WEAPONS[entry.index]
 		UI.label(browser_detail,"Dano: %s · alcance: %s" % [spec.values.damage,spec.values.range],14)
@@ -274,7 +277,11 @@ func refresh_browser() -> void:
 	var entry: Dictionary = browser_entries[browser_selection]
 	var reason := ""
 	if mode=="catalog":
-		if world.built_this_round>=world.build_quota(): reason = "COTA DESTA HORDA ESGOTADA"
+		var usage: Vector2i = world.builder.piece_usage(entry.id)
+		browser_capacity.visible = usage.y > 0
+		browser_capacity.text = "%d/%d na base" % [usage.x, usage.y]
+		if usage.y > 0 and usage.x >= usage.y: reason = "LIMITE DESTE TIPO ATINGIDO"
+		elif world.built_this_round>=world.build_quota(): reason = "COTA DESTA HORDA ESGOTADA"
 	else:
 		var copy := ItemBag.new(); copy.restore(world.player.bag.dump())
 		if entry.index>=0 and copy.count(entry.id)>0: reason = "VOCÊ JÁ TEM ESTA ARMA"

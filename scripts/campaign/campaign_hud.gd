@@ -171,12 +171,15 @@ func show_build_catalog() -> void:
 		UI.label(heading,"%d / %s" % [i+1,data.title.to_upper()],17,data.color.lightened(.3))
 		UI.label(card,descriptions[i],15,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.label(card,CampaignData.cost_text(data.cost),14).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		var button := UI.button(card,"SELECIONAR",func():
+		var usage: Vector2i = world.builder.piece_usage(data.id)
+		if usage.y > 0: UI.label(card, "%d/%d na base" % [usage.x, usage.y], 14, UI.MUTED)
+		var capped := usage.y > 0 and usage.x >= usage.y
+		var button := UI.button(card,"LIMITE ATINGIDO" if capped else "SELECIONAR",func():
 			close_modal()
 			world.builder.selected = index
 			world.builder.set_active(true)
 		)
-		button.disabled = not world.can_pay(data.cost)
+		button.disabled = capped or not world.can_pay(data.cost)
 	UI.button(box,"VOLTAR",close_modal)
 
 func show_routes() -> void:

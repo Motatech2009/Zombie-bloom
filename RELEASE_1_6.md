@@ -207,3 +207,20 @@ Codigo 49b9eaa2b38d550afe8ecf7f5c13e2e5a573d16f: [CI completo aprovado](https://
 - 19 modelos individuais preparados para Godot, com até 3.000 triângulos por modelo e o atlas compartilhado da RC9.
 - Errante, Blindado e Investidor têm joelhos e tornozelos recalibrados, malha separada entre os pés e reposição da postura ao parar. A investida do Investidor usa a passada rápida no anfitrião e nos convidados.
 - A versão de teste é `1.6.0-rc.10`, com APK 1610 e protocolo cooperativo 21.
+
+### RC11 — limites de construção e compatibilidade cooperativa
+
+Teto de estruturas ativas por tipo na base da equipe
+
+| Construção | Máximo |
+|---|---:|
+| Torreta comum | 12 |
+| Canhão automático | 5 |
+| Torreta elevada | 5 |
+| Torre elétrica | 5 |
+| Arame farpado | 30 |
+| Estacas | 30 |
+
+Postos de apoio, muros e demais peças seguem a cota por preparação e o teto geral de 120 estruturas. O anfitrião confere a ocupação antes de iniciar e antes de instalar. Destruir ou desmontar uma peça libera uma vaga do tipo. Saves acima do teto do tipo preservam o que já foi construído.
+
+A RC11 usa APK 1611 e protocolo cooperativo 22. A conexão entre RC11 e versões anteriores é recusada nos dois sentidos. Versões antigas já baixadas ainda executam localmente e podem se comunicar com outras cópias antigas compatíveis.

@@ -1,4 +1,8 @@
 extends Node
+
+const PROTOCOL_VERSION := 22
+const VERSION_MESSAGE := "Versões incompatíveis. Atualize o Zombie Bloom no PC e no Android para jogar juntos."
+
 signal status_changed(message: String)
 var mode: String = "offline"
 var world: Node3D
@@ -75,7 +79,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,21,Director15.selected_class,Director15.selected_cosmetic,Meta16.outfit(Director15.selected_class),Account.user_id)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,PROTOCOL_VERSION,Director15.selected_class,Director15.selected_cosmetic,Meta16.outfit(Director15.selected_class),Account.user_id)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -151,14 +155,15 @@ func blast_event(point: Vector3,radius: float) -> void:
 	if mode=="host": _blast_visual.rpc(point,radius)
 
 @rpc("any_peer","call_remote","reliable",0)
-func _join_ready(token: String,name_text: String,protocol: int = 21,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
+func _join_ready(token: String,name_text: String,protocol: int = 0,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
 	if account_uid.length()>128: return
 	if not Cosmetics16.valid(outfit,specialization): return
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=21:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão de jogo (protocolo 21)."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
+	if protocol != PROTOCOL_VERSION:
+		_rejected.rpc_id(id, VERSION_MESSAGE)
+		return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return
 	if world.attach_peer(id,token,name_text):
@@ -171,7 +176,10 @@ func _join_ready(token: String,name_text: String,protocol: int = 21,specializati
 
 @rpc("authority","call_remote","reliable",0)
 func _rejected(message: String) -> void:
-	if is_instance_valid(world): world.finish(false,message)
+	var previous := world
+	close_session()
+	if is_instance_valid(previous): previous.finish(false, message)
+	status_changed.emit(message)
 
 @rpc("any_peer","call_remote","unreliable_ordered",1)
 func _input_frame(data: Dictionary) -> void:
@@ -202,7 +210,11 @@ func _action(action: String,data: Dictionary) -> void:
 
 @rpc("authority","call_remote","reliable",0)
 func _receive_scene(data: Dictionary) -> void:
-	if mode=="client" and is_instance_valid(world): world.apply_net_scene(data)
+	if mode != "client" or not is_instance_valid(world): return
+	if data.get("protocol", 0) != PROTOCOL_VERSION:
+		_rejected(VERSION_MESSAGE)
+		return
+	world.apply_net_scene(data)
 
 @rpc("authority","call_remote","unreliable_ordered",2)
 func _receive_state(packet: PackedByteArray) -> void:

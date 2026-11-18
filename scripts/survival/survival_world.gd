@@ -348,7 +348,10 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 				builder.location = Vector3(snappedf(pos.x,1),0,snappedf(pos.z,1))
 				builder.selected = piece
 				builder.angle = fposmod(snappedf(float(angle),PI/2),TAU)
-				result = channel15.start(actor,"build",null,{"pos":builder.location,"piece":builder.selected,"angle":builder.angle})
+				if builder.can_place(builder.location, false):
+					result = channel15.start(actor,"build",null,{"pos":builder.location,"piece":builder.selected,"angle":builder.angle})
+				else:
+					private_notice(peer, builder.reason)
 				builder.active = previous.active
 				builder.location = previous.location
 				builder.selected = previous.selected
@@ -1069,7 +1072,7 @@ func detach_peer(peer: int) -> void:
 
 func net_scene(peer: int = 1) -> Dictionary:
 	if regions.enabled() and avatars.has(peer) and avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return net_scene(peer))
-	return {"rev":peer_revision(peer),"coord":sector_coord,"descriptor":descriptor.duplicate(true),"mode":game_mode}
+	return {"protocol":Coop.PROTOCOL_VERSION,"rev":peer_revision(peer),"coord":sector_coord,"descriptor":descriptor.duplicate(true),"mode":game_mode}
 
 func apply_net_scene(data: Dictionary) -> void:
 	if not is_client: return

@@ -1,5 +1,15 @@
 class_name FortressData
 extends RefCounted
+
+const BUILD_LIMITS := {
+	"turret": 12,
+	"cannon": 5,
+	"raised_turret": 5,
+	"shock": 5,
+	"wire": 30,
+	"spikes": 30,
+}
+
 const EXTRA = [
  {"id":"wire","title":"Arame farpado","size":Vector3(3,.95,1.3),"health":170.0,"cost":{"scrap":25,"wood":2,"parts":1},"color":Color("879ca3")},
  {"id":"bastion","title":"Muralha pesada","size":Vector3(3.5,3,1.5),"health":900.0,"cost":{"scrap":130,"wood":10,"parts":12},"color":Color("87918d")},
