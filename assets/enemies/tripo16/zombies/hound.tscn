@@ -1,0 +1,110 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/enemies/tripo16/zombies/hound.res" id="1_owhel"]
+
+[ext_resource type="Script" path="res://scripts/presentation/clay_enemy16.gd" id="rig"]
+[ext_resource type="Material" path="res://assets/enemies/tripo16/zombies/material.tres" id="mat"]
+
+[sub_resource type="Skin" id="Skin_7uflf"]
+bind_count = 7
+bind/0/name = &""
+bind/0/bone = 0
+bind/0/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.475, 0)
+bind/1/name = &""
+bind/1/bone = 1
+bind/1/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5225, 0)
+bind/2/name = &""
+bind/2/bone = 2
+bind/2/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.64599997, 0.39889854)
+bind/3/name = &""
+bind/3/bone = 3
+bind/3/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20419112, -0.4275, 0.39889854)
+bind/4/name = &""
+bind/4/bone = 4
+bind/4/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.20419112, -0.4275, 0.39889854)
+bind/5/name = &""
+bind/5/bone = 5
+bind/5/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20419112, -0.4275, -0.39889854)
+bind/6/name = &""
+bind/6/bone = 6
+bind/6/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.20419112, -0.4275, -0.39889854)
+
+[node name="ClayEnemy16" type="Node3D" unique_id=209749707]
+script = ExtResource("rig")
+metadata/imported_enemy16 = true
+metadata/model_id16 = "hound"
+metadata/profile16 = "dog"
+
+[node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=2054858123]
+bones/0/name = "Pelvis"
+bones/0/parent = -1
+bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.475, 0)
+bones/0/enabled = true
+bones/0/position = Vector3(0, 0.475, 0)
+bones/0/rotation = Quaternion(0, 0, 0, 1)
+bones/0/scale = Vector3(1, 1, 1)
+bones/1/name = "Spine"
+bones/1/parent = 0
+bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.047499985, 0)
+bones/1/enabled = true
+bones/1/position = Vector3(0, 0.047499985, 0)
+bones/1/rotation = Quaternion(0, 0, 0, 1)
+bones/1/scale = Vector3(1, 1, 1)
+bones/2/name = "Head"
+bones/2/parent = 1
+bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12349999, -0.39889854)
+bones/2/enabled = true
+bones/2/position = Vector3(0, 0.12349999, -0.39889854)
+bones/2/rotation = Quaternion(0, 0, 0, 1)
+bones/2/scale = Vector3(1, 1, 1)
+bones/3/name = "LegFL"
+bones/3/parent = 1
+bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.20419112, -0.09499997, -0.39889854)
+bones/3/enabled = true
+bones/3/position = Vector3(-0.20419112, -0.09499997, -0.39889854)
+bones/3/rotation = Quaternion(0, 0, 0, 1)
+bones/3/scale = Vector3(1, 1, 1)
+bones/4/name = "LegFR"
+bones/4/parent = 1
+bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20419112, -0.09499997, -0.39889854)
+bones/4/enabled = true
+bones/4/position = Vector3(0.20419112, -0.09499997, -0.39889854)
+bones/4/rotation = Quaternion(0, 0, 0, 1)
+bones/4/scale = Vector3(1, 1, 1)
+bones/5/name = "LegBL"
+bones/5/parent = 1
+bones/5/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.20419112, -0.09499997, 0.39889854)
+bones/5/enabled = true
+bones/5/position = Vector3(-0.20419112, -0.09499997, 0.39889854)
+bones/5/rotation = Quaternion(0, 0, 0, 1)
+bones/5/scale = Vector3(1, 1, 1)
+bones/6/name = "LegBR"
+bones/6/parent = 1
+bones/6/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.20419112, -0.09499997, 0.39889854)
+bones/6/enabled = true
+bones/6/position = Vector3(0.20419112, -0.09499997, 0.39889854)
+bones/6/rotation = Quaternion(0, 0, 0, 1)
+bones/6/scale = Vector3(1, 1, 1)
+
+[node name="Character" type="MeshInstance3D" parent="Skeleton3D" unique_id=515119420]
+custom_aabb = AABB(-0.82934046, -0.5, -1.297797, 1.658681, 1.95, 2.5955942)
+mesh = ExtResource("1_owhel")
+surface_material_override/0 = ExtResource("mat")
+skin = SubResource("Skin_7uflf")
+skeleton = NodePath("..")
+
+[node name="ArmL" type="Node3D" parent="." unique_id=118512366]
+
+[node name="ArmR" type="Node3D" parent="." unique_id=1123517287]
+
+[node name="LegL" type="Node3D" parent="." unique_id=1203608839]
+
+[node name="LegR" type="Node3D" parent="." unique_id=1001786932]
+
+[node name="LegFL" type="Node3D" parent="." unique_id=1431021019]
+
+[node name="LegFR" type="Node3D" parent="." unique_id=868071153]
+
+[node name="LegBL" type="Node3D" parent="." unique_id=235342060]
+
+[node name="LegBR" type="Node3D" parent="." unique_id=543833230]

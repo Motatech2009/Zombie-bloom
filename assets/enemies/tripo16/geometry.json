@@ -1,0 +1,245 @@
+[
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.574637, 0.0, -0.313869), S: (1.149274, 1.9, 0.627738)]",
+    "component": 8199,
+    "id": "walker",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2738
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.614615, 0.0, -0.430618), S: (1.22923, 1.9, 0.861235)]",
+    "component": 19228,
+    "id": "runner",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2966
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.781581, 0.0, -0.524401), S: (1.563161, 1.9, 1.048802)]",
+    "component": 33679,
+    "id": "brute",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 1708
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.576344, 0.0, -0.34304), S: (1.152687, 1.9, 0.686079)]",
+    "component": 44564,
+    "id": "armored",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 1882
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.655954, 0.0, -0.361736), S: (1.311908, 1.9, 0.723472)]",
+    "component": 53263,
+    "id": "demolisher",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2222
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.537084, 0.0, -0.32584), S: (1.074168, 1.9, 0.65168)]",
+    "component": 64261,
+    "id": "spitter",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2862
+  },
+  {
+    "bones": 7,
+    "bounds": "[P: (-0.32934, 0.0, -0.797797), S: (0.658681, 0.95, 1.595594)]",
+    "component": 75821,
+    "id": "hound",
+    "kit": "zombies",
+    "profile": "dog",
+    "triangles": 1952
+  },
+  {
+    "bones": 5,
+    "bounds": "[P: (-1.117492, 0.0, -0.609781), S: (2.234985, 0.75, 1.219561)]",
+    "component": 15596,
+    "id": "flyer",
+    "kit": "zombies",
+    "profile": "flyer",
+    "triangles": 1668
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.904096, 0.0, -0.593795), S: (1.808192, 1.9, 1.187591)]",
+    "component": 32993,
+    "id": "alpha_legacy",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2430
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.747485, 0.0, -0.615399), S: (1.494971, 1.9, 1.230799)]",
+    "component": 44542,
+    "id": "burster",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2250
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.515221, 0.0, -0.379469), S: (1.030442, 1.9, 0.758938)]",
+    "component": 52417,
+    "id": "screamer",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2446
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.628941, 0.0, -0.362895), S: (1.257881, 1.9, 0.725789)]",
+    "component": 64085,
+    "id": "mender",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2628
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.516297, 0.0, -0.383468), S: (1.032595, 1.9, 0.766936)]",
+    "component": 7186,
+    "id": "charger",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2390
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.59428, 0.0, -0.322544), S: (1.188559, 1.9, 0.645087)]",
+    "component": 74766,
+    "id": "cryo",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2458
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.580265, 0.0, -0.489666), S: (1.16053, 1.9, 0.979331)]",
+    "component": 18217,
+    "id": "saboteur",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2535
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.831811, 0.0, -0.605242), S: (1.663622, 1.9, 1.210483)]",
+    "component": 32011,
+    "id": "lobber",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 1990
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.662986, 0.0, -0.639298), S: (1.325972, 1.9, 1.278596)]",
+    "component": 43798,
+    "id": "cleaver",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 1538
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.652351, 0.0, -0.43341), S: (1.304702, 1.9, 0.86682)]",
+    "component": 62087,
+    "id": "shieldbearer",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 1556
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.838552, 0.0, -0.628127), S: (1.677105, 1.9, 1.256255)]",
+    "component": 73315,
+    "id": "bridge",
+    "kit": "zombies",
+    "profile": "human",
+    "triangles": 2532
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.89526, 0.0, -0.718046), S: (1.790521, 1.9, 1.436093)]",
+    "component": 18093,
+    "id": "mauler",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 6812
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-1.116181, 0.0, -0.874648), S: (2.232363, 1.9, 1.749297)]",
+    "component": 33545,
+    "id": "mortar",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 7404
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.644413, 0.0, -0.481911), S: (1.288826, 1.9, 0.963822)]",
+    "component": 51865,
+    "id": "broodmother",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 5773
+  },
+  {
+    "bones": 5,
+    "bounds": "[P: (-1.002802, 0.0, -0.985099), S: (2.005603, 0.75, 1.970199)]",
+    "component": 74885,
+    "id": "flyer",
+    "kit": "bosses",
+    "profile": "flyer",
+    "triangles": 4562
+  },
+  {
+    "bones": 7,
+    "bounds": "[P: (-0.501276, 0.0, -0.571972), S: (1.002551, 0.95, 1.143944)]",
+    "component": 18242,
+    "id": "hound",
+    "kit": "bosses",
+    "profile": "dog",
+    "triangles": 4040
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.804276, 0.0, -0.445578), S: (1.608552, 1.9, 0.891157)]",
+    "component": 31526,
+    "id": "potter",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 4296
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.934662, 0.0, -0.733767), S: (1.869325, 1.9, 1.467535)]",
+    "component": 52479,
+    "id": "hive",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 5146
+  },
+  {
+    "bones": 15,
+    "bounds": "[P: (-0.969192, 0.0, -0.906319), S: (1.938384, 2.5, 1.812638)]",
+    "component": 74831,
+    "id": "titan16",
+    "kit": "bosses",
+    "profile": "human",
+    "triangles": 6646
+  }
+]

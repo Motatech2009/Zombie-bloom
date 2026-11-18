@@ -10,6 +10,8 @@ var extra_motion = ""
 var bridge_mask = false
 var cast_visual: Node3D
 func create_model(factor: float) -> void:
+	var imported: Node3D = preload("res://scripts/presentation/enemy_models16.gd").create(self,factor)
+	if imported!=null: rig = imported; return
 	if spec.id=="parasite": dog_model(); rig.scale = Vector3.ONE*.45; return
 	super.create_model(factor)
 	if spec.id=="shieldbearer": ModelFactory.part(rig,Vector3(.95,1.3,.22),Vector3(0,1.1,-.5),Color("b39375"))

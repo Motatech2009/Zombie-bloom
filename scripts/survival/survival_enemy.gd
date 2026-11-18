@@ -27,11 +27,11 @@ func _ready() -> void:
 	super._ready()
 	label.hide()
 	label.set_meta("suppressed",true)
-	if spec.id in ["hound","flyer"]:
+	if spec.id in ["hound","flyer"] and not rig.get_meta("imported_enemy16",false):
 		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
 	ClayStyle.apply_tree(rig)
 	configure_bars()
-	if MobilePlatform.lightweight(): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+	if MobilePlatform.lightweight() and not rig.get_meta("imported_enemy16",false): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
 	if is_boss:
 		health.setup(health.maximum*1.6*(1+.5*(world.party_count()-1)))
 		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
@@ -290,10 +290,10 @@ func refresh_quality() -> void:
 	wings.clear()
 	remove_child(previous); previous.queue_free()
 	create_model(float(spec.values.scale))
-	if spec.id in ["hound","flyer"]:
+	if spec.id in ["hound","flyer"] and not rig.get_meta("imported_enemy16",false):
 		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
 	ClayStyle.apply_tree(rig)
-	if MobilePlatform.lightweight(): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+	if MobilePlatform.lightweight() and not rig.get_meta("imported_enemy16",false): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
 
 func visible_near_camera() -> bool:
 	if not MobilePlatform.enabled(): return true

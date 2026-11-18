@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/bosses/albedo_texture.jpg" id="albedo"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/bosses/normal_texture.png" id="normal"]
+
+[resource]
+resource_name = "tripo_mat_4f774437-4a15-40df-8ff5-db4a27ac5d68"
+metallic_specular = 0.22
+metallic_texture_channel = 2
+roughness = 0.94
+roughness_texture_channel = 1
+normal_enabled = true
+normal_scale = 0.45
+
+albedo_texture = ExtResource("albedo")
+normal_texture = ExtResource("normal")

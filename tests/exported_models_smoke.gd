@@ -7,7 +7,7 @@ func check(ok: bool,text: String) -> void:
 	if ok: print("PASS: "+text)
 	else: failures += 1; push_error("FAIL: "+text)
 func run() -> void:
-	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.8","actual exported package reports RC8")
+	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.9","actual exported package reports RC9")
 	for id in ["cannon","shock","raised_turret","core"]:
 		for tier in range(1,5 if id=="core" else 4):
 			var scene: Node3D = load("res://assets/fortress/"+id+"_"+str(tier)+".tscn").instantiate()
@@ -31,5 +31,11 @@ func run() -> void:
 		if previous!=null: rig.remove_child(previous); previous.queue_free()
 		preload("res://scripts/presentation/rank_cosmetics16.gd").decorate(rig,tier)
 		check(rig.get_node("EloCosmetic").get_meta("rank_tier")==tier,"export contains the 3D rank "+str(tier))
+	for kit in ["zombies","bosses"]:
+		var ids := ["walker","runner","brute","armored","demolisher","spitter","hound","flyer","alpha_legacy","burster","screamer","mender","charger","cryo","saboteur","lobber","cleaver","shieldbearer","bridge"] if kit=="zombies" else ["mauler","mortar","broodmother","flyer","hound","potter","hive","titan16"]
+		for id in ids:
+			var visual: Node3D = load("res://assets/enemies/tripo16/"+kit+"/"+id+".tscn").instantiate(); holder.add_child(visual)
+			var model: MeshInstance3D = visual.get_node("Skeleton3D/Character")
+			check(visual.get_meta("imported_enemy16",false) and model.skin.get_bind_count()>0 and model.get_surface_override_material(0).albedo_texture.get_width()==2048,"export contains supplied skinned "+kit+"/"+id)
 	holder.queue_free(); await process_frame; await process_frame
 	print("EXPORTED MODELS RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

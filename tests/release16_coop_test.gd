@@ -90,7 +90,7 @@ func client(link: Node) -> void:
 	while w.resources.pending==0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.resources.pending==1 and w.upgrades.offers.size()==3,"recipient sees exactly its own three cards")
 	check(w.player.bag.slots.size()==24 and w.player.outfit16.get("head","")=="COS-ENG-01","functional bag and equipped clay cosmetic replicate independently")
-	check(w.client_enemies.values().any(func(e): return e.spec.id=="titan16" and e.health.maximum==20000),"Titan has a native remote model and fixed replicated health")
+	check(w.client_enemies.values().any(func(e): return e.spec.id=="titan16" and e.health.maximum==20000 and e.rig.get_meta("imported_enemy16",false) and e.rig.get_node("Skeleton3D/Character").skin!=null),"Titan has the supplied skinned remote model and fixed replicated health")
 	var choice: Dictionary = w.upgrades.current(w.player)
 	check(str(choice.get("id","")).ends_with(link.identity),"reward is bound to stable identity, not peer slot")
 	if choice.is_empty(): return

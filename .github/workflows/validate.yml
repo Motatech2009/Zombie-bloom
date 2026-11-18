@@ -196,6 +196,17 @@ jobs:
               grep -E 'RESULT: [0-9]+ checks, 0 failures' "$log"
             done
           done
+      - name: Validate supplied enemy models on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/enemy16_models_tests.gd "${args[@]}" 2>&1 | tee "enemy-models-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "enemy-models-${platform}.log"; then exit 1; fi
+            grep -E 'ENEMY MODELS RESULT: [0-9]+ checks, 0 failures' "enemy-models-${platform}.log"
+          done
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -289,6 +300,13 @@ jobs:
             timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/rc8_preview.gd "${args[@]}" 2>&1 | tee "rc8-preview-${platform}.log"
             if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "rc8-preview-${platform}.log"; then exit 1; fi
           done
+      - name: Render supplied enemy closeups
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180s xvfb-run -a godot --audio-driver Dummy --path . --script res://tools/art/render_enemy_references16.gd -- --overview --out=res://builds/review16/enemies 2>&1 | tee enemy-models-preview.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' enemy-models-preview.log; then exit 1; fi
+          cp builds/review16/enemies/galeria_*.png builds/review16/
       - uses: actions/upload-artifact@v4
         with:
           name: ZombieBloom-1.6-UI-previews

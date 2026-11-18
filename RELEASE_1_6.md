@@ -185,3 +185,13 @@ Os artefatos exigem login GitHub. Hashes recalculados após download. Evidência
 - Posto seguro aparece também para convidados. Botão NEGOCIAR no toque abre a troca correta; compras continuam validadas pelo anfitrião e usam materiais da mochila.
 - Novos Titãs só são sorteados fora do quadrado central de nove setores: max(|x|,|y|) >= 2. Chance de 5% nas áreas elegíveis e 10% do posto preservadas. Encontros já salvos continuam. Aviso do Titã inclui setor e aparece depois do aviso de entrada.
 - Candidata RC8/APK1608/protocolo21. Testes específicos: 61 de apresentação e 22 de combate/eventos no desktop e 24 no toque. CI integral e pacotes desta revisão serão registrados após a execução. Economia Firebase real e Android físico continuam pendentes.
+
+## RC9 — bosses e infectados enviados pelo criador
+
+- bosses.glb e zombies.glb foram separados por componentes, reduzidos e articulados localmente. Originais somam 3.875.668 triângulos e ficam fora do executável/APK.
+- As oito criaturas do kit de bosses e dezoito formas de infectados da sobrevivência agora usam suas malhas fornecidas. O kit normal também contém o Colosso antigo, mantido como recurso de referência; o índice 8 da sobrevivência continua selecionando os sete bosses por etapa.
+- O Parasita não existe como componente separado no arquivo. Conserva a forma de cão pequeno com a malha nova do cão e escala 0,45; sua transformação em Bruto também recria o modelo articulado novo.
+- Modelos comuns ficam em até 3 mil triângulos e bosses em até 10 mil, com dois materiais compartilhados e atlas 2K com mipmaps/compressão VRAM. Esqueletos locais dirigem braços/pernas e asas; não havia animações nos GLBs originais.
+- Vida, dano, colisões, habilidades, drops, IA e regras das hordas continuam nos atores existentes. O corpo do Titã considera os galhos acima da cabeça para manter o coração na altura correta do peito.
+- Inclui integralmente as correções RC8: braço direito, elos 3D, taco com três alvos e sem paralisia, ninho ativo, negociação por toque e Titã apenas em novos setores da camada 2 em diante, com aviso.
+- Validação local específica: 218 verificações por execução desktop/toque; 81 de encontros e resgate; 24 de combate/negociação por toque. RC9/APK1609/protocolo21. CI integral e pacotes desta revisão serão vinculados ao concluir. Android físico e ativação do Firebase real permanecem pendentes.

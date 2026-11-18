@@ -14,6 +14,7 @@ func run() -> void:
 	var jobs = JSON.parse_string(FileAccess.get_file_as_string(config))
 	if not jobs is Array: push_error("Pass a JSON job array with --config="); quit(1); return
 	for job in jobs:
+		var texture_size := clampi(int(job.get("texture_size",1024)),256,2048)
 		job.source = ProjectSettings.globalize_path(str(job.source)); job.output = ProjectSettings.globalize_path(str(job.output)); DirAccess.make_dir_recursive_absolute(str(job.output).get_base_dir())
 		if FileAccess.get_sha256(job.source)!=job.sha256: push_error("Unexpected source: "+str(job.source)); quit(1); return
 		var doc := GLTFDocument.new(); var state := GLTFState.new()
@@ -43,14 +44,14 @@ func run() -> void:
 			data[channel] = target
 		data[Mesh.ARRAY_INDEX] = compact
 		var material: StandardMaterial3D = mesh.surface_get_material(0).duplicate()
-		material.albedo_texture = resized(material.albedo_texture,1024)
-		material.normal_texture = resized(material.normal_texture,1024)
-		var rm := resized(material.roughness_texture,1024); material.roughness_texture = rm; material.metallic_texture = rm
+		material.albedo_texture = resized(material.albedo_texture,texture_size)
+		material.normal_texture = resized(material.normal_texture,texture_size)
+		var rm := resized(material.roughness_texture,texture_size); material.roughness_texture = rm; material.metallic_texture = rm
 		var output := ArrayMesh.new(); output.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,data); output.surface_set_material(0,material)
 		var stage := Node3D.new(); var instance := MeshInstance3D.new(); instance.mesh = output; stage.add_child(instance)
 		var out_doc := GLTFDocument.new(); var out_state := GLTFState.new(); var error := out_doc.append_from_scene(stage,out_state)
 		if error==OK: error = out_doc.write_to_filesystem(out_state,job.output)
-		var report := {"source_sha256":job.sha256,"source_triangles":source_triangles,"lods":choices,"triangles":compact.size()/3,"vertices":ids.size(),"texture_size":1024,"error":error,"output_sha256":FileAccess.get_sha256(job.output)}
+		var report := {"source_sha256":job.sha256,"source_triangles":source_triangles,"lods":choices,"triangles":compact.size()/3,"vertices":ids.size(),"texture_size":texture_size,"error":error,"output_sha256":FileAccess.get_sha256(job.output)}
 		var file := FileAccess.open(str(job.output)+".json",FileAccess.WRITE); file.store_string(JSON.stringify(report,"  ")); file.close()
 		print("PREPARED: "+str(job.output)+" "+JSON.stringify(report)); stage.free(); original.free()
 		if error!=OK: quit(1); return

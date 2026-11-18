@@ -7,12 +7,14 @@ var cast16 := ""
 var roots16: Array = []
 var heart: Node3D
 func create_model(_factor: float) -> void:
-	rig = VisualFactory.human(self,Color("68503e"),false); rig.scale = Vector3.ONE*2.8
-	for side in [-1,1]:
-		VisualFactory.box(rig,Vector3(.38,1.1,.4),Vector3(side*.54,.9,.04),Color("594d3a"))
-		for i in range(2): VisualFactory.cylinder(rig,.12,.55,Vector3(side*(.28+i*.18),.2,.1),Color("6c7446"))
-	heart = VisualFactory.cylinder(rig,.19,.24,Vector3(0,1.22,-.28),Color("8fc34c"),true)
-	heart.rotation.x = PI/2
+	rig = preload("res://scripts/presentation/enemy_models16.gd").create(self,2.8)
+	if rig==null: rig = VisualFactory.human(self,Color("68503e"),false); rig.scale = Vector3.ONE*2.8
+	if not rig.get_meta("imported_enemy16",false):
+		for side in [-1,1]:
+			VisualFactory.box(rig,Vector3(.38,1.1,.4),Vector3(side*.54,.9,.04),Color("594d3a"))
+			for i in range(2): VisualFactory.cylinder(rig,.12,.55,Vector3(side*(.28+i*.18),.2,.1),Color("6c7446"))
+	heart = VisualFactory.cylinder(rig,.19,.24,rig.get_meta("heart_origin16",Vector3(0,1.22,-.28)),Color("8fc34c"),true)
+	heart.rotation.x = PI/2; heart.scale = Vector3.ONE*.7
 func choose_target() -> void:
 	target = self; var distance := 40.0
 	for actor in world.avatars.values():
