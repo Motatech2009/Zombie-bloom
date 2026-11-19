@@ -143,8 +143,6 @@ func _ready() -> void:
 	else:
 		create_fragments()
 		update_visual()
-		if kind == "howl" and world.player.global_position.distance_to(global_position) <= extent + 12:
-			world.audio.play_cue(GameAudio.Cue.HOWL)
 
 func create_warning() -> void:
 	var shape := kind if kind in ["line", "square"] else "circle"

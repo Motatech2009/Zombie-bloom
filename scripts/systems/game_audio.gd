@@ -2,15 +2,18 @@ class_name GameAudio
 extends Node
 ## Short synthesized gameplay cues with a shared, bounded voice pool.
 
-enum Cue { HOWL, ROLL, RELOAD, PICKUP, CORE_UPGRADE, WIND }
+enum Cue { ROLL, RELOAD, PICKUP, CORE_UPGRADE, WIND }
 
 const SAMPLE_RATE := 22050
-const LENGTHS := [1.38, .32, .29, .19, .64, 2.4]
-const LEVELS := [.17, .09, .08, .065, .095, .038]
+const LENGTHS := [.32, .29, .19, .64, 2.4]
+const LEVELS := [.09, .08, .065, .095, .038]
 var cache: Dictionary = {}
 var voices: Array[AudioStreamPlayer] = []
 var next_voice: int = 0
 var listener: Node3D
+var boss_bank: BossSoundBank
+var boss_voices: Array[AudioStreamPlayer] = []
+var boss_voice_index := 0
 var wind_left := 4.5
 var pickup_left := 0.0
 var bag_units := 0
@@ -22,6 +25,25 @@ func _ready() -> void:
 		var voice := AudioStreamPlayer.new()
 		add_child(voice)
 		voices.append(voice)
+
+func prepare_boss_audio() -> void:
+	boss_bank = preload("res://assets/audio/boss_attacks.res")
+	for i in range(8):
+		var voice := AudioStreamPlayer.new()
+		add_child(voice)
+		boss_voices.append(voice)
+
+func play_boss(cue: int, point: Vector3, listener_position: Vector3) -> void:
+	if not audible() or not BossSoundBank.valid_cue(cue) or boss_voices.is_empty(): return
+	var offset := point - listener_position
+	var distance := Vector2(offset.x, offset.z).length()
+	var gain := 1.0 - smoothstep(6.0, BossSoundBank.RANGE, distance)
+	if gain <= 0.0: return
+	var voice := boss_voices[boss_voice_index]
+	boss_voice_index = (boss_voice_index + 1) % boss_voices.size()
+	voice.stream = boss_bank.clips[cue]
+	voice.volume_db = BossSoundBank.LEVEL_DB[cue] + linear_to_db(gain)
+	voice.play()
 
 func audible() -> bool:
 	return DisplayServer.get_name() != "headless" and not voices.is_empty() and GameSettings.volume > 0
@@ -76,9 +98,6 @@ static func synthesize(cue: Cue, variant: int = 0) -> AudioStreamWAV:
 		breeze = lerpf(breeze, filtered, .025)
 		var value := 0.0
 		match cue:
-			Cue.HOWL:
-				var pitch := TAU * (168.0*t + 52.0*t*t - 42.0*t*t*t + .75*sin(TAU*4.0*t))
-				value = (sin(pitch)*.48 + sin(pitch*2.0)*.19 + filtered*.22) * pow(sin(PI*progress),1.45)
 			Cue.ROLL:
 				value = (filtered * .66 + breeze * 1.9) * sin(PI * progress)
 			Cue.RELOAD:
@@ -148,6 +167,9 @@ func inventory_units(bag: ItemBag) -> int:
 
 func _exit_tree() -> void:
 	for voice in voices:
+		voice.stop()
+		voice.stream = null
+	for voice in boss_voices:
 		voice.stop()
 		voice.stream = null
 	cache.clear()

@@ -26,6 +26,7 @@ const START := {
 const CLAY_RANGE := 15.0
 const CLAY_WIDTH := .84
 const CLAY_FLIGHT := .48
+const BIND_DURATION := 2.3
 
 var enemy: Node3D
 var attack := ""
@@ -176,32 +177,39 @@ func impact() -> void:
 	var world: Node3D = enemy.world
 	match attack:
 		"quake":
+			world.boss_sound(BossSoundBank.Cue.QUAKE, origin)
 			fx("quakes", origin, 8.4, 0, .58)
 			for body in world.get_tree().get_nodes_in_group("damageable"):
 				if body.is_in_group("enemies") or body.health.dead or world.coord_at(body.global_position) != world.coord_at(origin) or not within(body.global_position, origin, 8.4): continue
 				if world.avatars.values().has(body): hit(body, 13)
 				else: body.take_damage(scaled(3 if body == world.core else 7))
 		"volley":
+			world.boss_sound(BossSoundBank.Cue.ACID_VOLLEY, origin)
 			for spot in spots:
 				var projectile: Node3D = world.projectile("acid", enemy.global_position + Vector3.UP*1.7, spot, scaled(12), 1.75, 1.15, false)
 				if projectile != null: projectile.set_meta("toxic15", true)
 		"slap":
+			world.boss_sound(BossSoundBank.Cue.SLAP, origin)
 			fx("claw", origin, 4.8, 0, .32)
 			for actor in world.avatars.values():
 				if lane(actor.global_position, 4.8, 1.8): hit(actor, 7 if enemy.spec.id == "mortar" else 10, heading, 3.4 if enemy.spec.id == "mortar" else 1.1)
 		"scratches":
+			world.boss_sound(BossSoundBank.Cue.CLAW, origin)
 			fx("claw", origin, 5.5, 0, .30)
 			for actor in world.avatars.values():
 				if lane(actor.global_position, 5.5, 2.0): hit(actor, 13)
 		"scream":
+			world.boss_sound(BossSoundBank.Cue.SCREAM, origin)
 			fx("howl_wave", origin, 9.0, 0, .58)
 			for actor in world.avatars.values():
 				if within(actor.global_position, origin, 9.0): hit(actor, 5, outward(actor), 3.7)
 		"gust":
+			world.boss_sound(BossSoundBank.Cue.GUST, origin)
 			fx("wind", origin, 15.0, 2.15, .72)
 			for actor in world.avatars.values():
 				if lane(actor.global_position, 15.0, 2.15): hit(actor, 11, heading, 4.5)
 		"howl":
+			world.boss_sound(BossSoundBank.Cue.HOWL, origin)
 			fx("howl", origin, 13.0, 0, 1.0)
 			var chased: Node3D
 			for actor in world.avatars.values():
@@ -212,6 +220,7 @@ func impact() -> void:
 					if ally.is_boss or ally.health.dead or world.coord_at(ally.global_position) != world.coord_at(origin): continue
 					ally.force_hunt(chased, 7.0, true)
 		"block":
+			world.boss_sound(BossSoundBank.Cue.MOLD, point)
 			fx("mold", point, 2.75, 0, .72)
 			for actor in world.avatars.values():
 				var offset := flat(actor.global_position - point)
@@ -220,8 +229,10 @@ func impact() -> void:
 					if direction == Vector3.ZERO: direction = Vector3(signf(heading.x),0,0) if absf(heading.x) > absf(heading.z) else Vector3(0,0,signf(heading.z))
 					hit(actor, 19, direction, 3.6)
 		"clay":
+			world.boss_sound(BossSoundBank.Cue.CLAY, origin)
 			fx("clay", origin, CLAY_RANGE, CLAY_WIDTH, CLAY_FLIGHT)
 		"brood":
+			world.boss_sound(BossSoundBank.Cue.BROOD, origin)
 			fx("brood", origin, 3.0, 0, .70)
 			var chased := victim if eligible(victim) else closest_player()
 			if chased == null: return
@@ -233,11 +244,13 @@ func impact() -> void:
 				minion.temporary_left18 = 6.0
 				minion.force_hunt(chased, 6.0, false)
 		"slam":
+			world.boss_sound(BossSoundBank.Cue.SLAM, origin)
 			fx("quakes", origin, 6.8, 0, .69)
 			for actor in world.avatars.values():
 				if within(actor.global_position, origin, 6.8): hit(actor, 27, outward(actor), 1.6)
 			enemy.exposed = 3.0
 		"stakes":
+			world.boss_sound(BossSoundBank.Cue.STAKES, spots[0])
 			for spot in spots: fx("stakes", spot, 2.4, 0, 1.2)
 			for actor in world.avatars.values():
 				for spot in spots:
@@ -245,10 +258,11 @@ func impact() -> void:
 					if hit(actor, 15): actor.slow_left = maxf(actor.slow_left, 2.0)
 					break
 		"vines":
+			world.boss_sound(BossSoundBank.Cue.VINES, point)
 			for actor in world.avatars.values():
 				if within(actor.global_position, point, 4.1) and hit(actor, 4):
-					actor.entangle18(7.0)
-					fx("vines", flat(actor.global_position), 1.0, 0, 7.0)
+					actor.entangle18(BIND_DURATION)
+					fx("vines", flat(actor.global_position), 1.0, 0, BIND_DURATION)
 
 func update_clay(launch: float) -> void:
 	var front := CLAY_RANGE * clampf((elapsed - launch) / CLAY_FLIGHT, 0.0, 1.0)
@@ -260,8 +274,9 @@ func update_clay(launch: float) -> void:
 		if depth > front or depth < maxf(0, back) or not lane(actor.global_position, CLAY_RANGE, CLAY_WIDTH) or clay_hits.has(id): continue
 		if hit(actor, 12):
 			clay_hits[id] = true
-			actor.entangle18(2.3)
-			fx("clay_cage", flat(actor.global_position), .75, 0, 2.3)
+			actor.entangle18(BIND_DURATION)
+			enemy.world.boss_sound(BossSoundBank.Cue.BIND, actor.global_position)
+			fx("clay_cage", flat(actor.global_position), .75, 0, BIND_DURATION)
 
 func hit(actor: Node3D, damage: float, direction := Vector3.ZERO, push := 0.0) -> bool:
 	if not eligible(actor) or actor.roll_left > 0.0 or actor.invulnerable > 0.0: return false

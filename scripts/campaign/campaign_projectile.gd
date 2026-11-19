@@ -44,7 +44,9 @@ func _physics_process(delta: float) -> void:
 		if not hit.is_empty(): position = hit.position
 		if kind=="acid":
 			var pool: Node3D = world.spawn_acid(position,radius,damage)
-			if pool!=null and get_meta("toxic15",false): pool.life = 6
+			if get_meta("toxic15",false):
+				if pool!=null: pool.life = 6
+				world.boss_sound(BossSoundBank.Cue.ACID_SPLASH,position)
 		elif world.has_method("explode_from"): world.explode_from(position,radius,damage,owner_peer)
 		else: world.explode(position,radius,damage)
 		queue_free()

@@ -83,11 +83,15 @@ func _physics_process(delta: float) -> void:
 			var step = mini(4,int(t*4))
 			var done: int = get_meta("rain_step",0)
 			if step>done:
-				set_meta("rain_step",step); world.hostile_blast(global_position*Vector3(1,0,1),2.3,18+world.waves.wave)
+				set_meta("rain_step",step)
+				var point := BossCombat18.flat(global_position)
+				world.boss_sound(BossSoundBank.Cue.SPORES,point)
+				world.hostile_blast(point,2.3,18+world.waves.wave)
 		if leap_left==0:
 			global_position.y = leap_end.y
 			if extra_motion=="leap":
 				landing18 = .36
+				world.boss_sound(BossSoundBank.Cue.LAND,global_position)
 				BossFx18.spawn(world, "quakes", global_position, Vector3.FORWARD, 2.2, 0, .48)
 				for actor in world.avatars.values():
 					if not actor.health.dead and actor.roll_left<=0 and actor.global_position.distance_to(global_position)<2.2:
@@ -113,7 +117,8 @@ func _physics_process(delta: float) -> void:
 			for dog in world.get_tree().get_nodes_in_group("enemies"):
 				if str(dog.get_meta("summoner_token",""))==str(get_meta("summon_token",net_id)) and not dog.health.dead:
 					health.heal(health.maximum*.01); world.shot_visual(global_position+Vector3.UP,dog.global_position+Vector3.UP,Color("b4d775")); break
-	if spec.id=="hive":
+	if spec.id=="hive" and health.current/health.maximum<=swarm_threshold and swarm_threshold>0:
+		world.boss_sound(BossSoundBank.Cue.FLOCK,global_position)
 		while health.current/health.maximum<=swarm_threshold and swarm_threshold>0:
 			swarm_threshold -= .15
 			for i in range(3): world.spawn_minion(self,7,i)
@@ -226,28 +231,34 @@ func choose_target() -> void:
 func boss_cast() -> void:
 	match spec.id:
 		"mauler":
+			world.boss_sound(BossSoundBank.Cue.CHARGE,global_position)
 			rush_direction = (cast_point-global_position)*Vector3(1,0,1); rush_direction = rush_direction.normalized(); rush_left = .85; rush_hits.clear()
 			for actor in world.avatars.values():
 				var flat: Vector3 = (actor.global_position-global_position)*Vector3(1,0,1)
 				if flat.length()<7 and flat.normalized().dot(rush_direction)>.6:
 					actor.velocity += rush_direction*12; actor.move_and_collide(rush_direction*1.5); actor.take_damage((12+world.waves.wave)*world.v15.day.damage_factor())
 		"mortar":
+			world.boss_sound(BossSoundBank.Cue.ACID_LAUNCH,global_position)
 			var projectile: Node3D = world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,(22+world.waves.wave)*world.v15.day.damage_factor(),3.2,1.25,false)
 			if projectile!=null:
 				projectile.set_meta("toxic15",true)
 				BossFx18.spawn(world,"acid",BossCombat18.flat(cast_point),Vector3.FORWARD,3.2,0.0,1.25)
 		"broodmother":
+			world.boss_sound(BossSoundBank.Cue.SUMMON,global_position)
 			BossFx18.spawn(world, "brood", global_position, Vector3.FORWARD, 3.0, 0.0, .62)
 			if summon_casts<3:
 				summon_casts += 1
 				for i in range(2): world.spawn_minion(self,6,i)
 			shield_left = 2
 		"flyer":
+			world.boss_sound(BossSoundBank.Cue.DIVE,global_position)
 			extra_motion = "rain"; leap_start = global_position; leap_end = cast_point+Vector3.UP*2.8; leap_left = .85; set_meta("rain_step",0)
 		"hound":
+			world.boss_sound(BossSoundBank.Cue.LEAP,global_position)
 			extra_motion = "leap"; leap_start = global_position; leap_end = cast_point*Vector3(1,0,1); leap_left = .85
 			BossFx18.spawn(world, "thorn", leap_end, Vector3.FORWARD, 2.2, 0, .85)
 		"hive":
+			world.boss_sound(BossSoundBank.Cue.FLOCK,global_position)
 			for i in range(2): world.spawn_minion(self,7,i)
 func take_damage(amount: float) -> void:
 	if spec.id=="shieldbearer" and not world.explosive15:

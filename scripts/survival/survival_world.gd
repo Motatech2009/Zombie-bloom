@@ -163,7 +163,7 @@ func _ready() -> void:
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
-	audio.prepare_cue(GameAudio.Cue.HOWL)
+	audio.prepare_boss_audio()
 	v15.initialize(self)
 	upgrades.state(player); upgrades.refresh_local()
 	player.set_meta("account_uid16",Account.user_id)
@@ -485,6 +485,15 @@ func spawn_minion(parent: Node3D,kind: int,index: int,offset := Vector3.INF) -> 
 	parent.set_meta("summon_token",str(parent.get_meta("summon_token",parent.net_id)))
 	child.set_meta("summoner",parent.net_id); child.set_meta("summoner_token",parent.get_meta("summon_token"))
 	return child
+
+func boss_sound(cue: int, point: Vector3) -> void:
+	if is_client or phase == "ended" or not BossSoundBank.valid_cue(cue): return
+	hear_boss_sound(cue, point)
+	if network != null: network.boss_sound_event(cue, point)
+
+func hear_boss_sound(cue: int, point: Vector3) -> void:
+	if phase != "ended" and point.is_finite() and coord_at(point) == coord_at(player.global_position):
+		audio.play_boss(cue, point, player.global_position)
 
 func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 	if is_client: return

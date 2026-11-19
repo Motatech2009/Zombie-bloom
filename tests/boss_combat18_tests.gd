@@ -6,6 +6,12 @@ var w: Node3D
 var player: Node3D
 const ORIGIN := Vector3(22,0,18)
 
+class SoundProbe extends GameAudio:
+	var emitted: Array[int] = []
+
+	func play_boss(cue: int, _point: Vector3, _listener: Vector3) -> void:
+		emitted.append(cue)
+
 func _initialize() -> void:
 	call_deferred("run")
 
@@ -45,6 +51,9 @@ func run() -> void:
 	w.waves.set_physics_process(false)
 	player = w.player
 	player.set_physics_process(false)
+	var sound := SoundProbe.new()
+	w.audio = sound
+	w.add_child(sound)
 
 	reset_player(Vector3(0,0,5))
 	var mauler := boss(1,Vector3(0,0,3))
@@ -64,6 +73,7 @@ func run() -> void:
 		mauler.boss18.tick(1.13 if i==0 else .68)
 	check(is_equal_approx(player.health.current,500-39*w.v15.day.damage_factor()), "all three separate slams damage the player")
 	check(is_equal_approx(w.core.health.current,core_hp-9*w.v15.day.damage_factor()), "three slams do reduced damage to the core")
+	check(sound.emitted.count(BossSoundBank.Cue.QUAKE)==3, "Quake plays once per impact")
 	mauler.queue_free()
 
 	reset_player(ORIGIN+Vector3.FORWARD*9)
@@ -197,14 +207,23 @@ func run() -> void:
 	titan.boss18.begin("vines",player)
 	titan.boss18.tick(1.44)
 	var at: Vector3 = player.position
-	check(player.rooted_left18==7.0 and not player.start_roll(Vector3.FORWARD),"vines stop movement and rolling for seven seconds")
+	check(player.rooted_left18==2.3 and not player.start_roll(Vector3.FORWARD),"vines stop movement and rolling for the same 2.3 seconds as the clay bolt")
 	packet = w.net_state(1)
-	check(packet.players[0].root18==7.0 and state_matches(packet,"vines"),"coop packet carries the immobilization and vine effects")
-	player.simulate_motion({"move":Vector2.ONE},6.99)
+	var vines: Array = packet.hazards.filter(func(row): return row.get("fx18") == "vines")
+	check(packet.players[0].root18==2.3 and vines.size()==1 and vines[0].life==2.3,
+		"the root visualization, status and cooperative snapshot have the same duration")
+	player.simulate_motion({"move":Vector2.ONE},2.29)
 	check(BossCombat18.flat(player.position).is_equal_approx(BossCombat18.flat(at)) and player.rooted_left18>0,"roots lock horizontal motion for their full duration")
 	player.simulate_motion({"move":Vector2.ONE},.02)
 	check(player.rooted_left18==0.0 and player.start_roll(Vector3.FORWARD),"normal movement returns after the roots expire")
-
+	var signature_cues := [
+		BossSoundBank.Cue.QUAKE, BossSoundBank.Cue.ACID_VOLLEY, BossSoundBank.Cue.SCREAM,
+		BossSoundBank.Cue.GUST, BossSoundBank.Cue.HOWL, BossSoundBank.Cue.MOLD,
+		BossSoundBank.Cue.BROOD, BossSoundBank.Cue.VINES,
+	]
+	check(signature_cues.all(func(cue): return sound.emitted.has(cue)),
+		"every boss signature attack emits its own cue through the world")
+	check(sound.emitted.count(BossSoundBank.Cue.HOWL)==1,"the visual effect adds no duplicate howl")
 	w.queue_free()
 	await process_frame
 	await process_frame

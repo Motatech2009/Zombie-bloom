@@ -4,6 +4,11 @@ var failures := 0
 var role := "host"
 var tag := "1"
 var target_players := 4
+class SoundProbe extends GameAudio:
+	var heard: Array[int] = []
+	func play_boss(cue: int, _point: Vector3, _listener: Vector3) -> void:
+		heard.append(cue)
+
 func _initialize() -> void: call_deferred("run")
 func check(ok: bool,text: String) -> void:
 	checks += 1
@@ -67,6 +72,10 @@ func host(link: Node) -> void:
 	var own: Dictionary = w.upgrades.current(w.player)
 	check(w.perform_action(1,"choice",{"index":0,"choice_id":own.id}),"host commits its own independent card")
 	check(not w.combat_paused(),"all independent choices release combat")
+	w.boss_sound(BossSoundBank.Cue.HOWL,w.player.global_position)
+	for actor in w.avatars.values():
+		if actor.peer_id != 1:
+			w.boss_sound(BossSoundBank.Cue.VINES,actor.global_position)
 	var visitor: Node3D
 	for a in w.avatars.values():
 		if a.profile_id=="1".repeat(32): visitor = a
@@ -86,6 +95,9 @@ func client(link: Node) -> void:
 	check(is_instance_valid(link.world),"guest receives world")
 	if not is_instance_valid(link.world): return
 	var w: Node3D = link.world
+	var sound := SoundProbe.new()
+	w.audio = sound
+	w.add_child(sound)
 	deadline = Time.get_ticks_msec()+12000
 	while w.resources.pending==0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.resources.pending==1 and w.upgrades.offers.size()==3,"recipient sees exactly its own three cards")
@@ -109,6 +121,8 @@ func client(link: Node) -> void:
 		w.send_action("decoy16",{}); await create_timer(.15).timeout; w.send_action("decoy16",{})
 	while w.truce16.left<=0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.truce16.left>590 and w.truce16.pending,"private network snapshots carry team diversion and upcoming penalty")
+	check(sound.heard.count(BossSoundBank.Cue.VINES)==1 and not sound.heard.has(BossSoundBank.Cue.HOWL),
+		"guest receives exactly one positional boss sound from its own sector")
 	await create_timer(.3).timeout
 	check(root.get_node("Meta16").has_cosmetic("COS-TITAN-01")== (tag=="1"),"only the designated contributor receives the private Titan trophy")
 	await create_timer(2 if tag=="1" else 4).timeout

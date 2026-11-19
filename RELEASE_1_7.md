@@ -44,3 +44,9 @@ O Predador Alfa agora tem quatro patas animadas na malha e caminha alinhado ao d
 Os avisos dos ataques compartilham malhas e materiais preparados ao entrar na partida. Os fragmentos de cada efeito são renderizados em conjunto. O Caldeirão usa apenas um aviso por ponto de impacto.
 
 O APK principal usa o código 1703. Todos os jogadores da mesma sessão cooperativa precisam da 1.7.3.
+
+## 1.7.4
+
+As raízes do Titã Enraizado prendem por 2,3 segundos, a mesma duração da argila do Oleiro. O efeito no chão acompanha a duração do aprisionamento.
+
+Os oito chefes têm efeitos nos ataques com volume ajustado pela distância, incluindo investidas, aterrissagens, invocações e impactos. O cooperativo envia esses sons somente para jogadores próximos e no mesmo setor. O APK principal usa o código 1704 e o cooperativo exige que todos estejam na 1.7.4.

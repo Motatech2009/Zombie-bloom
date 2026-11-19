@@ -62,8 +62,22 @@ func run() -> void:
 		check(effect.mix_rate == 22050 and effect.get_length() <= 2.4 and peak > 512 and peak < 23001,
 			"cue %d has short audible samples below the clipping threshold" % cue)
 		check(pcm.decode_s16(0) == 0 and pcm.decode_s16(pcm.size() - 2) == 0, "cue %d has click-free boundaries" % cue)
-	check(GameAudio.synthesize(GameAudio.Cue.HOWL, 0).data != GameAudio.synthesize(GameAudio.Cue.HOWL, 1).data,
-		"the two howl variants use distinct waveforms")
+	var bank: BossSoundBank = world.audio.boss_bank
+	check(bank.clips.size() == BossSoundBank.Cue.size() and world.audio.boss_voices.size() == 8,
+		"boss audio bank and fixed voice pool are ready before combat")
+	var fingerprints := {}
+	for clip in bank.clips:
+		var pcm := clip.data
+		var peak := 0
+		for frame in range(0,pcm.size(),2):
+			peak = maxi(peak,absi(pcm.decode_s16(frame)))
+		check(clip.mix_rate == 22050 and clip.get_length() > .1 and clip.get_length() < 1.5
+			and peak > 20000 and peak < 32767 and pcm.decode_s16(0) == 0 and pcm.decode_s16(pcm.size()-2) == 0,
+			"prebaked boss clip has an audible, click-free waveform below the clipping limit")
+		fingerprints[hash(pcm)] = true
+	check(fingerprints.size() == BossSoundBank.Cue.size(),"all 25 boss sound clips are distinct")
+	check(BossSoundBank.in_range(Vector3(0,4,3),Vector3.ZERO)
+		and not BossSoundBank.in_range(Vector3(0,0,38),Vector3.ZERO), "boss sound audibility uses horizontal field distance")
 	world.queue_free()
 	await process_frame
 	await process_frame

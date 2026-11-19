@@ -82,6 +82,8 @@ func _physics_process(delta: float) -> void:
 			var body = get_slide_collision(i).get_collider()
 			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies") and not rush_hits.has(body.get_instance_id()):
 				rush_hits[body.get_instance_id()] = true
+				if spec.id == "mauler" and rush_hits.size() == 1:
+					world.boss_sound(BossSoundBank.Cue.CHARGE_HIT,body.global_position)
 				body.take_damage(float(spec.values.damage)*(3.0 if spec.id=="mauler" and body.is_in_group("campaign_structure") and body.spec.id in ["wall","barricade","bastion"] else 1.5))
 		if blocked: rush_left = 0
 		return
@@ -214,8 +216,13 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 		# No contact damage for ranged-only infected.
 	if melee_left>0:
 		melee_left = maxf(0,melee_left-delta); speed = 0
-		if melee_left==0 and is_instance_valid(melee_target) and not melee_target.health.dead and melee_reaches(melee_target):
-			melee_target.take_damage(float(spec.values.damage)); recoil = .8
+		if melee_left==0 and is_instance_valid(melee_target) and not melee_target.health.dead:
+			var reaches := melee_reaches(melee_target)
+			if is_boss:
+				var impact := BossSoundBank.Cue.CLAW if spec.id in ["hound","flyer","broodmother"] else BossSoundBank.Cue.SLAP
+				world.boss_sound(impact if reaches else BossSoundBank.Cue.MELEE_MISS,global_position)
+			if reaches:
+				melee_target.take_damage(float(spec.values.damage)); recoil = .8
 	velocity = direction*speed; velocity.y = 0 if spec.id=="flyer" else -1
 	move_and_slide()
 	if not ranged_only() and attack_left<=0 and melee_left<=0:
