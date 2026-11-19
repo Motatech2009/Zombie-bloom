@@ -58,10 +58,21 @@ func run() -> void:
 	var key: String = w.v15.sector_event_key(); w.v15.event_states[key] = {"type":"convoy","complete":false,"started":false,"left":45.0,"spawn":0.0,"bonus":false,"owner":""}
 	w.v15.tick_sector_event(.1); var convoy = w.v15.active_events[key]; w.player.position = convoy.global_position+Vector3(0,0,3)
 	check(w.v15.event_interactable(w.player) and w.v15.interact_event(w.player),"convoy exposes the same PC and touch interaction")
-	w.v15.tick_sector_event(44)
-	check(not w.v15.event_states[key].complete,"convoy does not reward before forty-five seconds")
-	w.v15.tick_sector_event(1.1)
+	w.v15.tick_sector_event(1.0)
+	var attackers: Array = w.v15.guards_for("convoy_owner17", key)
+	for attacker in attackers: attacker.set_physics_process(false)
+	check(attackers.size() >= 2, "convoy sends multiple attackers from its perimeter")
+	var saved_guards: Dictionary = SectorMemory.capture(w)
+	check(saved_guards.enemies.any(func(entry): return entry.get("convoy_owner17") == key),
+		"event attackers stay linked to their convoy when the sector is saved")
+	w.v15.tick_sector_event(59.1)
+	check(not w.v15.event_states[key].complete, "convoy requires clearing surviving attackers after sixty seconds")
+	for attacker in attackers: attacker.take_damage(100000.0)
+	w.v15.tick_sector_event(.1)
 	check(w.v15.event_states[key].complete and w.player.weapons.tuning[2]>=1,"defending convoy unlocks reinforced rifle reward once")
+	var supplies := get_nodes_in_group("survival_loot").filter(func(pile): return pile.contents.get("scrap", 0) == 180)
+	check(supplies.size() == 1 and supplies[0].contents.parts == 28 and supplies[0].contents.rifle_ammo == 90,
+		"one convoy reward includes scrap, components and rifle ammunition")
 	check(w.v15.start_extract(w.player),"beacon starts a four-second return channel in a distant sector")
 	w.channel15.tick(4.1)
 	check(w.sector_coord==Vector2i.ZERO and w.player.bag.count("beacon")==0,"successful extraction consumes one beacon and returns to the core")
@@ -80,9 +91,22 @@ func run() -> void:
 	w.v15.event_states[key] = {"type":"escort","complete":false,"started":false,"left":45.0,"spawn":0.0,"bonus":false,"owner":""}
 	w.v15.tick_sector_event(.1); var npc = w.v15.active_events[key]; w.player.position = npc.global_position+Vector3(0,0,2)
 	check(w.v15.interact_event(w.player),"lost survivor accepts an escort interaction")
-	w.extract_solo15(w.player); parts = w.stock.parts; w.v15.update_events(.1)
-	check(w.v15.event_states[key].complete and w.stock.parts==parts+12,"survivor escort rewards components exactly once on returning to refuge")
-	w.v15.update_events(.1); check(w.stock.parts==parts+12,"completed escort cannot duplicate its reward")
+	clear_enemies(); await physics_frame
+	var hostile: Node3D = w.make_enemy(0, w.field_root.to_local(npc.global_position + Vector3(0,0,5)), true, -1)
+	hostile.set_physics_process(false)
+	await physics_frame
+	var hostile_hp: float = hostile.health.current
+	w.v15.update_escort(key, w.v15.event_states[key], .75)
+	check(hostile.health.current < hostile_hp and npc.escort_recoil > 0.0, "the survivor helps shoot a visible zombie during the rescue")
+	w.extract_solo15(w.player); parts = w.stock.parts
+	w.player.global_position = Vector3(18,0,0)
+	w.v15.update_events(.1)
+	check(not w.v15.event_states[key].complete and is_instance_valid(npc), "entering the base sector alone does not finish the rescue")
+	w.player.global_position = Vector3(3,0,1)
+	for i in range(30): w.v15.update_events(.2)
+	check(w.v15.event_states[key].complete and w.stock.parts==parts+12,"survivor escort rewards components once when delivered to the actual core")
+	await create_timer(.3).timeout
+	check(not is_instance_valid(npc) and w.stock.parts == parts + 12, "delivered survivor disappears without duplicating the reward")
 	var hive = boss(7,Vector3(30,0,30)); var number: int = get_nodes_in_group("enemies").size(); hive.health.current = hive.health.maximum*.69; hive._physics_process(.01)
 	check(get_nodes_in_group("enemies").size()==number+6,"hive releases separate swarms for each fifteen-percent health threshold")
 	w.queue_free(); await process_frame; await process_frame; await create_timer(.2).timeout

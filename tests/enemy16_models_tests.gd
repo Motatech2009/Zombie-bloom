@@ -163,7 +163,7 @@ func run() -> void:
 			var source: String = rig.get_meta("separated_source16", "")
 			var expected_sources := {"walker": "errante", "armored": "blindado", "charger": "investidor", "parasite": "cao_infectado"}
 			check(not source.is_empty() and source == expected_sources.get(id, source), id + " selects its separated GLB bake")
-		if not enemy.is_boss and id in ["walker", "armored", "charger", "runner", "demolisher"]:
+		if id in ["walker", "armored", "charger", "runner", "demolisher", "saboteur", "potter"]:
 			check_leg_deformation(enemy, rig, mesh, sk)
 		if id in ["mauler", "runner", "demolisher", "walker"]:
 			check_arm_deformation(enemy, rig, mesh, sk)
@@ -188,8 +188,17 @@ func run() -> void:
 		check(sk.get_bone_pose_rotation(3).angle_to(Quaternion.IDENTITY)>.1,"the supplied mesh articulates during "+profile+" animation for "+id)
 		check(enemy.health.maximum==hp and enemy.spec.values.damage==damage and rig.find_children("*","CollisionObject3D",true,false).is_empty(),"model animation adds no collision or stat changes for "+id)
 		var shape: CapsuleShape3D = enemy.get_children().filter(func(child): return child is CollisionShape3D)[0].shape
-		var expected: float = .9 * (SectorGenerator.ALPHA_HOUND_SCALE if enemy.is_boss else 1.0) if id=="hound" else 1 if id=="flyer" else 1.8*float(enemy.spec.values.scale)
-		check(is_equal_approx(shape.height,expected),"gameplay hitbox is preserved for "+id)
+		var scale_factor: float = enemy.spec.values.scale
+		var expected := 1.8 * scale_factor
+		if id == "hound":
+			expected = .9 * (scale_factor if enemy.is_boss else 1.0)
+		elif id == "flyer":
+			expected = scale_factor if enemy.is_boss else 1.0
+		check(is_equal_approx(shape.height, expected), "gameplay hitbox matches the character's scale for " + id)
+		if enemy.is_boss:
+			var actual_height := mesh.mesh.get_aabb().size.y * scale_factor
+			check(scale_factor >= 2.1 and rig.scale.is_equal_approx(Vector3.ONE * scale_factor), id + " uses the larger boss rig")
+			check(enemy.aim_height < shape.height and enemy.health_bar_height > actual_height, id + " keeps aiming inside the body and the health bar above it")
 		if id=="hound":
 			var visual_scale := SectorGenerator.ALPHA_HOUND_SCALE if enemy.is_boss else 1.0
 			check(rig.scale.is_equal_approx(Vector3.ONE * visual_scale) and is_equal_approx(enemy.aim_height, .55 * visual_scale),

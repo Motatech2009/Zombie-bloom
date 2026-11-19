@@ -341,11 +341,33 @@ func show_upgrade() -> void:
 	UI.label(box,"O combate aguarda as escolhas ativas. Você pode guardar a sua para a preparação.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(box,"ESCOLHER DEPOIS",func(): world.send_action("defer_choice",{"choice_id":choice_id}); choice_cooldown = .5; close_modal(),true)
 
+func show_story17(page_index: int = -1) -> void:
+	if world.game_mode != "campaign" or world.phase == "ended": return
+	var completed := int(world.waves.wave) - int(world.waves.running)
+	var pages := CampaignStory17.available(maxi(0, completed))
+	var index := pages.size() - 1 if page_index < 0 else clampi(page_index, 0, pages.size() - 1)
+	var page: Dictionary = pages[index]
+	var box := open_modal("story17", 720)
+	UI.label(box, "O ÚLTIMO FAROL · DIÁRIO DE CAIO VALE", 15, UI.LIME)
+	UI.label(box, page.title, 30)
+	var entry := UI.label(box, page.text, 18, UI.TEXT)
+	entry.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var row := UI.hbox(box, 8)
+	var previous := UI.button(row, "ANTERIOR", func(): show_story17(index - 1))
+	previous.disabled = index == 0
+	var next := UI.button(row, "PRÓXIMA", func(): show_story17(index + 1))
+	next.disabled = index + 1 >= pages.size()
+	UI.button(row, "CONTINUAR", close_modal, true)
+
 func show_result() -> void:
 	if world.won and world.game_mode=="campaign": world.v15.unlock_campaign()
 	var box := open_modal("result",760)
 	UI.label(box,"REFÚGIO DEFENDIDO" if world.won else "O GRUPO CAIU",34,UI.LIME)
 	UI.label(box,world.ending_reason,19,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if world.won and world.game_mode == "campaign":
+		var epilogue: Dictionary = CampaignStory17.PAGES.back()
+		UI.label(box, epilogue.title, 22, UI.LIME)
+		UI.label(box, epilogue.text, 17, UI.TEXT).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.label(box,"Horda %d · %d eliminações" % [world.waves.wave,world.kills],20)
 	if not world.connected_game(): UI.button(box,"RETOMAR CHECKPOINT",func(): load("res://scripts/campaign/campaign_world.gd").resume_requested = true; restart())
 	UI.button(box,"VOLTAR AO MENU",menu,true)
@@ -366,7 +388,12 @@ func confirm_dismantle() -> void:
 	UI.button(box,"CANCELAR",close_modal,true)
 
 func show_pause() -> void:
-	if not world.connected_game(): super.show_pause(); return
+	if not world.connected_game():
+		super.show_pause()
+		if mode == "pause" and world.game_mode == "campaign":
+			var journal := UI.button(overlay_box, "DIÁRIO DA CAMPANHA", show_story17)
+			overlay_box.move_child(journal, overlay_box.get_child_count() - 2)
+		return
 	if not mode.is_empty() or world.phase=="ended": return
 	var box := open_modal("pause",640)
 	UI.label(box,"SALA EM ANDAMENTO",32,UI.LIME)
@@ -377,6 +404,8 @@ func show_pause() -> void:
 		save.disabled = world.area_index!=-1 or world.phase!="prep"
 	UI.button(box,"CONEXÃO / AMIGOS",func(): close_modal(); show_connection())
 	UI.button(box,"ESTATÍSTICAS DO SAVE",func(): close_modal(); show_run_records())
+	if world.game_mode == "campaign":
+		UI.button(box, "DIÁRIO DA CAMPANHA", show_story17)
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"ENCERRAR SALA" if not world.is_client else "SAIR DA SALA",menu)
 

@@ -18,7 +18,7 @@ static func create(actor: Node3D,factor: float) -> Node3D:
 		mesh.set_surface_override_material(0, lean_materials[original])
 	var profile: String = rig.get_meta("profile16","human")
 	rig.set_meta("source_model_id16",source_id); rig.set_meta("model_id16",id)
-	rig.scale = Vector3.ONE*(factor if profile=="human" or (profile=="dog" and actor.is_boss) else .45 if id=="parasite" else 1.0)
+	rig.scale = Vector3.ONE*(factor if actor.is_boss or profile=="human" else .45 if id=="parasite" else 1.0)
 	if id=="parasite": rig.set_meta("parasite16",true)
 	actor.wings.clear()
 	for name in (["WingL","WingR"] if profile=="flyer" else ["LegFL","LegFR","LegBL","LegBR"] if profile=="dog" else []):

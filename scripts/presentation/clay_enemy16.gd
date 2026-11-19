@@ -4,6 +4,7 @@ var sk: Skeleton3D
 var profile := ""
 var running := false
 var separated := false
+var anatomical_stride := false
 var controls: Array[Node3D] = []
 var joints: PackedInt32Array = []
 var lower_joints: PackedInt32Array = []
@@ -17,6 +18,7 @@ func _ready() -> void:
 	sk = $Skeleton3D
 	profile = str(get_meta("profile16", "human"))
 	separated = has_meta("separated_source16")
+	anatomical_stride = separated or has_meta("anatomical_stride16")
 	var names: Array[String]
 	match profile:
 		"human":
@@ -52,7 +54,7 @@ func sync_pose(arm_follow := 1.0) -> void:
 			sk.set_bone_pose_rotation(forearms[i], Quaternion(Vector3.RIGHT, curl))
 			sk.set_bone_pose_rotation(hands[i], Quaternion(Vector3.RIGHT, -curl * .45))
 			var control := controls[2 + i]
-			if separated:
+			if anatomical_stride:
 				# Retarget the GLB stride to this model's joints. Godot enemies face -Z.
 				var step := clampf(control.rotation.x / .65, -1.0, 1.0)
 				var thigh := step * (.53 if running else .33)

@@ -10,9 +10,9 @@ var gait_phase := 0.0
 var gait_weight := 0.0
 var titan_arms: Array[Node3D] = []
 var titan_legs: Array[Node3D] = []
-func create_model(_factor: float) -> void:
-	rig = preload("res://scripts/presentation/enemy_models16.gd").create(self,2.8)
-	if rig==null: rig = VisualFactory.human(self,Color("68503e"),false); rig.scale = Vector3.ONE*2.8
+func create_model(factor: float) -> void:
+	rig = preload("res://scripts/presentation/enemy_models16.gd").create(self,factor)
+	if rig==null: rig = VisualFactory.human(self,Color("68503e"),false); rig.scale = Vector3.ONE*factor
 	if not rig.get_meta("imported_enemy16",false):
 		for side in [-1,1]:
 			VisualFactory.box(rig,Vector3(.38,1.1,.4),Vector3(side*.54,.9,.04),Color("594d3a"))

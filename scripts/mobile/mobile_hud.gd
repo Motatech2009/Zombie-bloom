@@ -128,7 +128,7 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	place_panel(close,Control.PRESET_TOP_RIGHT,Rect2(-140,10,116,48))
 	var close_style := compact_style(); close_style.content_margin_top = 2; close_style.content_margin_bottom = 2
 	close.add_theme_stylebox_override("normal",close_style); close.add_theme_font_size_override("font_size",17)
-	var heading := UI.label(modal,{"post16":"POSTO DO FAROL","upgrade":"SUA EVOLUÇÃO","inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
+	var heading := UI.label(modal,{"story17":"DIÁRIO DA CAMPANHA","post16":"POSTO DO FAROL","upgrade":"SUA EVOLUÇÃO","inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
 	heading.position = Vector2(26,21)
 	call_deferred("adapt_modal",box)
 	return box

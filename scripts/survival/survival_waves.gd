@@ -33,6 +33,10 @@ func complete() -> void:
 	world.checkpoint_enabled = enabled
 	if wave == FortressData.BUILD_LIMIT_UNLOCK_WAVE and world.phase != "ended":
 		world.notify("HORDA %d VENCIDA · A equipe pode ultrapassar os limites por tipo." % wave)
+	if world.game_mode == "campaign" and world.phase != "ended":
+		var chapter := CampaignStory17.new_title(wave)
+		if not chapter.is_empty():
+			world.notify("DIÁRIO ATUALIZADO · %s · Abra o diário no menu de pausa." % chapter)
 	world.built_this_round = 0
 	for survivor in world.avatars.values():
 		if survivor.health.dead: survivor.revive(40)

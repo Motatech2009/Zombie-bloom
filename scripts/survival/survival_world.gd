@@ -1,4 +1,5 @@
 extends "res://scripts/sectors/roaming_world.gd"
+static var opening_story_requested := false
 var damage_origin15 := Vector3.INF
 var damage_point16 := Vector3.INF
 var exp16 := Exploration16.new()
@@ -129,6 +130,8 @@ func starter_bag(bag: ItemBag) -> void:
 	bag.add("bat",1)
 
 func _ready() -> void:
+	var opening_story := opening_story_requested and next_mode == "campaign" and not resume_requested
+	opening_story_requested = false
 	truce16.world = self
 	exp16.world = self; rescue16.world = self
 	resources.free(); resources = HordeResources16.new()
@@ -171,6 +174,8 @@ func _ready() -> void:
 		core.set_physics_process(false)
 	if network!=null: network.bind_world(self)
 	notify("BOLSA 18 espaços · 1–9 barra rápida · Drops automáticos · Segure E nas caixas · Deposite no Núcleo · I mochila")
+	if opening_story and not connected_game():
+		hud.show_story17.call_deferred(0)
 
 func party_count() -> int: return maxi(1,avatars.size())
 func team_multiplier() -> int: return 1 << (mini(4,party_count())-1)
@@ -430,7 +435,7 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	enemy.enemy_kind = kind
 	enemy.net_id = next_id()
 	if kind==20:
-		enemy.spec = CampaignData.enemy_spec(2).duplicate(true); enemy.spec.id = "titan16"; enemy.spec.title = "Titã Enraizado"; enemy.spec.values.scale = 3.0; enemy.spec.values.damage = 25; enemy.spec.values.speed = 1.5; enemy.aim_height = 3.4; enemy.set_meta("titan16",true)
+		enemy.spec = CampaignData.enemy_spec(2).duplicate(true); enemy.spec.id = "titan16"; enemy.spec.title = "Titã Enraizado"; enemy.spec.values.scale = SectorGenerator.TITAN_SCALE; enemy.spec.values.damage = 25; enemy.spec.values.speed = 1.5; enemy.set_meta("titan16",true)
 	elif kind==8:
 		var stage := restoring_boss_stage if restoring_boss_stage>0 else maxi(1,waves.wave if not field else maxi(waves.wave,SectorGenerator.distance(sector_coord)+2))
 		enemy.spec = SectorGenerator.boss_spec(stage); enemy.set_meta("boss_stage",stage)

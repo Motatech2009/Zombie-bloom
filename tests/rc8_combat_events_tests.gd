@@ -57,7 +57,9 @@ func run() -> void:
 		for enemy in get_nodes_in_group("enemies"): enemy.set_physics_process(false)
 		await physics_frame
 	var guards := get_nodes_in_group("enemies").filter(func(e): return e.get_meta("nest_owner15","")==key)
-	check(guards.size()==6,"an active nest produces six guards and respects its live-creature cap")
+	check(guards.size()==Director15.NEST_CAP and nest.health.maximum == 520.0,"an active nest has 520 HP and caps its live defenders at nine")
+	check(guards.any(func(e): return e.enemy_kind == 3) and guards.any(func(e): return e.enemy_kind == 12),
+		"the nest mixes armored and charging reinforcements")
 	check(guards.all(func(e): return e.get_meta("nest_speed",false)),"nest guards receive the regional speed bonus")
 	check(MobileTargeting.alive(nest) and w.target_enemy(nest.net_id)==nest,"nest is a valid mobile hostile target without becoming a wave zombie")
 	a.global_position = nest.global_position+Vector3(0,0,3)

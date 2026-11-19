@@ -41,7 +41,7 @@ func _ready() -> void:
 func create_model(factor: float) -> void:
 	if spec.id in ["hound","flyer"]:
 		super.create_model(factor)
-		if spec.id == "hound" and is_boss:
+		if is_boss:
 			rig.scale = Vector3.ONE * factor
 		return
 	rig = load("res://assets/models/infected_"+str((enemy_kind if enemy_kind<=14 else 5 if enemy_kind==15 else 4) if not is_boss else 3 if spec.id=="broodmother" else 5 if spec.id=="mortar" else 8)+".tscn").instantiate()
@@ -231,7 +231,7 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 
 func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
 	moving = clampf(moving, 0.0, 1.0)
-	if rig.has_meta("separated_source16"):
+	if rig.has_meta("separated_source16") or rig.has_meta("anatomical_stride16"):
 		rig.running = sprinting or spec.id == "runner"
 	elif not proxy and moving == 0.0:
 		moving = .1

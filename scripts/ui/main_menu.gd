@@ -145,7 +145,7 @@ func show_play() -> void:
 	clear_content()
 	UI.label(content,"SEU PRÓXIMO REFÚGIO",26,UI.LIME)
 	UI.label(content,"Escolha a campanha ou resista por quanto tempo conseguir.",16,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	menu_button(content,"NOVA CAMPANHA / 20 HORDAS",func(): choose_mode("campaign"),true)
+	menu_button(content,"CAMPANHA · O ÚLTIMO FAROL",func(): choose_mode("campaign"),true)
 	menu_button(content,"NOVA DEFESA INFINITA",func(): choose_mode("endless"))
 	menu_button(content,"EXPEDIÇÃO DE RESGATE",func(): choose_mode("rescue"))
 	for mode in ["campaign","endless"]:
@@ -179,6 +179,7 @@ Quer começar outro refúgio?",20,UI.MUTED)
 		begin_campaign()
 
 func begin_campaign() -> void:
+	load("res://scripts/survival/survival_world.gd").opening_story_requested = true
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	get_tree().change_scene_to_file("res://scenes/survival/SurvivalWorld.tscn")
 

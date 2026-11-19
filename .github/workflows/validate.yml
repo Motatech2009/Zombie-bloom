@@ -132,6 +132,17 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
           if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
           grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
+      - name: Validate the campaign journal on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/release17_campaign_tests.gd "${args[@]}" 2>&1 | tee "release17-campaign-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release17-campaign-${platform}.log"; then exit 1; fi
+            grep -E 'RELEASE17 CAMPAIGN RESULT: [0-9]+ checks, 0 failures' "release17-campaign-${platform}.log"
+          done
       - name: Validate increased horde population and pistol durability
         shell: bash
         run: |
@@ -358,7 +369,7 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: ZombieBloom-1.6-RC-Windows-x64
+          name: ZombieBloom-1.7-Windows-x64
           path: builds/windows/
           if-no-files-found: error
       - uses: actions/setup-java@v4
@@ -391,7 +402,7 @@ jobs:
       - name: Upload Android build
         uses: actions/upload-artifact@v4
         with:
-          name: ZombieBloom-1.6-RC-Android-APK
+          name: ZombieBloom-1.7-Android-APK
           path: builds/android/
           if-no-files-found: error
       - name: Upload validation logs

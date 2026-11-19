@@ -64,9 +64,9 @@ func load_sector() -> void:
 	if s.kind == "titan" and not s.dead:
 		var boss := CharacterBody3D.new(); boss.set_script(load("res://scripts/release16/titan16.gd")); boss.world = world
 		boss.spec = CampaignData.enemy_spec(2).duplicate(true); boss.spec.id = "titan16"; boss.spec.title = "Titã Enraizado"
-		boss.spec.values.scale = 3.0; boss.spec.values.speed = 1.5; boss.spec.values.damage = 25
+		boss.spec.values.scale = SectorGenerator.TITAN_SCALE; boss.spec.values.speed = 1.5; boss.spec.values.damage = 25
 		boss.enemy_kind = 20; boss.is_boss = true; boss.field_enemy = true; boss.encounter_index = -1; boss.net_id = world.next_id()
-		boss.aim_height = 3.4; boss.position = Vector3(clampf(s.pos[0], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE), 0, clampf(s.pos[1], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE)); boss.set_meta("titan16",true); boss.encounter_key = key
+		boss.position = Vector3(clampf(s.pos[0], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE), 0, clampf(s.pos[1], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE)); boss.set_meta("titan16",true); boss.encounter_key = key
 		world.field_root.add_child(boss); boss.health.setup(20000); boss.health.current = float(s.hp); boss.set_meta("night_hp",1.0); boss.set_meta("night_damage",1.0); world.v15.day.apply_enemy(boss)
 		world.enemy_index[boss.net_id] = boss; var id: int = boss.net_id; boss.tree_exiting.connect(func(): world.enemy_index.erase(id)); nodes[key].boss = boss
 		call_deferred("announce_titan",key)
