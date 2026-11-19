@@ -236,10 +236,12 @@ func run() -> void:
 	world.channel15.tick(4)
 	check(world.built_this_round==1,"new defenses consume the existing shared placement quota")
 	actor.position = Vector3(0,0,3)
-	var core_before: Node3D = world.core.model.get_child(0)
+	var core_before: MeshInstance3D = world.core_visual
+	var original_mesh := core_before.mesh
 	check(world.improve_nearby(),"core improvement begins a channel")
 	world.channel15.tick(4)
-	check(world.core_tier==2 and world.core.model.get_child(0)!=core_before,"core upgrade replaces its complete fortified model")
+	check(world.core_tier == 2 and world.core_visual == core_before and core_before.mesh != original_mesh and core_before.is_visible_in_tree(),
+		"core upgrade updates the mesh on the same visible renderer instance")
 	world.airdrops.left = 600; world.airdrops.state = {}; world.airdrops.serial = 0
 	world.airdrops.tick(599)
 	check(world.airdrops.state.is_empty() and world.airdrops.left==1,"airdrop does not occur before ten minutes")

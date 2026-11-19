@@ -9,3 +9,11 @@ O Ninho de Esporos tem 520 PV, até nove guardas ativos e reforços mais rápido
 Os chefes receberam escalas próprias, com mira, colisão e barras de vida ajustadas. O Sabotador e o Oleiro têm articulações e pesos de malha próprios para cada perna.
 
 O Android usa o código de versão 1700. O cooperativo usa o protocolo 26 e exige a mesma versão entre os jogadores.
+
+## 1.7.1
+
+O Núcleo mantém sua instância visual durante as melhorias, a restauração do save e a sincronização do cooperativo. As quatro malhas passam a ser referências diretas do jogo.
+
+Passos, rolamento, recarga, coleta, melhoria do Núcleo e rajadas ocasionais de vento usam efeitos sonoros curtos e discretos. O volume geral também controla esses efeitos.
+
+O APK usa o código 1701. O protocolo cooperativo continua compatível com a 1.7.0.

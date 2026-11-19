@@ -132,7 +132,7 @@ jobs:
           timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
           if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
           grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
-      - name: Validate the campaign journal on desktop and touch
+      - name: Validate the campaign journal and core upgrades on desktop and touch
         shell: bash
         run: |
           set -euo pipefail
@@ -142,6 +142,9 @@ jobs:
             timeout 120s godot --headless --path . --script res://tests/release17_campaign_tests.gd "${args[@]}" 2>&1 | tee "release17-campaign-${platform}.log"
             if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release17-campaign-${platform}.log"; then exit 1; fi
             grep -E 'RELEASE17 CAMPAIGN RESULT: [0-9]+ checks, 0 failures' "release17-campaign-${platform}.log"
+            timeout 120s godot --headless --path . --script res://tests/core171_tests.gd "${args[@]}" 2>&1 | tee "core171-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "core171-${platform}.log"; then exit 1; fi
+            grep -E 'CORE171 RESULT: [0-9]+ checks, 0 failures' "core171-${platform}.log"
           done
       - name: Validate increased horde population and pistol durability
         shell: bash

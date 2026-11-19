@@ -1,4 +1,13 @@
 extends "res://scripts/sectors/roaming_world.gd"
+const CORE_MESHES := [
+	preload("res://assets/defenses/core/base_1.res"),
+	preload("res://assets/defenses/core/base_2.res"),
+	preload("res://assets/defenses/core/base_3.res"),
+	preload("res://assets/defenses/core/base_4.res"),
+]
+const CORE_MATERIAL := preload("res://assets/defenses/core/material.tres")
+var core_visual: MeshInstance3D
+
 static var opening_story_requested := false
 var damage_origin15 := Vector3.INF
 var damage_point16 := Vector3.INF
@@ -201,6 +210,8 @@ func local_input(actor: Node3D) -> Dictionary:
 	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":pending_slot if is_client and pending_slot>=0 else actor.bag.selected}
 
 func _process(delta: float) -> void:
+	var listening := phase != "ended" and not combat_paused() and (not is_client or client_scene_ready)
+	audio.update_field(player if listening else null, delta, not waves.running)
 	if not combat_paused():
 		v15.tick(delta); exp16.tick(delta); rescue16.tick(delta)
 		if not is_client: channel15.tick(delta)
@@ -1186,8 +1197,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 	core.health.maximum = data.core_max
 	core.health.current = data.core_hp
 	if core_tier!=int(data.core_tier):
+		var raised := int(data.core_tier) > core_tier
 		core_tier = int(data.core_tier)
 		refresh_core_model()
+		if raised and client_scene_ready and player.region_coord == Vector2i.ZERO:
+			audio.play_cue(GameAudio.Cue.CORE_UPGRADE)
 	resources.scrap = int(data.scrap)
 	stock = data.stock.duplicate()
 	depot_items = data.depot.duplicate()
@@ -1408,10 +1422,23 @@ func collect_ground(actor: Node3D,source: Node3D) -> bool:
 	return moved
 
 func refresh_core_model() -> void:
-	for child in core.model.get_children(): core.model.remove_child(child); child.queue_free()
-	var visual: Node3D = load("res://assets/fortress/core_"+str(core_tier)+".tscn").instantiate()
-	core.model.add_child(visual)
-	ClayStyle.apply_tree(visual)
+	var tier := clampi(core_tier, 1, CORE_MESHES.size())
+	var placeholder_parts: Array[Node] = []
+	if not is_instance_valid(core_visual):
+		placeholder_parts = core.model.get_children()
+		core_visual = MeshInstance3D.new()
+		core_visual.name = "CoreVisual"
+
+	# The registered renderer instance stays in the world throughout upgrades and saves.
+	core_visual.mesh = CORE_MESHES[tier - 1]
+	core_visual.set_surface_override_material(0, CORE_MATERIAL)
+	core_visual.set_meta("tier", tier)
+	core_visual.show()
+	if core_visual.get_parent() == null:
+		core.model.add_child(core_visual)
+	for child in placeholder_parts:
+		core.model.remove_child(child)
+		child.queue_free()
 
 func defense_shell(from: Vector3,to: Vector3,power: float,radius: float) -> Node3D:
 	if is_client or get_tree().get_nodes_in_group("campaign_projectiles").size()>=48: return null
@@ -1619,7 +1646,11 @@ func improve_nearby() -> bool:
 func commit_upgrade() -> bool:
 	var target := nearest_structure()
 	var result := super.improve_nearby()
-	if result and target!=null and target!=core: mark_alloy16(target,player)
+	if result:
+		if target == core:
+			audio.play_cue(GameAudio.Cue.CORE_UPGRADE)
+		else:
+			mark_alloy16(target,player)
 	return result
 
 func mark_alloy16(structure: Node3D,actor: Node3D) -> void:
