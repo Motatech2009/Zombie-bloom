@@ -240,3 +240,9 @@ O Titã Enraizado só aparece em setores com pelo menos um eixo de módulo 2 ou 
 O Ateliê usa uma carteira de Brotos salva no aparelho. Cada horda elegível concluída credita 100 Brotos, inclusive sem conta conectada. Compras e equipamentos são locais. A primeira migração pode importar o saldo e os itens já confirmados no perfil em cache, e jogar novamente uma horda do mesmo save não paga duas vezes.
 
 A RC13 usa APK 1613 e protocolo cooperativo 24.
+
+### RC14 — braços e mãos dos infectados
+
+Os 23 modelos humanoides recebem pivôs de ombro, cotovelo e pulso ajustados à geometria de cada modelo. O Quebra-Muros inclina o tronco para preparar a carga e alterna as passadas durante a corrida, inclusive para convidados. As animações de ataque usam a articulação do antebraço e da mão. O Escudeiro mantém a proteção firme e as lâminas do Cutelo acompanham as mãos.
+
+A RC14 usa APK 1614 e protocolo cooperativo 25.

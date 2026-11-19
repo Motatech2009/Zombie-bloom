@@ -1,11 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="ArrayMesh" path="res://assets/enemies/tripo16/bosses/broodmother.res" id="1_4b1ka"]
-
-[ext_resource type="Script" path="res://scripts/presentation/clay_enemy16.gd" id="rig"]
 [ext_resource type="Material" path="res://assets/enemies/tripo16/bosses/material.tres" id="mat"]
+[ext_resource type="Script" path="res://scripts/presentation/clay_enemy16.gd" id="rig"]
 
-[sub_resource type="Skin" id="Skin_2ao7c"]
+[sub_resource type="Skin" id="Skin_pi8g7"]
 bind_count = 15
 bind/0/name = &""
 bind/0/bone = 0
@@ -18,22 +17,22 @@ bind/2/bone = 2
 bind/2/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.52, 0)
 bind/3/name = &""
 bind/3/bone = 3
-bind/3/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32220638, -1.406, 0)
+bind/3/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, -1.28, -0.18)
 bind/4/name = &""
 bind/4/bone = 4
-bind/4/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38664764, -1.026, 0)
+bind/4/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.43, -0.91, -0.32)
 bind/5/name = &""
 bind/5/bone = 5
-bind/5/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.40275797, -0.703, 0)
+bind/5/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.51, -0.64, -0.25)
 bind/6/name = &""
 bind/6/bone = 6
-bind/6/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32220638, -1.406, 0)
+bind/6/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, -1.24, 0.12)
 bind/7/name = &""
 bind/7/bone = 7
-bind/7/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38664764, -1.026, 0)
+bind/7/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.93, 0.25)
 bind/8/name = &""
 bind/8/bone = 8
-bind/8/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.40275797, -0.703, 0)
+bind/8/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.54, -0.64, 0.32)
 bind/9/name = &""
 bind/9/bone = 9
 bind/9/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, -0.798, 0)
@@ -83,44 +82,44 @@ bones/2/rotation = Quaternion(0, 0, 0, 1)
 bones/2/scale = Vector3(1, 1, 1)
 bones/3/name = "ArmL"
 bones/3/parent = 1
-bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32220638, 0.30400002, 0)
+bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0.17799997, 0.18)
 bones/3/enabled = true
-bones/3/position = Vector3(-0.32220638, 0.30400002, 0)
+bones/3/position = Vector3(-0.28, 0.17799997, 0.18)
 bones/3/rotation = Quaternion(0, 0, 0, 1)
 bones/3/scale = Vector3(1, 1, 1)
 bones/4/name = "ForearmL"
 bones/4/parent = 3
-bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06444126, -0.38, 0)
+bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -0.36999995, 0.13999999)
 bones/4/enabled = true
-bones/4/position = Vector3(-0.06444126, -0.38, 0)
+bones/4/position = Vector3(-0.15, -0.36999995, 0.13999999)
 bones/4/rotation = Quaternion(0, 0, 0, 1)
 bones/4/scale = Vector3(1, 1, 1)
 bones/5/name = "HandL"
 bones/5/parent = 4
-bones/5/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.01611033, -0.323, 0)
+bones/5/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07999998, -0.27000004, -0.06999999)
 bones/5/enabled = true
-bones/5/position = Vector3(-0.01611033, -0.323, 0)
+bones/5/position = Vector3(-0.07999998, -0.27000004, -0.06999999)
 bones/5/rotation = Quaternion(0, 0, 0, 1)
 bones/5/scale = Vector3(1, 1, 1)
 bones/6/name = "ArmR"
 bones/6/parent = 1
-bones/6/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32220638, 0.30400002, 0)
+bones/6/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 0.13800001, -0.12)
 bones/6/enabled = true
-bones/6/position = Vector3(0.32220638, 0.30400002, 0)
+bones/6/position = Vector3(0.35, 0.13800001, -0.12)
 bones/6/rotation = Quaternion(0, 0, 0, 1)
 bones/6/scale = Vector3(1, 1, 1)
 bones/7/name = "ForearmR"
 bones/7/parent = 6
-bones/7/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06444126, -0.38, 0)
+bones/7/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -0.31, -0.13)
 bones/7/enabled = true
-bones/7/position = Vector3(0.06444126, -0.38, 0)
+bones/7/position = Vector3(0.15, -0.31, -0.13)
 bones/7/rotation = Quaternion(0, 0, 0, 1)
 bones/7/scale = Vector3(1, 1, 1)
 bones/8/name = "HandR"
 bones/8/parent = 7
-bones/8/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01611033, -0.323, 0)
+bones/8/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04000002, -0.29000002, -0.06999999)
 bones/8/enabled = true
-bones/8/position = Vector3(0.01611033, -0.323, 0)
+bones/8/position = Vector3(0.04000002, -0.29000002, -0.06999999)
 bones/8/rotation = Quaternion(0, 0, 0, 1)
 bones/8/scale = Vector3(1, 1, 1)
 bones/9/name = "LegL"
@@ -169,9 +168,9 @@ bones/14/scale = Vector3(1, 1, 1)
 [node name="Character" type="MeshInstance3D" parent="Skeleton3D" unique_id=1823351099]
 custom_aabb = AABB(-1.1444125, -0.5, -0.9819111, 2.2888255, 2.9, 1.9638222)
 mesh = ExtResource("1_4b1ka")
-surface_material_override/0 = ExtResource("mat")
-skin = SubResource("Skin_2ao7c")
+skin = SubResource("Skin_pi8g7")
 skeleton = NodePath("..")
+surface_material_override/0 = ExtResource("mat")
 
 [node name="ArmL" type="Node3D" parent="." unique_id=23166762]
 

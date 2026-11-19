@@ -96,6 +96,48 @@ func check_leg_deformation(enemy: Node3D, rig: Node3D, mesh: MeshInstance3D, sk:
 		sk.get_bone_pose_rotation(sk.find_bone("ShinR")).is_equal_approx(Quaternion.IDENTITY),
 		id + " returns the knees and ankles to their resting pose")
 
+func check_arm_deformation(enemy: Node3D, rig: Node3D, mesh: MeshInstance3D, sk: Skeleton3D) -> void:
+	var id: String = enemy.spec.id
+	var data := mesh.mesh.surface_get_arrays(0)
+	var joints: PackedInt32Array = data[Mesh.ARRAY_BONES]
+	var weights: PackedFloat32Array = data[Mesh.ARRAY_WEIGHTS]
+	var forearm := sk.find_bone("ForearmR")
+	var hand := sk.find_bone("HandR")
+	var grip_vertices := 0
+	for i in range(joints.size()):
+		if joints[i] == hand and weights[i] > .8:
+			grip_vertices += 1
+	check(grip_vertices >= 6, id + " binds the palm to its own wrist")
+	enemy.animate_ground(0.0, 0.0)
+	rig.sync_pose()
+	var rest := sk.get_bone_global_pose(hand).origin
+	var max_hp: float = enemy.health.maximum
+	enemy.melee_left = .015
+	enemy.animate_melee()
+	rig.sync_pose()
+	check(sk.get_bone_global_pose(hand).origin.z < rest.z - .08 and
+		sk.get_bone_pose_rotation(forearm).angle_to(Quaternion.IDENTITY) > .025,
+		id + " drives the wrist and forearm forward during a strike")
+	check(enemy.health.maximum == max_hp, id + " arm animation leaves combat stats intact")
+	enemy.melee_left = 0.0
+	if id != "mauler":
+		return
+	enemy.windup = .3
+	enemy.animate_cast()
+	rig.sync_pose()
+	check(rig.rotation.x < -.1, "Quebra-Muros visibly braces before charging")
+	enemy.windup = 0.0
+	enemy.rush_left = .8
+	enemy.clock = 0.0
+	enemy.replica_motion = 1.0
+	enemy.animate_replica(.035)
+	rig.sync_pose()
+	check(rig.rotation.x < -.1 and absf(rig.get_node("LegL").rotation.x) > .1,
+		"Quebra-Muros replica leans and runs during a charge")
+	enemy.rush_left = 0.0
+	enemy.animate_replica(.035)
+	check(is_zero_approx(rig.rotation.x), "Quebra-Muros returns to walking after the charge")
+
 func run() -> void:
 	MobilePlatform.force_touch = "--mobile" in OS.get_cmdline_user_args(); GameSettings.volume = 0; GameSettings.music_volume = 0
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false; load("res://scripts/campaign/campaign_world.gd").next_mode = "endless"
@@ -123,6 +165,8 @@ func run() -> void:
 			check(not source.is_empty() and source == expected_sources.get(id, source), id + " selects its separated GLB bake")
 		if not enemy.is_boss and id in ["walker", "armored", "charger", "runner", "demolisher"]:
 			check_leg_deformation(enemy, rig, mesh, sk)
+		if id in ["mauler", "runner", "demolisher", "walker"]:
+			check_arm_deformation(enemy, rig, mesh, sk)
 		var material: StandardMaterial3D = mesh.get_surface_override_material(0)
 		var atlas_size := 512 if id == "runner" else 2048
 		check(material.albedo_texture.get_width() == atlas_size and material.normal_texture.get_width() == atlas_size,

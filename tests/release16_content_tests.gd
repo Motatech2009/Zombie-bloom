@@ -116,7 +116,7 @@ func run() -> void:
 	check(absf(left) > .12 and is_equal_approx(left, -right), "Titan walks with alternating legs")
 	boss.cast16 = "slam"; boss.windup = .4
 	for i in range(25): boss.update_titan_pose(1.0 / 60.0, 0.0)
-	check(boss.rig.get_node("ArmL").rotation.x > .85 and boss.rig.rotation.x < -.08, "Titan raises the arms and leans back before the slam")
+	check(boss.rig.get_node("ArmL").rotation.x > .85 and (boss.rig.basis * Vector3.UP).z > .08, "Titan raises the arms and leans back before the slam")
 	boss.windup = 0.0
 	for i in range(60): boss.update_titan_pose(1.0 / 60.0, 0.0)
 	check(absf(boss.rig.rotation.x) < .01 and absf(boss.rig.get_node("LegL").rotation.x) < .02, "Titan returns smoothly to the idle pose")

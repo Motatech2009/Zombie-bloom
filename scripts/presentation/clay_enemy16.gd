@@ -8,6 +8,8 @@ var controls: Array[Node3D] = []
 var joints: PackedInt32Array = []
 var lower_joints: PackedInt32Array = []
 var feet: PackedInt32Array = []
+var forearms: PackedInt32Array = []
+var hands: PackedInt32Array = []
 var parasite_left: Node3D
 var parasite_right: Node3D
 
@@ -21,6 +23,8 @@ func _ready() -> void:
 			names = ["ArmL", "ArmR", "LegL", "LegR"]
 			lower_joints = [sk.find_bone("ShinL"), sk.find_bone("ShinR")]
 			feet = [sk.find_bone("FootL"), sk.find_bone("FootR")]
+			forearms = [sk.find_bone("ForearmL"), sk.find_bone("ForearmR")]
+			hands = [sk.find_bone("HandL"), sk.find_bone("HandR")]
 		"flyer":
 			names = ["WingL", "WingR"]
 		"dog":
@@ -32,17 +36,21 @@ func _ready() -> void:
 		controls.append(get_node(name))
 		joints.append(sk.find_bone(name))
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if is_visible_in_tree():
-		sync_pose()
+		sync_pose(1.0 - exp(-delta * 22.0))
 
-func sync_pose() -> void:
+func sync_pose(arm_follow := 1.0) -> void:
 	if sk == null:
 		return
 	if profile == "human":
-		sk.set_bone_pose_rotation(joints[0], controls[0].quaternion)
-		sk.set_bone_pose_rotation(joints[1], controls[1].quaternion)
 		for i in range(2):
+			var arm := controls[i]
+			var shoulder := sk.get_bone_pose_rotation(joints[i]).slerp(arm.quaternion, arm_follow)
+			sk.set_bone_pose_rotation(joints[i], shoulder)
+			var curl := clampf(shoulder.get_euler().x, 0.0, 1.0) * .13
+			sk.set_bone_pose_rotation(forearms[i], Quaternion(Vector3.RIGHT, curl))
+			sk.set_bone_pose_rotation(hands[i], Quaternion(Vector3.RIGHT, -curl * .45))
 			var control := controls[2 + i]
 			if separated:
 				# Retarget the GLB stride to this model's joints. Godot enemies face -Z.

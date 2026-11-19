@@ -27,3 +27,13 @@ O preparo mantém o atlas da RC9 e limita cada malha a 3.000 triângulos. O prep
 A RC13 usa o `corredor.glb` em pose neutra enviado separadamente. Seu atlas em 512 px está em `zombies/runner_albedo.jpg` e `zombies/runner_normal.jpg`. O Demolidor usa o GLB separado da coleção original e o corte das superfícies unidas entre as pernas.
 
 Para gerar apenas essas duas malhas, passe `runner demolisher` após o diretório de origem no comando do Godot.
+
+## Pesos dos braços e mãos
+
+Depois de gerar os modelos compactos, refaça a associação dos vértices aos ombros, cotovelos e pulsos com o Godot 4.6.3.
+
+```sh
+godot --headless --path . --script res://tools/art/rebind_enemy_arms16.gd
+```
+
+A ferramenta preserva os triângulos e os atlas e refaz a pose de repouso dos braços e os pesos da pele. Os pontos de cada membro ficam em `tools/art/enemy_arms16.gd`.

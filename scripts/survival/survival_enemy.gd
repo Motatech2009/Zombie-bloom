@@ -69,7 +69,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = -1
 		move_and_slide()
 		rig.rotation.y = atan2(-rush_direction.x,-rush_direction.z)
-		if rig.has_meta("separated_source16"):
+		if rig.has_meta("separated_source16") or spec.id == "mauler":
 			clock += delta
 			animate_ground(clock * 1.55, 1.0, true)
 		var blocked := false
@@ -85,8 +85,12 @@ func _physics_process(delta: float) -> void:
 	if windup>0:
 		windup -= delta
 		velocity = Vector3.ZERO
-		if rig.has_meta("separated_source16"):
+		if rig.has_meta("imported_enemy16") and rig.get_meta("profile16") == "human":
 			animate_ground(clock, 0.0)
+			if spec.id == "mauler":
+				var toward_cast := (cast_point - global_position) * Vector3(1, 0, 1)
+				if toward_cast.length_squared() > .01:
+					rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-toward_cast.x, -toward_cast.z), minf(1.0, delta * 10.0))
 		if windup<=0:
 			if is_instance_valid(warning): warning.queue_free()
 			if enemy_kind==12:
@@ -222,11 +226,27 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 	recoil = maxf(0,recoil-delta*3)
 
 func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
+	moving = clampf(moving, 0.0, 1.0)
 	if rig.has_meta("separated_source16"):
 		rig.running = sprinting or spec.id == "runner"
 	elif not proxy and moving == 0.0:
 		moving = .1
 	VisualFactory.animate_human(rig, pose_clock, moving, recoil if not proxy else 0.0, false)
+	if rig.get_meta("profile16", "") == "human":
+		var swing := sin(pose_clock * 11.0) * moving
+		var lift := .16
+		var range_of_swing := .22 if spec.id == "runner" else .15
+		if sprinting:
+			lift = .49 if spec.id == "mauler" else .29
+			range_of_swing = .17 if spec.id == "mauler" else .24
+		pose_arms(lift - swing * range_of_swing, lift + swing * range_of_swing)
+
+func pose_arms(left: float, right: float) -> void:
+	# Keep the equipment and arms close to the body on the tightly posed source meshes.
+	var motion := .42 if spec.id in ["demolisher", "charger", "screamer", "spitter", "cryo", "saboteur", "cleaver", "brute"] else 1.0
+	var holds_shield: bool = spec.id == "shieldbearer"
+	rig.get_node("ArmL").rotation = Vector3.ZERO if holds_shield else Vector3(left * motion, 0, -.08 * motion)
+	rig.get_node("ArmR").rotation = Vector3(right * (.42 if holds_shield else motion), 0, .08 * motion)
 
 func melee_reaches(victim: Node3D) -> bool:
 	var reach := .36*float(spec.values.scale)+.75
@@ -242,7 +262,18 @@ func melee_reaches(victim: Node3D) -> bool:
 
 func animate_melee() -> void:
 	if melee_left<=0 and recoil<=0: return
-	if rig.has_node("ArmL"):
+	if rig.get_meta("profile16", "") == "human":
+		var duration := .45 if is_boss or spec.id == "cleaver" else .28
+		var prepare := clampf(1.0 - melee_left / duration, 0.0, 1.0)
+		var reach := .89 if spec.id == "mauler" else .73
+		if melee_left > 0.0:
+			var draw := smoothstep(0.0, .42, prepare) * (1.0 - smoothstep(.46, 1.0, prepare))
+			var strike := smoothstep(.46, 1.0, prepare)
+			pose_arms(.16 - .33 * draw + reach * strike, .16 - .24 * draw + reach * .77 * strike)
+		else:
+			var recover := smoothstep(0.0, .8, recoil)
+			pose_arms(.16 + reach * recover, .16 + reach * .77 * recover)
+	elif rig.has_node("ArmL"):
 		rig.get_node("ArmL").rotation.x = -1.2 if melee_left>0 else .7
 		rig.get_node("ArmR").rotation.x = -1.2 if melee_left>0 else .7
 
@@ -273,13 +304,26 @@ func animate_replica(delta: float) -> void:
 		rig.position.y = sin(clock*4)*.12
 	else:
 		rig.rotation.x = 0
-		var sprinting: bool = spec.id == "charger" and rush_left > 0.0
+		var sprinting: bool = rush_left > 0.0 and spec.id in ["charger", "mauler"]
 		animate_ground(clock * (1.55 if sprinting else float(spec.values.speed) / 2), replica_motion, sprinting)
-		animate_cast()
-		animate_melee()
+		if windup > 0.0:
+			animate_cast()
+		elif sprinting and spec.id == "mauler":
+			rig.rotation.x = -.19
+		elif not sprinting:
+			animate_melee()
 
 func animate_cast() -> void:
 	if windup<=0 or not rig.has_node("ArmL"): return
+	if rig.get_meta("profile16", "") == "human":
+		var anticipation := smoothstep(1.1, .52, windup)
+		if spec.id == "mauler":
+			pose_arms(.16 + .62 * anticipation, .16 + .46 * anticipation)
+			rig.rotation.x = -.24 * anticipation
+		else:
+			pose_arms(.16 + .59 * anticipation, .16 + .67 * anticipation)
+			rig.rotation.x = .09 * anticipation
+		return
 	rig.get_node("ArmL").rotation.x = 1.6+sin(Time.get_ticks_msec()*.015)*.1
 	rig.get_node("ArmR").rotation.x = 1.6-sin(Time.get_ticks_msec()*.015)*.1
 	rig.rotation.x = -.15
@@ -292,9 +336,11 @@ func update_visibility(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	update_visibility(delta)
-	if proxy or health.dead or not rig.visible: return
-	if windup>0: animate_cast()
-	else: rig.rotation.x = 0
+	if proxy or health.dead or not rig.visible or world.combat_paused(): return
+	if windup > 0.0:
+		animate_cast()
+	else:
+		rig.rotation.x = -.19 if spec.id == "mauler" and rush_left > 0.0 else 0.0
 
 func configure_bars() -> void:
 	if MobilePlatform.enabled(): return

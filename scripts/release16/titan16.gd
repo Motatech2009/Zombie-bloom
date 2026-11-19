@@ -82,26 +82,26 @@ func update_titan_pose(delta: float, motion: float) -> void:
 	gait_weight = lerpf(gait_weight, moving, 1.0 - exp(-delta * 7.0))
 	gait_phase = fposmod(gait_phase + delta * 4.7 * gait_weight, TAU)
 	var step := sin(gait_phase) * gait_weight
-	var pitch := .04 * gait_weight
+	var pitch := -.04 * gait_weight
 	var arms := Vector2(.32 - step * .22, .32 + step * .22)
-	var arm_spread := Vector2(.12, -.12)
+	var arm_spread := Vector2(-.09, .09)
 	if windup > 0.0 and cast16 == "slam":
 		var progress := 1.0 - clampf(windup / 1.4, 0.0, 1.0)
 		var lift := smoothstep(0.0, .66, progress)
 		var strike := smoothstep(.76, 1.0, progress)
 		arms = Vector2.ONE * lerpf(.32 + .82 * lift, .25, strike)
-		pitch = lerpf(-.20 * lift, .23, strike)
+		pitch = lerpf(.15 * lift, -.20, strike)
 		arm_spread *= 1.0 + lift * .4
 	elif windup > 0.0 and cast16 == "roots":
 		var progress := 1.0 - clampf(windup / 1.2, 0.0, 1.0)
 		var reach := smoothstep(0.0, .7, progress)
 		arms += Vector2(.54, .75) * reach
-		arm_spread += Vector2(.14, -.25) * reach
-		pitch = .09 * reach
+		arm_spread += Vector2(-.09, .14) * reach
+		pitch = -.09 * reach
 	elif melee_left > 0.0:
-		var reach := smoothstep(.45, .0, melee_left)
+		var reach := smoothstep(.45, 0.0, melee_left)
 		arms += Vector2(.65, .41) * reach
-		pitch = .10 * reach
+		pitch = -.10 * reach
 	rig.rotation.x = lerpf(rig.rotation.x, pitch, follow)
 	rig.rotation.z = lerpf(rig.rotation.z, .045 * step, follow)
 	rig.position.y = lerpf(rig.position.y, (1.0 - cos(gait_phase * 2.0)) * .038 * gait_weight, follow)
