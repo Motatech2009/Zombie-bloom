@@ -28,6 +28,7 @@ const ROLL_RECHARGE: float = 5.0
 const ROLL_SPEED: float = 13.0
 var roll_count: int = 0
 var authoritative_roll_count: int = 0
+var rooted_left18 := 0.0
 var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
@@ -47,7 +48,7 @@ static func movement_direction(input: Vector2) -> Vector3:
 	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
 
 func start_roll(direction: Vector3) -> bool:
-	if proxy or world.is_client or health.dead or world.phase=="ended" or roll_cooldown>0 or not direction.is_finite(): return false
+	if proxy or world.is_client or health.dead or world.phase=="ended" or roll_cooldown>0 or rooted_left18>0 or not direction.is_finite(): return false
 	direction.y = 0
 	if direction.length_squared()>1.01: return false
 	if direction.length_squared()<.01: direction = aim
@@ -177,6 +178,7 @@ func cancel_gather() -> void:
 	gather_kind = ""
 
 func die() -> void:
+	rooted_left18 = 0.0
 	downed = true
 	stop_roll()
 	cancel_gather()
@@ -192,7 +194,17 @@ func revive(hp: float = 40) -> void:
 	rig.rotation.z = 0
 	invulnerable = 2
 
+func entangle18(duration: float) -> void:
+	rooted_left18 = maxf(rooted_left18, duration)
+	stop_roll()
+	velocity = Vector3.ZERO
+
 func simulate_motion(frame: Dictionary,delta: float) -> void:
+	if rooted_left18 > 0.0:
+		rooted_left18 = maxf(0, rooted_left18 - delta)
+		velocity = Vector3.DOWN
+		move_and_slide()
+		return
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
 	var direction := movement_direction(input)
 	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)

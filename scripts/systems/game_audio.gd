@@ -2,19 +2,15 @@ class_name GameAudio
 extends Node
 ## Short synthesized gameplay cues with a shared, bounded voice pool.
 
-enum Cue { FOOTSTEP, ROLL, RELOAD, PICKUP, CORE_UPGRADE, WIND }
+enum Cue { HOWL, ROLL, RELOAD, PICKUP, CORE_UPGRADE, WIND }
 
 const SAMPLE_RATE := 22050
-const LENGTHS := [.15, .32, .29, .19, .64, 2.4]
-const LEVELS := [.075, .09, .08, .065, .095, .038]
+const LENGTHS := [1.38, .32, .29, .19, .64, 2.4]
+const LEVELS := [.17, .09, .08, .065, .095, .038]
 var cache: Dictionary = {}
 var voices: Array[AudioStreamPlayer] = []
 var next_voice: int = 0
 var listener: Node3D
-var last_position := Vector3.ZERO
-var step_distance := 0.0
-var step_left := 0.0
-var step_variant := 0
 var wind_left := 4.5
 var pickup_left := 0.0
 var bag_units := 0
@@ -78,8 +74,9 @@ static func synthesize(cue: Cue, variant: int = 0) -> AudioStreamWAV:
 		breeze = lerpf(breeze, filtered, .025)
 		var value := 0.0
 		match cue:
-			Cue.FOOTSTEP:
-				value = (filtered * .82 + sin(TAU * (81 + variant * 9) * t) * .34) * exp(-t * 28.0)
+			Cue.HOWL:
+				var pitch := TAU * (168.0*t + 52.0*t*t - 42.0*t*t*t + .75*sin(TAU*4.0*t))
+				value = (sin(pitch)*.48 + sin(pitch*2.0)*.19 + filtered*.22) * pow(sin(PI*progress),1.45)
 			Cue.ROLL:
 				value = (filtered * .66 + breeze * 1.9) * sin(PI * progress)
 			Cue.RELOAD:
@@ -111,32 +108,16 @@ func update_field(actor: Node3D, delta: float, calm: bool) -> void:
 		return
 	if actor != listener:
 		listener = actor
-		last_position = actor.global_position
-		step_distance = 0.0
-		step_left = 0.0
 		pickup_left = 0.0
 		bag_units = inventory_units(actor.bag)
 		rolling = actor.roll_left > 0
 		reloading = actor.weapons.reload_left > 0
 		return
 
-	var moved: Vector3 = actor.global_position - last_position
-	last_position = actor.global_position
-	var distance := Vector2(moved.x, moved.z).length()
 	var now_rolling: bool = actor.roll_left > 0
 	if now_rolling and not rolling:
 		play_cue(Cue.ROLL)
 	rolling = now_rolling
-	step_left = maxf(0.0, step_left - delta)
-	if rolling or distance > 2.5:
-		step_distance = 0.0
-	elif distance > .004:
-		step_distance += distance
-		if step_distance >= 1.55 and step_left == 0.0:
-			play_cue(Cue.FOOTSTEP, step_variant)
-			step_variant = 1 - step_variant
-			step_distance = 0.0
-			step_left = .18
 
 	var now_reloading: bool = actor.weapons.reload_left > 0
 	if now_reloading and not reloading:

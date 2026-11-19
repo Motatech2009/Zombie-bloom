@@ -46,7 +46,7 @@ func tick(delta: float) -> void:
 			sessions.erase(coord); continue
 		if coord!=world.sector_coord and coord!=Vector2i.ZERO: run_in(coord,func(): world.tick_exploration(delta))
 func travel(actor: Node3D,direction: int) -> bool:
-	if direction<0 or direction>3 or actor.health.dead or actor.region_travel_left>0 or world.combat_paused() or world.phase=="ended": return false
+	if direction<0 or direction>3 or actor.health.dead or actor.rooted_left18>0 or actor.region_travel_left>0 or world.combat_paused() or world.phase=="ended": return false
 	initialize(); sessions[world.sector_coord] = capture()
 	var source: Vector2i = actor.region_coord
 	var next: Vector2i = source+SectorGenerator.DIRECTIONS[direction]

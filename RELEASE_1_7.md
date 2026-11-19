@@ -17,3 +17,20 @@ O Núcleo mantém sua instância visual durante as melhorias, a restauração do
 Passos, rolamento, recarga, coleta, melhoria do Núcleo e rajadas ocasionais de vento usam efeitos sonoros curtos e discretos. O volume geral também controla esses efeitos.
 
 O APK usa o código 1701. O protocolo cooperativo continua compatível com a 1.7.0.
+
+## 1.7.2
+
+Os oito chefes têm poses novas nas fases de preparação, impacto e recuperação. Os infectados viram na direção em que estão andando. O som dos passos foi removido.
+
+| Chefe | Mudanças |
+| --- | --- |
+| Quebra-Muros | Mantém a investida. Executa três batidas amplas, com dano reduzido ao Núcleo. |
+| Caldeirão | Mantém o arremesso principal. Joga cinco bolas corrosivas com alcance de até 15 metros e empurra quem fica perto durante seis segundos. |
+| Matriarca de Argila | Continua invocando cães. Ataca com duas garradas e um grito que empurra com pouco dano. |
+| Tempestade Alada | Mantém o rasante. Bate as asas para lançar vento com fragmentos de argila numa faixa reta de 15 metros. |
+| Predador Alfa | Prepara, salta e aterrissa com novas poses. O uivo atrai infectados do setor para um sobrevivente atingido pelo aviso e aumenta a velocidade deles em 15% por sete segundos. |
+| Oleiro | Ergue um bloco de 5,5 × 5,5 metros. Dispara argila numa faixa estreita com imobilização de 2,3 segundos e desfere um tapa após oito segundos de proximidade. |
+| Colmeia Viva | Mantém os tapas e os pássaros. Sacode o corpo e solta oito parasitas que perseguem sobreviventes e somem após seis segundos. |
+| Titã Enraizado | Bate no chão e expõe o coração. Faz três grupos de estacas irromperem e invoca ervas que imobilizam por sete segundos. |
+
+O APK principal usa o código 1702. Todos os jogadores da sessão cooperativa precisam da versão 1.7.2.

@@ -340,7 +340,7 @@ func region_active(key: String) -> bool:
 	return key=="0:0" or (area_index!=-1 and key==SectorGenerator.key(sector_coord))
 
 func clear_region_hazards(key: String) -> void:
-	for group in ["campaign_projectiles","acid_pools"]:
+	for group in ["campaign_projectiles","acid_pools","boss_fx18"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if node.region_key==key: node.get_parent().remove_child(node); node.queue_free()
 

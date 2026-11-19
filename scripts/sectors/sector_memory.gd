@@ -44,7 +44,7 @@ static func capture(world: Node3D) -> Dictionary:
 	for house in world.get_tree().get_nodes_in_group("raid_houses"):
 		if world.field_root.is_ancestor_of(house): state.houses.append(house.dump())
 	for enemy in world.get_tree().get_nodes_in_group("enemies"):
-		if not world.field_root.is_ancestor_of(enemy) or enemy.health.dead or enemy.get_meta("titan16",false): continue
+		if not world.field_root.is_ancestor_of(enemy) or enemy.health.dead or enemy.temporary_left18 > 0 or enemy.get_meta("titan16",false): continue
 		state.enemies.append({"nest_owner15":str(enemy.get_meta("nest_owner15","")),"convoy_owner17":str(enemy.get_meta("convoy_owner17","")),"summon_token":str(enemy.get_meta("summon_token","")),"summoner_token":str(enemy.get_meta("summoner_token","")),"night_hp":enemy.get_meta("night_hp",1.0),"night_damage":enemy.get_meta("night_damage",1.0),"nest_speed":enemy.get_meta("nest_speed",false),"growth15":enemy.growth,"swarm15":enemy.swarm_threshold,"kind":enemy.enemy_kind,"stage":int(enemy.get_meta("boss_stage",0)),"index":enemy.encounter_index,"pos":vector(enemy.position),"hp":enemy.health.current,"max":enemy.health.maximum,"damage":enemy.spec.values.damage,"speed":enemy.spec.values.speed,"enraged":enemy.enraged,"shield":enemy.shield_left,"ability":.3 if enemy.windup>0 else clampf(enemy.ability_left,-1,100),"summons":enemy.summon_casts,"house":int(enemy.get_meta("house_id",-1)),"guard":int(enemy.get_meta("house_guard",-1)),"event":int(enemy.get_meta("supply_event",-1)),"supply_index":int(enemy.get_meta("supply_index",-1))})
 	for loot in world.get_tree().get_nodes_in_group("survival_loot"):
 		if loot.get_parent()!=world.field_root or loot.is_queued_for_deletion() or loot.get_meta("special16",false): continue

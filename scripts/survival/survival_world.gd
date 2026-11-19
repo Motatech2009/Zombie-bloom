@@ -385,6 +385,7 @@ func load_individual_sector(direction: int) -> bool:
 	return super.step_sector(direction)
 
 func step_sector(direction: int) -> bool:
+	if player.rooted_left18 > 0.0: return false
 	if game_mode=="rescue" and waves.running and not regions.enabled(): notify("Proteja a estação até concluir a defesa."); return false
 	if regions.enabled(): return regions.travel(player,direction)
 	if is_client: return false
@@ -471,15 +472,17 @@ func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	if kind==8: enemy.add_to_group("boss_enemies")
 	return enemy
 
-func spawn_minion(parent: Node3D,kind: int,index: int) -> void:
+func spawn_minion(parent: Node3D,kind: int,index: int,offset := Vector3.INF) -> Node3D:
 	if regions.enabled() and coord_at(parent.global_position)!=sector_coord:
-		regions.run_in(coord_at(parent.global_position),func(): spawn_minion(parent,kind,index)); return
-	if get_tree().get_nodes_in_group("enemies").size()>=72: return
+		return regions.run_in(coord_at(parent.global_position),func(): return spawn_minion(parent,kind,index,offset))
+	if get_tree().get_nodes_in_group("enemies").size()>=72: return null
 	var root_node: Node3D = field_root if parent.field_enemy else base_root
-	var pos: Vector3 = parent.global_position-root_node.global_position+Vector3(1.5+index,0,1)
+	var spawn_offset := offset if offset.is_finite() else Vector3(1.5+index,0,1)
+	var pos: Vector3 = parent.global_position-root_node.global_position+spawn_offset
 	var child := make_enemy(kind,pos,parent.field_enemy,-1)
 	parent.set_meta("summon_token",str(parent.get_meta("summon_token",parent.net_id)))
 	child.set_meta("summoner",parent.net_id); child.set_meta("summoner_token",parent.get_meta("summon_token"))
+	return child
 
 func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
 	if is_client: return
@@ -1141,11 +1144,11 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var actors: Array = []
 	for id in avatars:
 		var actor: Node3D = avatars[id]
-		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"outfit16":actor.outfit16.duplicate(),"pin":actor.pinned_left,"combat":actor.combat_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"outfit16":actor.outfit16.duplicate(),"pin":actor.pinned_left,"root18":actor.rooted_left18,"combat":actor.combat_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
-		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup,"cast16":enemy.cast16 if enemy.spec.id=="titan16" else "","exposed16":enemy.exposed if enemy.spec.id=="titan16" else 0.0})
+		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup,"attack18":enemy.boss18.attack if enemy.boss18 != null else "","time18":enemy.boss18.elapsed if enemy.boss18 != null else 0.0,"leap18":enemy.leap_left,"land18":enemy.landing18,"cast16":enemy.cast16 if enemy.spec.id=="titan16" else "","exposed16":enemy.exposed if enemy.spec.id=="titan16" else 0.0})
 	var structures: Array = []
 	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())
@@ -1164,11 +1167,13 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 			if group=="campaign_projectiles" and node.kind=="defense_shell":
 				visual.shell16 = true; visual.direction16 = (node.destination-node.start).normalized()
 			hazards.append(visual)
+	for node in get_tree().get_nodes_in_group("boss_fx18"):
+		if not node.is_queued_for_deletion() and (not regions.enabled() or coord_at(node.global_position) == sector_coord):
+			hazards.append(node.state())
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
-		if enemy.spec.id=="titan16" and enemy.windup>0 and enemy.cast16=="roots":
-			for i in range(enemy.roots16.size()): hazards.append({"id":-100000000-enemy.net_id*4-i,"p":enemy.roots16[i],"pool":true,"warning":true,"radius":2.4,"color":Color("94b86b")})
-		elif enemy.windup>0: hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
+		if (not regions.enabled() or coord_at(enemy.global_position) == sector_coord) and enemy.windup > 0 and enemy.boss18 == null:
+			hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
+
 	return {"truce16":truce16.dump(),"visuals15":v15.visuals() if include_bulk else [],"mission16":rescue16.dump() if game_mode=="rescue" else {},"special16":{SectorGenerator.key(avatars[peer].region_coord):{"kind":exp16.kind_at(avatars[peer].region_coord),"stocks":exp16.sectors.get(SectorGenerator.key(avatars[peer].region_coord),{}).get("stocks",{}).duplicate()}},"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":upgrades.pending_for(avatars[peer]),"offers":upgrades.current(avatars[peer]).get("offers",[]).duplicate(true),"progression16":upgrades.private_state(avatars[peer]),"paused16":combat_paused(),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
 
 func apply_net_state(data: Dictionary,own_id: int) -> void:
@@ -1269,6 +1274,7 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		# The predicted local roll is reconciled with its pending inputs in physics.
 		# Writing a stale snapshot here erases it between physics and rendering.
 		if actor!=player or not prediction.enabled():
+			actor.rooted_left18 = float(state.get("root18",0.0))
 			actor.roll_left = float(state.get("roll",0))
 			actor.roll_cooldown = float(state.get("roll_cd",0))
 			actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
@@ -1309,6 +1315,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		enemy.health.maximum = state.max
 		enemy.replica_motion = float(state.get("motion",0))
 		enemy.windup = float(state.get("cast",0))
+		enemy.leap_left = float(state.get("leap18",0.0))
+		enemy.landing18 = float(state.get("land18",0.0))
+		if enemy.boss18 != null:
+			enemy.boss18.attack = state.get("attack18","")
+			enemy.boss18.elapsed = float(state.get("time18",0.0))
 		if enemy.spec.id=="titan16": enemy.cast16 = str(state.get("cast16","")); enemy.exposed = float(state.get("exposed16",0))
 		enemy.melee_left = float(state.get("melee",0)); enemy.recoil = float(state.get("recoil",0)); enemy.rush_left = float(state.get("rush",0))
 		enemy.health.current = state.hp
@@ -1372,7 +1383,11 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var id := int(state.id)
 		seen[id] = true
 		if not client_hazards.has(id):
-			if state.get("shell16",false): client_hazards[id] = VisualFactory.box(self,Vector3(.38,.38,.84),Vector3.ZERO,Color("e1af64"),true)
+			if state.has("fx18"):
+				var visual := BossFx18.from_state(self,state)
+				add_child(visual)
+				client_hazards[id] = visual
+			elif state.get("shell16",false): client_hazards[id] = VisualFactory.box(self,Vector3(.38,.38,.84),Vector3.ZERO,Color("e1af64"),true)
 			elif state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
 			else: client_hazards[id] = VisualFactory.cylinder(self,state.radius if state.pool else .15,.04 if state.pool else .25,Vector3.ZERO,Color("9dc45f") if state.pool else Color("e1af64"))
 		client_hazards[id].position = state.p

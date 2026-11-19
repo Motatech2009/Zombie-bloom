@@ -1,8 +1,6 @@
 extends "res://scripts/release15/enemy15.gd"
 var encounter_key := ""
 var exposed := 0.0
-var root_cooldown := 7.0
-var slam_cooldown := 4.0
 var cast16 := ""
 var roots16: Array = []
 var heart: Node3D
@@ -33,30 +31,9 @@ func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended" or world.combat_paused(): return
 	exposed = maxf(0,exposed-delta)
 	if health.current<health.maximum*.25: enraged = true
-	if windup>0:
-		windup = maxf(0,windup-delta); velocity = Vector3.ZERO
-		if windup<=0:
-			if cast16=="slam": world.hostile_blast(cast_point,5.2,30); exposed = 3
-			else:
-				for point in roots16:
-					world.hostile_blast(point,2.4,12)
-					for actor in world.avatars.values():
-						if actor.global_position.distance_to(point)<2.4 and actor.roll_left<=0: actor.slow_left = maxf(actor.slow_left,2)
-			clear_roots(); if is_instance_valid(warning): warning.queue_free()
-		return
-	slam_cooldown -= delta; root_cooldown -= delta
+	if boss18.tick(delta): return
 	choose_target()
 	if target==self: velocity = Vector3.ZERO; return
-	var distance: float = target.global_position.distance_to(global_position)
-	if slam_cooldown<=0 and distance<9:
-		cast16 = "slam"; cast_point = global_position; windup = 1.4; slam_cooldown = 9*(.85 if enraged else 1.0)
-		warning = VisualFactory.ring(world.effects,5.2,cast_point+Vector3.UP*.12,Color("d6a66d")); return
-	if root_cooldown<=0 and distance<24:
-		cast16 = "roots"; cast_point = target.global_position; windup = 1.2; root_cooldown = 13*(.85 if enraged else 1.0)
-		roots16 = [cast_point,cast_point+Vector3(4,0,1),cast_point+Vector3(-3,0,3)]
-		for point in roots16:
-			var ring := VisualFactory.ring(world.effects,2.4,point+Vector3.UP*.12,Color("94b86b")); ring.add_to_group("titan_root_warnings"); ring.set_meta("owner16",net_id)
-		return
 	normal_step(delta, false)
 	if not encounter_key.is_empty():
 		var edge := Exploration16.TITAN_SECTOR_EDGE
@@ -74,9 +51,13 @@ func _process(delta: float) -> void:
 
 func animate_replica(delta: float) -> void:
 	if not health.dead and rig.is_visible_in_tree() and not world.combat_paused() and world.phase != "ended":
+		if boss18 != null: boss18.elapsed += delta
 		update_titan_pose(delta, replica_motion)
 
 func update_titan_pose(delta: float, motion: float) -> void:
+	if boss18 != null and not boss18.attack.is_empty() and boss18.pose():
+		heart.scale = heart.scale.lerp(Vector3.ONE * (1.3 if exposed > 0.0 else .7), 1.0 - exp(-delta * 12.0))
+		return
 	var moving := clampf(motion, 0.0, 1.0) if windup <= 0.0 and melee_left <= 0.0 else 0.0
 	var follow := 1.0 - exp(-delta * 12.0)
 	gait_weight = lerpf(gait_weight, moving, 1.0 - exp(-delta * 7.0))

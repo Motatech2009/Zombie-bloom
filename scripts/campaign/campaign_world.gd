@@ -539,7 +539,7 @@ func migrate_snapshot(data: Variant) -> Variant:
 	return converted
 
 func clear_hazards() -> void:
-	for group in ["campaign_projectiles","acid_pools"]:
+	for group in ["campaign_projectiles","acid_pools","boss_fx18","clay_temp_walls"]:
 		for node in get_tree().get_nodes_in_group(group):
 			node.get_parent().remove_child(node)
 			node.queue_free()

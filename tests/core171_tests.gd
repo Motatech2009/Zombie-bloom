@@ -62,8 +62,8 @@ func run() -> void:
 		check(effect.mix_rate == 22050 and effect.get_length() <= 2.4 and peak > 512 and peak < 23001,
 			"cue %d has short audible samples below the clipping threshold" % cue)
 		check(pcm.decode_s16(0) == 0 and pcm.decode_s16(pcm.size() - 2) == 0, "cue %d has click-free boundaries" % cue)
-	check(GameAudio.synthesize(GameAudio.Cue.FOOTSTEP, 0).data != GameAudio.synthesize(GameAudio.Cue.FOOTSTEP, 1).data,
-		"the two footstep variants use distinct waveforms")
+	check(GameAudio.synthesize(GameAudio.Cue.HOWL, 0).data != GameAudio.synthesize(GameAudio.Cue.HOWL, 1).data,
+		"the two howl variants use distinct waveforms")
 	world.queue_free()
 	await process_frame
 	await process_frame

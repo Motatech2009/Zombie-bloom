@@ -178,6 +178,8 @@ func warning_color() -> Color:
 func ranged_only() -> bool:
 	return spec.id in ["spitter","mortar","lobber"]
 
+func movement_boost() -> float: return 1.0
+
 func normal_step(delta: float, update_pose: bool = true) -> void:
 	clock += delta
 	attack_left = maxf(0,attack_left-delta)
@@ -190,11 +192,14 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 	var flat := (target.global_position-global_position)*Vector3(1,0,1)
 	var distance := flat.length()
 	var direction := flat.normalized()
-	var speed := float(spec.values.speed)*(.55 if snare_left>0 else 1.0)
+	var speed := float(spec.values.speed)*(.55 if snare_left>0 else 1.0)*movement_boost()
 	if spec.id!="flyer" and path_index<path.size():
 		var point := Vector3(path[path_index].x,global_position.y,path[path_index].y)
-		if global_position.distance_to(point)<.8: path_index += 1
-		direction = (point-global_position).normalized()
+		while path_index + 1 < path.size() and global_position.distance_to(point) < .8:
+			path_index += 1
+			point = Vector3(path[path_index].x,global_position.y,path[path_index].y)
+		if global_position.distance_to(point) >= .8:
+			direction = (point-global_position).normalized()
 	if ranged_only():
 		ranged_left -= delta
 		if distance<7: direction = -flat.normalized()
@@ -219,7 +224,14 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 		if victim!=null:
 			melee_target = victim; melee_left = .45 if is_boss or spec.id=="cleaver" else .28
 			attack_left = float(spec.values.interval)+melee_left
-	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-flat.x,-flat.z),minf(1,delta*10))
+	var travel := get_real_velocity() * Vector3(1,0,1)
+	var facing := travel if speed > 0 and travel.length_squared() > .08 else flat
+	if melee_left > 0 and is_instance_valid(melee_target):
+		facing = (melee_target.global_position - global_position) * Vector3(1,0,1)
+	elif ranged_only() and distance < 7:
+		facing = flat
+	if facing.length_squared() > .001:
+		rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-facing.x,-facing.z), 1.0 - exp(-delta*13.0))
 	if update_pose:
 		if spec.id=="flyer":
 			for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
