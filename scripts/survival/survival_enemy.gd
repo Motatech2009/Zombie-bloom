@@ -120,7 +120,7 @@ func _physics_process(delta: float) -> void:
 		cast_point = global_position if enemy_kind==14 else target.global_position
 		windup = 1.1
 		ability_left = 8 if is_boss else 9 if enemy_kind in [12,13,14] else 12
-		warning = VisualFactory.ring(world.effects,warning_radius(),cast_point+Vector3(0,.12,0),warning_color())
+		warning = create_cast_warning()
 		return
 	if enemy_kind==11:
 		special_clock -= delta
@@ -168,6 +168,9 @@ func die() -> void:
 
 func _exit_tree() -> void:
 	if is_instance_valid(warning): warning.queue_free()
+
+func create_cast_warning() -> Node3D:
+	return VisualFactory.ring(world.effects, warning_radius(), cast_point+Vector3(0,.12,0), warning_color())
 
 func warning_radius() -> float:
 	return (3.2 if spec.id=="mortar" else 4.2) if is_boss else 8.0 if enemy_kind==14 else 4.5 if enemy_kind==13 else 1.7 if enemy_kind==12 else 2.5

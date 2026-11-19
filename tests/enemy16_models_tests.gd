@@ -203,6 +203,26 @@ func run() -> void:
 			var visual_scale := SectorGenerator.ALPHA_HOUND_SCALE if enemy.is_boss else 1.0
 			check(rig.scale.is_equal_approx(Vector3.ONE * visual_scale) and is_equal_approx(enemy.aim_height, .55 * visual_scale),
 				"hound model and aim height match " + ("Predador Alfa" if enemy.is_boss else "Cão infectado"))
+		if id == "hound" and enemy.is_boss:
+			var skin_arrays := mesh.mesh.surface_get_arrays(0)
+			var bone_indices: PackedInt32Array = skin_arrays[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = skin_arrays[Mesh.ARRAY_WEIGHTS]
+			var influences := {}
+			for i in range(weights.size()):
+				if weights[i] > .3: influences[bone_indices[i]] = true
+			check(rig.predator_stride and [3,4,5,6,8,10,12,14].all(func(joint): return influences.has(joint)),
+				"the Predator mesh is weighted to four independent paw chains")
+			rig.stride_pose(.25,1.0)
+			rig.sync_pose()
+			check(rig.get_node("LegFL").rotation.x * rig.get_node("LegFR").rotation.x < 0
+				and rig.get_node("LegFL").rotation.x * rig.get_node("LegBR").rotation.x > 0
+				and sk.get_bone_pose_rotation(sk.find_bone("PawFL")).angle_to(Quaternion.IDENTITY) > .1,
+				"opposite diagonals alternate while the paw bone articulates")
+		if id == "hive":
+			rig.stride_pose(.37,1.0)
+			rig.sync_pose()
+			check(rig.hive_stride and sk.rotation.y < -.4 and absf(rig.knee_angles[1] - rig.knee_angles[0]) > .1,
+				"the Hive faces forward and plants one foot while the other knee lifts")
 		if id=="parasite": check(rig.get_meta("source_model_id16")=="hound" and rig.scale.is_equal_approx(Vector3.ONE*.45),"parasite uses the supplied small quadruped without a fabricated separate source")
 		if id=="titan16": check(is_instance_valid(enemy.heart) and enemy.heart.get_parent()==rig,"Titan retains its exposed-heart presentation")
 		models[kit+"/"+id] = true

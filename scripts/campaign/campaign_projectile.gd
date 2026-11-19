@@ -11,6 +11,7 @@ var model: Node3D
 var area_id: int = -1
 var region_key: String = ""
 var owner_peer: int = 1
+var show_landing := true
 
 func _ready() -> void:
 	add_to_group("campaign_projectiles")
@@ -18,7 +19,7 @@ func _ready() -> void:
 	if world.has_method("region_at"): region_key = world.region_at(start)
 	position = start
 	model = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,Color("a8d95e") if kind=="acid" else Color("f2b563"),true)
-	if kind=="acid":
+	if kind=="acid" and show_landing:
 		var warning := VisualFactory.ring(self,radius,Vector3.ZERO,Color("8bdf57"))
 		warning.set_as_top_level(true)
 		warning.global_position = destination*Vector3(1,0,1)+Vector3(0,.08,0)

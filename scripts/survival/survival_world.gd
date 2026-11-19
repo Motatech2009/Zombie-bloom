@@ -152,6 +152,7 @@ func _ready() -> void:
 	MobilePlatform.configure(get_tree().root)
 	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
 	ClayStyle.prewarm()
+	BossFx18.prepare()
 	airdrops.world = self
 	network = get_node_or_null("/root/Coop")
 	is_client = network!=null and network.mode=="client"
@@ -162,6 +163,7 @@ func _ready() -> void:
 	resources.scrap = 85
 	stock = {"wood":6,"parts":2}
 	super._ready()
+	audio.prepare_cue(GameAudio.Cue.HOWL)
 	v15.initialize(self)
 	upgrades.state(player); upgrades.refresh_local()
 	player.set_meta("account_uid16",Account.user_id)
@@ -1051,8 +1053,8 @@ func load_checkpoint() -> bool:
 		return true
 	return false
 
-func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float) -> Node3D:
-	var shot := super.projectile(kind,from,to,power,radius,travel_time)
+func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float,show_landing := true) -> Node3D:
+	var shot := super.projectile(kind,from,to,power,radius,travel_time,show_landing)
 	if shot!=null: shot.owner_peer = shot_owner; shot.set_meta("uid",next_id())
 	return shot
 
@@ -1148,7 +1150,9 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 	var enemies: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
-		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)),"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup,"attack18":enemy.boss18.attack if enemy.boss18 != null else "","time18":enemy.boss18.elapsed if enemy.boss18 != null else 0.0,"leap18":enemy.leap_left,"land18":enemy.landing18,"cast16":enemy.cast16 if enemy.spec.id=="titan16" else "","exposed16":enemy.exposed if enemy.spec.id=="titan16" else 0.0})
+		var motion: float = (enemy.ground_motion if enemy.stride_boss else
+			Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)))
+		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":motion,"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup,"attack18":enemy.boss18.attack if enemy.boss18 != null else "","time18":enemy.boss18.elapsed if enemy.boss18 != null else 0.0,"leap18":enemy.leap_left,"land18":enemy.landing18,"cast16":enemy.cast16 if enemy.spec.id=="titan16" else "","exposed16":enemy.exposed if enemy.spec.id=="titan16" else 0.0})
 	var structures: Array = []
 	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
 		if not s.has_meta("uid"): s.set_meta("uid",next_id())

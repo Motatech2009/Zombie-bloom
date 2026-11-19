@@ -322,25 +322,6 @@ func destroy_nest(key: String) -> void:
 			if enemy.get_meta("nest_speed",false) and world.coord_at(enemy.global_position)==world.coord_at(node.global_position): enemy.spec.values.speed /= 1.2; enemy.set_meta("nest_speed",false)
 		node.queue_free()
 	world.notify("NINHO DESTRUÍDO · velocidade dos infectados normalizada.")
-func temporary_wall(point: Vector3, size := Vector3(5,2.6,1), fixed := false) -> Node3D:
-	if world.get_tree().get_nodes_in_group("clay_temp_walls").size()>=12: return null
-	for actor in world.avatars.values():
-		var offset := BossCombat18.flat(actor.global_position - point)
-		if actor.health.dead: continue
-		if fixed and absf(offset.x) < size.x*.5 + .4 and absf(offset.z) < size.z*.5 + .4:
-			return null
-		if not fixed and offset.length()<3: point += Vector3(4,0,0)
-	if point.distance_to(world.core.global_position)<4: return null
-	var wall := StaticBody3D.new()
-	world.add_child(wall)
-	wall.global_position = point*Vector3(1,0,1)
-	wall.collision_layer = 8
-	wall.add_to_group("clay_temp_walls")
-	wall.set_meta("size18",size)
-	VisualFactory.collider(wall,size,Vector3.UP*size.y*.5)
-	VisualFactory.box(wall,size,Vector3.UP*size.y*.5,Color("a77c60"))
-	timed_node(wall,8)
-	return wall
 func make_ramp(point: Vector3) -> Node3D:
 	var nearby: Node3D
 	for structure in world.get_tree().get_nodes_in_group("campaign_structure"):
@@ -383,21 +364,16 @@ func visuals() -> Array:
 		var node = entry.node
 		if not is_instance_valid(node) or world.coord_at(node.global_position)!=world.sector_coord: continue
 		if not node.has_meta("uid"): node.set_meta("uid",world.next_id())
-		rows.append({"id":node.get_meta("uid"),"kind":"wall" if node is StaticBody3D else "ramp","p":node.global_position,"text":"","size18":node.get_meta("size18", Vector3(5,2.6,1))})
+		rows.append({"id":node.get_meta("uid"),"kind":"ramp","p":node.global_position,"text":""})
 	return rows
 func apply_visuals(rows: Array) -> void:
 	var seen = {}
 	for row in rows:
+		if row.kind == "wall": continue
 		seen[row.id] = true
 		if not client_visuals.has(row.id):
 			var node: Node3D
-			if row.kind=="wall":
-				node = StaticBody3D.new()
-				node.collision_layer = 8
-				var size: Vector3 = row.get("size18",Vector3(5,2.6,1))
-				VisualFactory.collider(node,size,Vector3.UP*size.y*.5)
-				VisualFactory.box(node,size,Vector3.UP*size.y*.5,Color("a77c60"))
-			elif row.kind=="ramp":
+			if row.kind=="ramp":
 				node = Node3D.new(); var mesh = VisualFactory.box(node,Vector3(2,.35,5),Vector3(0,1,0),Color("a17a66")); mesh.rotation.x = -.4
 			else:
 				node = StaticBody3D.new(); node.set_script(load("res://scripts/release15/event15.gd")); node.world = world; node.kind = row.kind

@@ -34,3 +34,13 @@ Os oito chefes têm poses novas nas fases de preparação, impacto e recuperaç�
 | Titã Enraizado | Bate no chão e expõe o coração. Faz três grupos de estacas irromperem e invoca ervas que imobilizam por sete segundos. |
 
 O APK principal usa o código 1702. Todos os jogadores da sessão cooperativa precisam da versão 1.7.2.
+
+## 1.7.3
+
+O bloco do Oleiro sobe e recolhe no mesmo efeito, em 0,72 segundo, com a mesma área de impacto. O golpe deixa de criar uma parede sólida no mapa.
+
+O Predador Alfa agora tem quatro patas animadas na malha e caminha alinhado ao deslocamento. A Colmeia Viva também olha na direção do movimento e ganhou passadas mais pesadas, com apoio alternado dos pés.
+
+Os avisos dos ataques compartilham malhas e materiais preparados ao entrar na partida. Os fragmentos de cada efeito são renderizados em conjunto. O Caldeirão usa apenas um aviso por ponto de impacto.
+
+O APK principal usa o código 1703. Todos os jogadores da mesma sessão cooperativa precisam da 1.7.3.

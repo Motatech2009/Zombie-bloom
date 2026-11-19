@@ -539,12 +539,12 @@ func migrate_snapshot(data: Variant) -> Variant:
 	return converted
 
 func clear_hazards() -> void:
-	for group in ["campaign_projectiles","acid_pools","boss_fx18","clay_temp_walls"]:
+	for group in ["campaign_projectiles","acid_pools","boss_fx18"]:
 		for node in get_tree().get_nodes_in_group(group):
 			node.get_parent().remove_child(node)
 			node.queue_free()
 
-func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float) -> Node3D:
+func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float,show_landing := true) -> Node3D:
 	if get_tree().get_nodes_in_group("campaign_projectiles").size()>=32: return null
 	var shot := Node3D.new()
 	shot.set_script(load("res://scripts/campaign/campaign_projectile.gd"))
@@ -555,6 +555,7 @@ func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: floa
 	shot.damage = power
 	shot.radius = radius
 	shot.life = travel_time
+	shot.show_landing = show_landing
 	add_child(shot)
 	return shot
 

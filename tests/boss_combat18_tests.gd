@@ -51,6 +51,13 @@ func run() -> void:
 	mauler.boss18.begin("quake",player)
 	var packet: Dictionary = w.net_state(1)
 	var core_hp: float = w.core.health.current
+	var marker: Node3D = mauler.boss18.warnings[0]
+	var same := BossFx18.spawn(w, "area", Vector3(0,0,8), Vector3.FORWARD, 5.1, 0.0, 1.0)
+	check(marker.get_child_count() == 1 and same.get_child_count() == 1
+		and marker.get_child(0).mesh == same.get_child(0).mesh
+		and marker.get_child(0).material_override == same.get_child(0).material_override,
+		"warning effects share a prebuilt mesh and material even at different sizes")
+	same.queue_free()
 	check(state_matches(packet,"area") and packet.enemies[0].attack18 == "quake", "quake warning and pose state replicate")
 	for i in range(3):
 		player.invulnerable = 0.0
@@ -64,7 +71,10 @@ func run() -> void:
 	mortar.boss18.begin("volley",player)
 	check(mortar.boss18.spots.size()==5 and mortar.boss18.spots.all(func(p): return p.distance_to(ORIGIN)<=15.01), "volley marks five impacts within range")
 	mortar.boss18.tick(1.13)
-	check(get_nodes_in_group("campaign_projectiles").size()==5,"volley launches five actual projectiles")
+	var shots := get_nodes_in_group("campaign_projectiles")
+	check(shots.size()==5,"volley launches five actual projectiles")
+	check(shots.all(func(shot): return not shot.show_landing and shot.get_child_count() == 1),
+		"volley uses the five existing landing markers without generating duplicate geometry")
 	for shot in get_nodes_in_group("campaign_projectiles"): shot.queue_free()
 	mortar.boss18.finish()
 	mortar.boss18.cooldowns.volley = 30.0
@@ -126,10 +136,26 @@ func run() -> void:
 	var square: Vector3 = player.position
 	player.position += Vector3(2.4,0,2.4)
 	potter.boss18.tick(1.11)
-	var walls := get_nodes_in_group("clay_temp_walls")
 	check(player.health.current<500,"the square hits the corner of the telegraphed area")
-	check(walls.size()==1 and walls[0].global_position.is_equal_approx(square) and walls[0].get_meta("size18").z==5.5, "a 5.5 m square wall appears at exactly the telegraph")
-	for wall in walls: wall.queue_free()
+	var blocks := get_nodes_in_group("boss_fx18").filter(func(effect): return effect.data.fx18 == "mold")
+	check(blocks.size()==1 and blocks[0].global_position.is_equal_approx(square) and blocks[0].data.s==2.75, "the only block rises from the exact 5.5 m warning")
+	check(get_nodes_in_group("clay_temp_walls").is_empty() and blocks[0].find_children("*","CollisionObject3D").is_empty(),"the strike leaves no solid wall behind")
+	var block: Node3D = blocks[0]
+	block._process(.32)
+	var raised := BossFx18.mold_height(0, block.elapsed/block.lifetime)
+	block._process(.35)
+	check(raised > .9 and BossFx18.mold_height(0, block.elapsed/block.lifetime) < raised*.35,
+		"the block descends again during the same effect")
+	packet = w.net_state(1)
+	var row: Dictionary = packet.hazards.filter(func(state): return state.get("fx18") == "mold")[0]
+	var replica := BossFx18.from_state(w,row)
+	w.add_child(replica)
+	check(is_equal_approx(replica.elapsed, block.elapsed) and replica.lifetime == block.lifetime,
+		"co-op replicates the remaining visible lifetime instead of starting a new solid wall")
+	replica.queue_free()
+	block._process(.06)
+	check(block.is_queued_for_deletion() and not state_matches(w.net_state(1),"mold"),
+		"the block despawns before a second passes and leaves no network hazard")
 	reset_player(ORIGIN+Vector3.FORWARD*11)
 	potter.boss18.begin("clay",player)
 	potter.boss18.tick(.93)

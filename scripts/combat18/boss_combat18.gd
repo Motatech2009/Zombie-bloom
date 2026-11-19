@@ -138,7 +138,7 @@ func begin(id: String, actor: Node3D) -> void:
 			spots = [middle, middle + spread * 4.8, middle - spread * 4.8, middle + heading * 3.8, middle - heading * 3.8]
 			for i in range(spots.size()):
 				spots[i] = local_point(origin + (spots[i] - origin).limit_length(15.0))
-				warn("acid", spots[i], 1.75, 0, lead + 1.10)
+				warn("acid", spots[i], 1.75, 0, lead + 1.15)
 		"slap":
 			near_time = 0.0
 			warn("line", origin, 4.8, 1.8, lead)
@@ -183,7 +183,7 @@ func impact() -> void:
 				else: body.take_damage(scaled(3 if body == world.core else 7))
 		"volley":
 			for spot in spots:
-				var projectile: Node3D = world.projectile("acid", enemy.global_position + Vector3.UP*1.7, spot, scaled(12), 1.75, 1.15)
+				var projectile: Node3D = world.projectile("acid", enemy.global_position + Vector3.UP*1.7, spot, scaled(12), 1.75, 1.15, false)
 				if projectile != null: projectile.set_meta("toxic15", true)
 		"slap":
 			fx("claw", origin, 4.8, 0, .32)
@@ -212,14 +212,13 @@ func impact() -> void:
 					if ally.is_boss or ally.health.dead or world.coord_at(ally.global_position) != world.coord_at(origin): continue
 					ally.force_hunt(chased, 7.0, true)
 		"block":
-			fx("mold", point, 2.75, 0, .53)
+			fx("mold", point, 2.75, 0, .72)
 			for actor in world.avatars.values():
 				var offset := flat(actor.global_position - point)
 				if absf(offset.x) <= 2.75 and absf(offset.z) <= 2.75:
 					var direction := Vector3(signf(offset.x),0,0) if absf(offset.x) > absf(offset.z) else Vector3(0,0,signf(offset.z))
 					if direction == Vector3.ZERO: direction = Vector3(signf(heading.x),0,0) if absf(heading.x) > absf(heading.z) else Vector3(0,0,signf(heading.z))
 					hit(actor, 19, direction, 3.6)
-			world.v15.temporary_wall(point, Vector3(5.5, 2.6, 5.5), true)
 		"clay":
 			fx("clay", origin, CLAY_RANGE, CLAY_WIDTH, CLAY_FLIGHT)
 		"brood":

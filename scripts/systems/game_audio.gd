@@ -49,13 +49,15 @@ func play_tone(frequency: int, duration: float, gain: float) -> void:
 		cache[key] = make_stream(bytes)
 	play_stream(cache[key], gain)
 
-func play_cue(cue: Cue, variant: int = 0) -> void:
-	if not audible():
-		return
+func prepare_cue(cue: Cue, variant: int = 0) -> AudioStreamWAV:
 	var key := "cue_%d_%d" % [cue, variant]
 	if not cache.has(key):
 		cache[key] = synthesize(cue, variant)
-	play_stream(cache[key], LEVELS[cue])
+	return cache[key]
+
+func play_cue(cue: Cue, variant: int = 0) -> void:
+	if audible():
+		play_stream(prepare_cue(cue, variant), LEVELS[cue])
 
 static func synthesize(cue: Cue, variant: int = 0) -> AudioStreamWAV:
 	var duration: float = LENGTHS[cue]

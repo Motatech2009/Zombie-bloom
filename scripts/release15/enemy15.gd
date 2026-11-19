@@ -14,10 +14,16 @@ var hunt_target18: Node3D
 var hunt_left18 := 0.0
 var hunt_boost18 := false
 var temporary_left18 := 0.0
+var stride_boss := false
+var ground_motion := 0.0
+var stride_phase := 0.0
+var stride_blend := 0.0
 
 func _ready() -> void:
 	super._ready()
-	if is_boss: boss18 = BossCombat18.new(self)
+	if is_boss:
+		boss18 = BossCombat18.new(self)
+		stride_boss = spec.id in ["hound","hive"] and rig.has_method("stride_pose")
 
 func force_hunt(actor: Node3D, duration: float, boost: bool) -> void:
 	hunt_target18 = actor
@@ -62,6 +68,7 @@ func create_model(factor: float) -> void:
 func _physics_process(delta: float) -> void:
 	if proxy or health.dead or world.phase=="ended" or world.combat_paused(): return
 	if not tick_hunt(delta): return
+	ground_motion = 0.0
 	landing18 = maxf(0.0, landing18 - delta)
 	if boss18 != null and boss18.tick(delta):
 		shield_left = maxf(0, shield_left - delta)
@@ -120,47 +127,66 @@ func _physics_process(delta: float) -> void:
 		elif not crossing: rig.position.y = 0
 	if spec.id == "hive": ability_left = 999
 	if spec.id == "potter" and windup <= 0.0: ability_left = 999
-	var casting_before: float = windup
 	super._physics_process(delta)
 	if boss18 != null and windup > 0.0:
 		var direction := BossCombat18.flat(cast_point - global_position)
 		if direction.length_squared() > .01:
 			rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-direction.x, -direction.z), 1.0 - exp(-delta * 13.0))
-		if casting_before <= 0.0: replace_legacy_warning()
 
-func replace_legacy_warning() -> void:
-	if is_instance_valid(warning): warning.queue_free()
+
+func create_cast_warning() -> Node3D:
+	if boss18 == null: return super.create_cast_warning()
 	var origin := BossCombat18.flat(global_position)
 	var aim := BossCombat18.flat(cast_point)
 	var direction := (aim - origin).normalized()
 	match spec.id:
 		"mauler", "flyer":
 			var distance := 13.6 if spec.id == "mauler" else origin.distance_to(aim)
-			warning = BossFx18.spawn(world, "line", origin, direction, maxf(1.0, distance), 1.35 if spec.id == "mauler" else 2.3, windup)
+			return BossFx18.spawn(world, "line", origin, direction, maxf(1.0, distance), 1.35 if spec.id == "mauler" else 2.3, windup)
 		"hound":
-			warning = BossFx18.spawn(world, "thorn", aim, direction, 2.2, 0.0, windup + .85)
+			return BossFx18.spawn(world, "thorn", aim, direction, 2.2, 0.0, windup + .85)
 		"mortar":
-			warning = BossFx18.spawn(world, "acid", aim, direction, 3.2, 0.0, windup)
+			return BossFx18.spawn(world, "acid", aim, direction, 3.2, 0.0, windup)
 		_:
-			warning = BossFx18.spawn(world, "thorn", origin, direction, 3.2, 0.0, windup)
+			return BossFx18.spawn(world, "thorn", origin, direction, 3.2, 0.0, windup)
+
+func normal_step(delta: float, update_pose: bool = true) -> void:
+	super.normal_step(delta, update_pose and not stride_boss)
+	if stride_boss and velocity.length_squared() > 1.01:
+		ground_motion = Vector2(get_real_velocity().x,get_real_velocity().z).length() / maxf(.1,float(spec.values.speed))
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if not proxy and not health.dead and rig.visible and not world.combat_paused():
-		animate_special()
+		animate_special(delta, ground_motion)
 
 func animate_replica(delta: float) -> void:
-	super.animate_replica(delta)
+	if not stride_boss:
+		super.animate_replica(delta)
 	if not health.dead and rig.is_visible_in_tree() and not world.combat_paused():
 		if boss18 != null:
 			boss18.elapsed += delta
 			leap_left = maxf(0, leap_left - delta)
 			landing18 = maxf(0, landing18 - delta)
-		animate_special()
+		animate_special(delta, replica_motion)
 
-func animate_special() -> void:
+func animate_special(delta: float, motion: float) -> void:
 	if boss18 == null: return
-	if boss18.pose(): return
+	if stride_boss: rig.striding = false
+	if boss18.pose():
+		stride_blend = 0.0
+		return
+	if stride_boss:
+		var weight := clampf(motion, 0.0, 1.2)
+		stride_blend = lerpf(stride_blend, weight, 1.0 - exp(-delta * 11.0))
+		var pace := (1.55 if spec.id == "hound" else .82) + .17 * stride_blend
+		stride_phase = fposmod(stride_phase + delta * pace * stride_blend, 1.0)
+		rig.stride_pose(stride_phase, minf(1.0, stride_blend))
+		if spec.id == "hive":
+			var sway := sin(stride_phase*TAU)*stride_blend
+			pose_arms(.24 - .15*sway,.24 + .15*sway)
+			animate_melee()
+		return
 	rig.rotation.z = 0.0
 	if spec.id != "flyer": rig.position.y = 0.0
 	if spec.id == "flyer":
@@ -206,8 +232,10 @@ func boss_cast() -> void:
 				if flat.length()<7 and flat.normalized().dot(rush_direction)>.6:
 					actor.velocity += rush_direction*12; actor.move_and_collide(rush_direction*1.5); actor.take_damage((12+world.waves.wave)*world.v15.day.damage_factor())
 		"mortar":
-			var projectile: Node3D = world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,(22+world.waves.wave)*world.v15.day.damage_factor(),3.2,1.25)
-			if projectile!=null: projectile.set_meta("toxic15",true)
+			var projectile: Node3D = world.projectile("acid",global_position+Vector3(0,1.6,0),cast_point,(22+world.waves.wave)*world.v15.day.damage_factor(),3.2,1.25,false)
+			if projectile!=null:
+				projectile.set_meta("toxic15",true)
+				BossFx18.spawn(world,"acid",BossCombat18.flat(cast_point),Vector3.FORWARD,3.2,0.0,1.25)
 		"broodmother":
 			BossFx18.spawn(world, "brood", global_position, Vector3.FORWARD, 3.0, 0.0, .62)
 			if summon_casts<3:
@@ -219,10 +247,6 @@ func boss_cast() -> void:
 		"hound":
 			extra_motion = "leap"; leap_start = global_position; leap_end = cast_point*Vector3(1,0,1); leap_left = .85
 			BossFx18.spawn(world, "thorn", leap_end, Vector3.FORWARD, 2.2, 0, .85)
-		"potter":
-			var direction: Vector3 = (cast_point-global_position).normalized()
-			var point = global_position+direction*5
-			world.v15.temporary_wall(point)
 		"hive":
 			for i in range(2): world.spawn_minion(self,7,i)
 func take_damage(amount: float) -> void:
