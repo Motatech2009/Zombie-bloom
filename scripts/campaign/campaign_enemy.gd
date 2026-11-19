@@ -20,7 +20,11 @@ func _ready() -> void:
 	var shape := CapsuleShape3D.new()
 	shape.radius = .36*factor
 	shape.height = 1.8*factor
-	if spec.id=="hound": shape.height = .9; shape.radius = .32; aim_height = .55
+	if spec.id=="hound":
+		var hound_scale := factor if is_boss else 1.0
+		shape.height = .9 * hound_scale
+		shape.radius = .32 * hound_scale
+		aim_height = .55 * hound_scale
 	if spec.id=="flyer": shape.height = 1; shape.radius = .4; position.y = 2.8; aim_height = .6
 	var collision := CollisionShape3D.new()
 	collision.shape = shape

@@ -59,6 +59,10 @@ func sector_descriptor(coord: Vector2i,visits: int) -> Dictionary:
 	prune_sector_memory()
 	var key := SectorGenerator.key(coord)
 	pending_sector_memory = sector_memory.get(key,{}).duplicate(true)
+	if not Exploration16.special_allowed(coord) and pending_sector_memory.get("layout", {}).get("special16") == "post":
+		# An old post layout has neither loot caches nor a regular spawn roster.
+		sector_memory.erase(key)
+		pending_sector_memory.clear()
 	if not pending_sector_memory.is_empty():
 		sector_deadline = float(pending_sector_memory.expires)
 		return exp16.decorate(airdrops.decorate(SectorMemory.decode_layout(pending_sector_memory.layout)),coord)
@@ -959,6 +963,11 @@ func apply_snapshot(data: Dictionary) -> void:
 		for key in data.get("discovered",{}):
 			if key!="0:0": exp16.sectors[key] = {"kind":"normal","hp":20000.0,"dead":false,"reward":{},"stocks":{},"pos":[15.0,0.0]}
 	super.apply_snapshot(data)
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var key := SectorGenerator.key(Vector2i(x, z))
+			if discovered.has(key):
+				discovered[key].erase("special16")
 	if data.has("systems15"): v15.restore(data.systems15)
 	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
 	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
@@ -1104,7 +1113,8 @@ func apply_net_scene(data: Dictionary) -> void:
 		field.world = self
 		field.descriptor = descriptor
 		field_root.add_child(field)
-		if descriptor.get("special16","")=="post": exp16.build_post(field_root)
+		if descriptor.get("special16", "") == "post" and Exploration16.special_allowed(sector_coord):
+			exp16.build_post(field_root)
 		arena = field
 		add_exits(field_root)
 	else: arena = base_arena; add_exits_again_for_base()
@@ -1259,7 +1269,12 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 		var id := int(state.id)
 		seen[id] = true
 		if not client_enemies.has(id):
+			# Several bosses share kind 8. Resolve the actual rig and hitbox before _ready.
+			var stage_before := restoring_boss_stage
+			if int(state.k) == 8:
+				restoring_boss_stage = SectorGenerator.BOSS_IDS.find(state.get("spec", "")) + 1
 			var enemy: Node3D = make_enemy(int(state.k),Vector3.ZERO,false,-1)
+			restoring_boss_stage = stage_before
 			enemy.proxy = true
 			enemy.remove_from_group("wave_enemies")
 			enemy.set_physics_process(false)

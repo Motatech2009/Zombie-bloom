@@ -5,6 +5,8 @@ const NAMES = ["Norte","Leste","Sul","Oeste"]
 const EXITS = [Vector3(0,0,-49),Vector3(49,0,0),Vector3(0,0,49),Vector3(-49,0,0)]
 const RISKS = ["TRANQUILO","PATRULHADO","DENSO","INFESTADO","DOMÍNIO DE CHEFE"]
 const BIOMES = ["Subúrbio","Pátio industrial","Bosque morto","Zona agrícola","Ruínas militares"]
+const BOSS_IDS := ["mauler","mortar","broodmother","flyer","hound","potter","hive"]
+const ALPHA_HOUND_SCALE := 2.15
 
 static func key(coord: Vector2i) -> String:
 	return "%d:%d" % [coord.x,coord.y]
@@ -70,11 +72,8 @@ static func boss_spec(number: int) -> Resource:
 	var index := maxi(0,number-1)%flavors.size()
 	var result: Resource = CampaignData.enemy_spec(flavors[index]).duplicate(true)
 	result.title = names[index]
-	if index==0: result.id = "mauler"
-	if index==1: result.id = "mortar"
-	if index==2: result.id = "broodmother"
-	if index==5: result.id = "potter"
-	if index==6: result.id = "hive"
+	result.id = BOSS_IDS[index]
+	if result.id == "hound": result.values.scale = ALPHA_HOUND_SCALE
 	var stage := maxi(1,number)
 	result.values.health = 650.0+110*stage+8.0*stage*stage
 	result.values.damage = maxf(18,float(result.values.damage))

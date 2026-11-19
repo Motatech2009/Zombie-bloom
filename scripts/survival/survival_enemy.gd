@@ -39,7 +39,11 @@ func _ready() -> void:
 	ability_left = 5+fmod(float(net_id),3)
 
 func create_model(factor: float) -> void:
-	if spec.id in ["hound","flyer"]: super.create_model(factor); return
+	if spec.id in ["hound","flyer"]:
+		super.create_model(factor)
+		if spec.id == "hound" and is_boss:
+			rig.scale = Vector3.ONE * factor
+		return
 	rig = load("res://assets/models/infected_"+str((enemy_kind if enemy_kind<=14 else 5 if enemy_kind==15 else 4) if not is_boss else 3 if spec.id=="broodmother" else 5 if spec.id=="mortar" else 8)+".tscn").instantiate()
 	rig.scale = Vector3.ONE*factor
 	add_child(rig)

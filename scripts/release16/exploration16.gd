@@ -6,21 +6,22 @@ var nodes: Dictionary = {}
 var tick_left := 0.0
 const TITAN_SECTOR_EDGE := 58.0
 
-static func titan_allowed(coord: Vector2i) -> bool:
+static func special_allowed(coord: Vector2i) -> bool:
 	return maxi(absi(coord.x), absi(coord.y)) >= 2
 
 static func sanitize_encounter(coord: Vector2i, state: Dictionary) -> void:
-	if state.get("kind") != "titan" or titan_allowed(coord):
+	if special_allowed(coord) or state.get("kind") not in ["post", "titan"]:
 		return
+	if state.kind == "titan":
+		# A chest from a previously defeated Titan remains collectible.
+		state.loot_created = state.dead and not state.reward.is_empty()
 	state.kind = "normal"
-	# A chest from a previously defeated Titan remains collectible.
-	state.loot_created = state.dead and not state.reward.is_empty()
 
 static func roll(seed_value: int,coord: Vector2i) -> String:
-	if coord==Vector2i.ZERO: return "normal"
+	if not special_allowed(coord): return "normal"
 	var rng := RandomNumberGenerator.new(); rng.seed = hash("special16:%d:%s" % [seed_value,SectorGenerator.key(coord)])
 	var n := rng.randi_range(0,99)
-	return ("titan" if titan_allowed(coord) else "normal") if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
+	return "titan" if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
 func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 	if coord==Vector2i.ZERO: return d
 	if world.game_mode=="rescue":
@@ -40,8 +41,8 @@ func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 		if d.has("base_roster"): d.base_roster = d.base_roster.map(func(k): return 2 if int(k)==8 else k)
 	return d
 func kind_at(coord: Vector2i) -> String:
-	var kind: String = sectors.get(SectorGenerator.key(coord), {}).get("kind", "normal")
-	return "normal" if kind == "titan" and not titan_allowed(coord) else kind
+	if not special_allowed(coord): return "normal"
+	return sectors.get(SectorGenerator.key(coord), {}).get("kind", "normal")
 func safe(point: Vector3) -> bool:
 	var coord: Vector2i = world.coord_at(point)
 	return kind_at(coord)=="post" and (point-world.sector_offset(coord)).length()<14

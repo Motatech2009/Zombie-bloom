@@ -12,6 +12,11 @@ func stop_world() -> void:
 func create_world(mode: String = "endless") -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = mode; load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w; stop_world()
+func travel_for_test(direction: int) -> bool:
+	w.player.position = w.sector_offset(w.sector_coord) + SectorGenerator.EXITS[direction]
+	w.travel_cooldown = 0.0
+	return w.step_sector(direction)
+
 func run() -> void:
 	GameSettings.volume = 0
 	check(Catalog16.talents().size()==9 and Catalog16.data().cosmetics.size()==22,"catalog has nine class talents and 21 shop cosmetics plus one exclusive Titan trophy")
@@ -60,10 +65,9 @@ func run() -> void:
 		check(Cosmetics16.valid({item.slot:item.id},cls),"valid cosmetic slot/class: "+item.id)
 		Cosmetics16.decorate(w.player.rig,{item.slot:item.id},w.player)
 	check(not Cosmetics16.valid({"head":"COS-ENG-01"},"scout"),"wrong-class cosmetics are rejected")
-	var coord := Vector2i(1,0); var key := SectorGenerator.key(coord)
+	var coord := Vector2i(2,0); var key := SectorGenerator.key(coord)
 	w.exp16.sectors[key] = {"kind":"post","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
-	w.player.position = SectorGenerator.EXITS[1]; w.travel_cooldown = 0
-	check(w.step_sector(1),"exploration enters a real safe-post sector")
+	check(travel_for_test(1) and travel_for_test(1), "exploration enters a real safe-post sector at layer two")
 	w.player.position = w.sector_offset(coord); w.player.invulnerable = 0; var hp: float = w.player.health.current
 	w.player.take_damage(20); check(w.player.health.current==hp,"safe perimeter blocks ordinary incoming damage")
 	w.hud.show_post16(); check(not paused,"safe-post trading never pauses the horde clock even in solo"); w.hud.close_modal()
@@ -75,28 +79,38 @@ func run() -> void:
 	check(w.exp16.trade(w.player,"medkit") and w.exp16.trade(w.player,"medkit") and not w.exp16.trade(w.player,"medkit"),"medical stock is shared and limited per preparation")
 	var dump: Dictionary = JSON.parse_string(JSON.stringify(w.exp16.dump()))
 	check(Exploration16.valid(dump),"special sector ownership, stock and rewards survive JSON validation")
-	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[3]; w.travel_cooldown = 0; w.step_sector(3)
-	w.elapsed = 181; w.player.position = SectorGenerator.EXITS[1]; w.travel_cooldown = 0; w.step_sector(1)
+	travel_for_test(3)
+	var old_post_memory: Dictionary = w.sector_memory[key].duplicate(true)
+	w.elapsed = 181
+	travel_for_test(1)
 	w.player.position = w.sector_offset(coord)
 	check(w.exp16.kind_at(coord)=="post" and not w.exp16.trade(w.player,"medkit"),"post does not reroll or restock on 181-second revisit")
-	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[3]; w.travel_cooldown = 0; w.step_sector(3)
+	travel_for_test(3)
+	travel_for_test(3)
 	var forbidden := {}
 	var legacy_titan := {"kind":"titan","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
 	for x in range(-1, 2):
 		for z in range(-1, 2):
 			var inner := Vector2i(x, z)
 			forbidden[SectorGenerator.key(inner)] = legacy_titan.duplicate(true)
-			check(not Exploration16.titan_allowed(inner) and range(128).all(func(seed_value): return Exploration16.roll(seed_value, inner) != "titan"),
-				"no Titan roll in central sector " + str(inner))
+			check(not Exploration16.special_allowed(inner) and range(128).all(func(seed_value): return Exploration16.roll(seed_value, inner) == "normal"),
+				"no Titan or Posto do Farol roll in central sector " + str(inner))
+	forbidden["1:0"].kind = "post"
 	forbidden["-1:1"].dead = true
 	forbidden["-1:1"].reward = {"scrap": 800}
 	var restored: Dictionary = w.exp16.dump()
 	restored.sectors.merge(forbidden, true)
 	w.exp16.restore(restored)
 	check(forbidden.keys().all(func(coord_key): return w.exp16.sectors[coord_key].kind == "normal"),
-		"loading a checkpoint removes every legacy Titan in the nine central sectors")
+		"loading a checkpoint removes legacy Titans and posts in the central sectors")
 	check(w.exp16.sectors["-1:1"].loot_created and w.exp16.sectors["-1:1"].reward.scrap == 800,
 		"old victories retain unclaimed loot after the sector restriction")
+	old_post_memory.expires = w.elapsed + 120.0
+	w.sector_memory["1:0"] = old_post_memory
+	w.exp16.sectors["1:0"].kind = "post"
+	check(travel_for_test(1) and not w.exp16.nodes.has("1:0") and not w.exp16.safe(w.sector_offset(Vector2i(1,0))) and w.descriptor.caches.size() == 3,
+		"a restricted legacy post loses its safe area and regenerates a normal sector with loot")
+	travel_for_test(3)
 	w.exp16.sectors["0:-1"] = legacy_titan.duplicate(true)
 	w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0
 	check(w.step_sector(0) and w.exp16.kind_at(Vector2i(0,-1)) == "normal" and not w.exp16.nodes.has("0:-1"),

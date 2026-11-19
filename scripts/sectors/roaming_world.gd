@@ -85,6 +85,8 @@ func _process(delta: float) -> void:
 	core.label.visible = area_index==-1 and player.position.distance_to(core.position)<4
 	vendor_tag.visible = area_index==-1 and player.position.distance_to(vendor_pos)<7
 	for boss in get_tree().get_nodes_in_group("boss_enemies"):
+		if boss.label.has_meta("suppressed"):
+			continue
 		boss.label.visible = boss.global_position.distance_to(player.position)<35
 		boss.label.text = "CHEFE · %s · %d" % [boss.spec.title,ceili(boss.health.current)]
 	shop_clock += delta

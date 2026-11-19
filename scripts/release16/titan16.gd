@@ -139,7 +139,11 @@ func clear_roots() -> void:
 		if int(node.get_meta("owner16",0))==net_id: node.queue_free()
 	roots16.clear()
 func die() -> void:
-	clear_roots(); set_meta("boss_rewarded",true); world.exp16.defeated(self); super.die()
+	clear_roots()
+	set_meta("boss_rewarded", true)
+	if not encounter_key.is_empty():
+		world.exp16.defeated(self)
+	super.die()
 func _exit_tree() -> void:
 	if is_instance_valid(world) and is_inside_tree(): clear_roots()
 	super._exit_tree()
