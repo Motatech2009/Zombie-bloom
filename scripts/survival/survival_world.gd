@@ -150,6 +150,7 @@ func _ready() -> void:
 	upgrades.state(player); upgrades.refresh_local()
 	player.set_meta("account_uid16",Account.user_id)
 	Meta16.world = self; Meta16.bound_run = ""
+	if Meta16.local_economy: Meta16.observe_progress()
 	var range_view := DefenseRange16.new(); range_view.world = self; add_child(range_view)
 	if MobilePlatform.enabled():
 		MobilePlatform.configure(get_tree().root)
@@ -961,6 +962,9 @@ func apply_snapshot(data: Dictionary) -> void:
 	if data.has("systems15"): v15.restore(data.systems15)
 	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
 	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
+	if Meta16.local_economy and (Meta16.wallet.data.equipped.has(player.specialization) or Meta16.trophy_equipped.has(player.specialization)):
+		player.outfit16 = Meta16.outfit(player.specialization)
+		v15.decorate(player)
 	records.restore(data.get("records",{}))
 	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
 	account_baseline = true

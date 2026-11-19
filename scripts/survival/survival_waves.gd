@@ -25,6 +25,8 @@ func complete() -> void:
 	if not running: return
 	world.record_victory(wave)
 	world.upgrades.award_horde(wave)
+	if Meta16.world == world and Meta16.local_economy:
+		Meta16.observe_progress()
 	var enabled: bool = world.checkpoint_enabled
 	world.checkpoint_enabled = false
 	super.complete()

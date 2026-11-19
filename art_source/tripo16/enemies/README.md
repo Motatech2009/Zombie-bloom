@@ -21,3 +21,9 @@ godot --headless --path . --script res://tools/art/build_separated_zombies16.gd 
 ```
 
 O preparo mantém o atlas da RC9 e limita cada malha a 3.000 triângulos. O preparo separa e fecha as superfícies internas das pernas fundidas na malha desses três modelos. Os pivôs de joelho e tornozelo de Errante, Blindado e Investidor são ajustados por lado. O jogo aplica a passada local aos esqueletos e controla os braços separadamente durante ataques. O Parasita usa uma versão reduzida do Cão Infectado e se transforma no Bruto. Use o preparo RC9 dos chefes para atualizar o kit de bosses.
+
+## Corredor e Demolidor
+
+A RC13 usa o `corredor.glb` em pose neutra enviado separadamente. Seu atlas em 512 px está em `zombies/runner_albedo.jpg` e `zombies/runner_normal.jpg`. O Demolidor usa o GLB separado da coleção original e o corte das superfícies unidas entre as pernas.
+
+Para gerar apenas essas duas malhas, passe `runner demolisher` após o diretório de origem no comando do Godot.

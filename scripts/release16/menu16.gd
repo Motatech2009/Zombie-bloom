@@ -17,7 +17,7 @@ static func account_card(menu: Node,compact: bool = false) -> void:
 		badge.level = RankProgress.tier(kills) if account().signed_in() else 0
 		bar.min_value = 0 if badge.level in [0,10] else RankProgress.THRESHOLDS[badge.level-1]
 		bar.max_value = RankProgress.next_goal(kills); bar.value = kills
-		label.text = (RankProgress.summary(kills) if account().signed_in() else "Entre para registrar seu progresso")+"\n"+PlayClock16.display(meta().clock.total)+" · "+str(meta().confirmed.get("balance",0))+" "+str(Catalog16.data().currency.name)
+		label.text = (RankProgress.summary(kills) if account().signed_in() else "Ranking online disponível com conta")+"\n"+PlayClock16.display(meta().clock.total)+" · "+str(meta().balance())+" "+str(Catalog16.data().currency.name)
 	refresh.call(); account().changed.connect(refresh); meta().changed.connect(refresh)
 	label.tree_exiting.connect(func(): account().changed.disconnect(refresh); meta().changed.disconnect(refresh))
 	if compact:
@@ -59,9 +59,9 @@ static func ranks(menu: Node,tab: String = "ranking") -> void:
 static func shop(menu: Node,filter_class: String = "engineer") -> void:
 	menu.clear_content(); menu.menu_button(menu.content,"‹ VOLTAR",menu.show_main)
 	UI.label(menu.content,"ATELIÊ DOS SOBREVIVENTES",23,UI.LIME)
-	UI.label(menu.content,"%d %s · somente aparência" % [int(meta().confirmed.get("balance",0)),str(Catalog16.data().currency.name)],16,UI.LIME)
+	UI.label(menu.content,"%d %s · somente aparência" % [meta().balance(),str(Catalog16.data().currency.name)],16,UI.LIME)
 	UI.label(menu.content,meta().status,13,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.label(menu.content,"100 moedas por horda elegível. A partida precisa de registro online; pendências offline dependem de validação. Compras exigem conexão.",12,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.label(menu.content,"%d Brotos por horda vencida. Saldo e compras ficam salvos neste aparelho." % int(Catalog16.data().currency.horde_reward),12,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var filter := OptionButton.new(); menu.content.add_child(filter); filter.custom_minimum_size.y = 44
 	var filters := ["engineer","scout","shooter","all","owned"]
 	for title in ["Engenheiro","Batedor","Atirador","Universais","Obtidos"]: filter.add_item(title)
@@ -93,7 +93,7 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 			UI.label(card,"EXCLUSIVO · participe da derrota do Titã",13,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		else:
 			var buy: Button = menu.menu_button(card,"COMPRAR · %d" % int(item.price),func(): confirm_purchase(menu,id,filter_class))
-			buy.disabled = meta().busy or not account().signed_in() or not meta().available() or int(meta().confirmed.get("balance",0))<int(item.price)
+			buy.disabled = not meta().shop_ready() or meta().balance()<int(item.price)
 static func confirm_purchase(menu: Node,id: String,filter_class: String) -> void:
 	menu.clear_content(); var item := Catalog16.cosmetic(id)
 	if item.has("unlock"): shop(menu,filter_class); return

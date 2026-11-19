@@ -15,7 +15,7 @@ func run() -> void:
 	if not a.signed_in(): quit(1); return
 	var account: Node = root.get_node("Account"); account.set_process(false)
 	account.token = a.token; account.user_id = a.user_id; account.refresh_token = a.refresh_token; account.token_deadline = Time.get_ticks_msec()+300000
-	meta.identity_changed(); meta.backend = "service"; meta.api_url = "http://127.0.0.1:5001/demo-zombie-bloom/us-central1/account16Api"
+	meta.local_economy = false; meta.identity_changed(); meta.backend = "service"; meta.api_url = "http://127.0.0.1:5001/demo-zombie-bloom/us-central1/account16Api"
 	var reply: Dictionary = await meta.request("profile")
 	check(reply.ok and int(reply.profile.balance)==0,"Godot service client receives authenticated profile JSON")
 	meta.clock.total = 120; meta.sessions[meta.session_id] = 120

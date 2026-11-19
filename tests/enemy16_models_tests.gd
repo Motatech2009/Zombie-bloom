@@ -89,7 +89,7 @@ func check_leg_deformation(enemy: Node3D, rig: Node3D, mesh: MeshInstance3D, sk:
 			id + " leg motion leaves the arm pose independent")
 	enemy.animate_ground(.15, 1.0, id == "charger")
 	rig.sync_pose()
-	check(rig.running == (id == "charger"), id + " selects the expected walk or charge stride")
+	check(rig.running == (id in ["charger", "runner"]), id + " selects the expected walk or charge stride")
 	enemy.animate_ground(.15, 0.0)
 	rig.sync_pose()
 	check(sk.get_bone_pose_rotation(sk.find_bone("FootL")).is_equal_approx(Quaternion.IDENTITY) and
@@ -121,14 +121,20 @@ func run() -> void:
 			var source: String = rig.get_meta("separated_source16", "")
 			var expected_sources := {"walker": "errante", "armored": "blindado", "charger": "investidor", "parasite": "cao_infectado"}
 			check(not source.is_empty() and source == expected_sources.get(id, source), id + " selects its separated GLB bake")
-		if not enemy.is_boss and id in ["walker", "armored", "charger"]:
+		if not enemy.is_boss and id in ["walker", "armored", "charger", "runner", "demolisher"]:
 			check_leg_deformation(enemy, rig, mesh, sk)
 		var material: StandardMaterial3D = mesh.get_surface_override_material(0)
-		check(material.albedo_texture.get_width()==2048 and material.normal_texture.get_width()==2048,"shared 2K clay atlas is present for "+id)
+		var atlas_size := 512 if id == "runner" else 2048
+		check(material.albedo_texture.get_width() == atlas_size and material.normal_texture.get_width() == atlas_size,
+			"expected clay textures are loaded for " + id)
 		check(material.normal_enabled==not MobilePlatform.lightweight() and not material.uv1_triplanar,"material quality matches desktop/touch mode for "+id)
 		var kit := "bosses" if enemy.is_boss else "zombies"
-		if materials.has(kit): check(material==materials[kit],"atlas material is shared within "+kit+" for "+id)
-		else: materials[kit] = material
+		var atlas := "runner" if id == "runner" else kit
+		if materials.has(atlas): check(material==materials[atlas],"atlas material is shared within "+atlas+" for "+id)
+		else: materials[atlas] = material
+		if id == "runner":
+			var soles := skinned_soles(mesh, sk)
+			check(absf(soles[0].z - soles[1].z) < .10, "runner has a neutral stance with aligned soles")
 		var hp: float = enemy.health.maximum; var damage: float = enemy.spec.values.damage
 		var profile: String = rig.get_meta("profile16"); rig.show()
 		if profile=="human" or id=="parasite": VisualFactory.animate_human(rig,.15,1,0,false)
@@ -143,7 +149,8 @@ func run() -> void:
 		if id=="parasite": check(rig.get_meta("source_model_id16")=="hound" and rig.scale.is_equal_approx(Vector3.ONE*.45),"parasite uses the supplied small quadruped without a fabricated separate source")
 		if id=="titan16": check(is_instance_valid(enemy.heart) and enemy.heart.get_parent()==rig,"Titan retains its exposed-heart presentation")
 		models[kit+"/"+id] = true
-	check(models.size()==27 and materials.size()==2,"nineteen normal types and eight bosses use two shared atlas materials")
+	check(models.size()==27 and materials.size()==3 and materials.runner != materials.zombies,
+		"the runner uses its own atlas while the other models share textures")
 	var parasite: Node3D = actors.filter(func(e): return e.enemy_kind==17)[0]
 	parasite.enemy_kind = 2; parasite.spec = CampaignData.enemy_spec(2).duplicate(true); parasite.refresh_quality()
 	check(parasite.rig.get_meta("model_id16")=="brute" and parasite.rig.has_node("Skeleton3D/Character"),"parasite transformation rebuilds the supplied skinned brute")

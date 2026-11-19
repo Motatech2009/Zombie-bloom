@@ -80,11 +80,46 @@ func run() -> void:
 	w.player.position = w.sector_offset(coord)
 	check(w.exp16.kind_at(coord)=="post" and not w.exp16.trade(w.player,"medkit"),"post does not reroll or restock on 181-second revisit")
 	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[3]; w.travel_cooldown = 0; w.step_sector(3)
-	coord = Vector2i(0,-1); key = SectorGenerator.key(coord)
-	w.exp16.sectors[key] = {"kind":"titan","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
-	w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
+	var forbidden := {}
+	var legacy_titan := {"kind":"titan","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var inner := Vector2i(x, z)
+			forbidden[SectorGenerator.key(inner)] = legacy_titan.duplicate(true)
+			check(not Exploration16.titan_allowed(inner) and range(128).all(func(seed_value): return Exploration16.roll(seed_value, inner) != "titan"),
+				"no Titan roll in central sector " + str(inner))
+	forbidden["-1:1"].dead = true
+	forbidden["-1:1"].reward = {"scrap": 800}
+	var restored: Dictionary = w.exp16.dump()
+	restored.sectors.merge(forbidden, true)
+	w.exp16.restore(restored)
+	check(forbidden.keys().all(func(coord_key): return w.exp16.sectors[coord_key].kind == "normal"),
+		"loading a checkpoint removes every legacy Titan in the nine central sectors")
+	check(w.exp16.sectors["-1:1"].loot_created and w.exp16.sectors["-1:1"].reward.scrap == 800,
+		"old victories retain unclaimed loot after the sector restriction")
+	w.exp16.sectors["0:-1"] = legacy_titan.duplicate(true)
+	w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0
+	check(w.step_sector(0) and w.exp16.kind_at(Vector2i(0,-1)) == "normal" and not w.exp16.nodes.has("0:-1"),
+		"entering the restricted sector cannot instantiate a stale Titan")
+	coord = Vector2i(0,-2); key = SectorGenerator.key(coord)
+	w.exp16.sectors[key] = legacy_titan.duplicate(true)
+	w.exp16.sectors[key].pos = [15.0,65.0]
+	w.player.position = w.sector_offset(Vector2i(0,-1))+SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
 	var boss: Node3D = w.exp16.nodes[key].boss; boss.set_physics_process(false)
 	check(boss.health.maximum==20000 and boss.enemy_kind==20,"optional Titan has fixed daytime 20000 HP and separate species")
+	check(w.coord_at(boss.global_position) == coord, "legacy Titan position is clamped inside its eligible sector")
+	boss.position.z = 0.0
+	boss.set_process(false)
+	for i in range(25): boss.update_titan_pose(1.0 / 60.0, 1.0)
+	var left: float = boss.rig.get_node("LegL").rotation.x
+	var right: float = boss.rig.get_node("LegR").rotation.x
+	check(absf(left) > .12 and is_equal_approx(left, -right), "Titan walks with alternating legs")
+	boss.cast16 = "slam"; boss.windup = .4
+	for i in range(25): boss.update_titan_pose(1.0 / 60.0, 0.0)
+	check(boss.rig.get_node("ArmL").rotation.x > .85 and boss.rig.rotation.x < -.08, "Titan raises the arms and leans back before the slam")
+	boss.windup = 0.0
+	for i in range(60): boss.update_titan_pose(1.0 / 60.0, 0.0)
+	check(absf(boss.rig.rotation.x) < .01 and absf(boss.rig.get_node("LegL").rotation.x) < .02, "Titan returns smoothly to the idle pose")
 	boss.exposed = 3; w.damage_point16 = boss.to_global(Vector3(0,3.4,-1)); boss.take_damage(100); w.damage_point16 = Vector3.INF
 	check(is_equal_approx(boss.health.current,19850),"real chest hit while exposed receives 1.5x damage")
 	boss.take_damage(100); check(is_equal_approx(boss.health.current,19750),"unlocated or ordinary damage does not get weak-point multiplier")
@@ -106,7 +141,7 @@ func run() -> void:
 	boss.global_position = old_boss_pos; w.player.global_position = old_player_pos
 	boss.health.current = 10000; w.exp16.remember()
 	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[2]; w.travel_cooldown = 0; w.step_sector(2)
-	w.elapsed = 400; w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
+	w.elapsed = 400; w.player.position = w.sector_offset(Vector2i(0,-1))+SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
 	boss = w.exp16.nodes[key].boss; boss.set_physics_process(false)
 	check(is_equal_approx(boss.health.current,10000),"Titan HP survives sector cache expiry")
 	w.shot_owner = 1; boss.take_damage(100000); w.shot_owner = 0; w.exp16.remember()
@@ -125,7 +160,7 @@ func run() -> void:
 	check(reward_loot.contents.is_empty() and w.exp16.sectors[key].reward.is_empty(),"the final item updates persistent Titan loot immediately before its node disappears")
 	reward_loot.queue_free(); await process_frame
 	w.player.position = w.sector_offset(coord)+SectorGenerator.EXITS[2]; w.travel_cooldown = 0; w.step_sector(2)
-	w.elapsed = 800; w.player.position = SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
+	w.elapsed = 800; w.player.position = w.sector_offset(Vector2i(0,-1))+SectorGenerator.EXITS[0]; w.travel_cooldown = 0; w.step_sector(0)
 	check(not w.exp16.nodes[key].has("loot") and w.exp16.sectors[key].reward.is_empty(),"fully claimed Titan loot never respawns after cache expiry and sector reload")
 	w.queue_free(); await create_timer(.4).timeout
 	create_world("rescue")

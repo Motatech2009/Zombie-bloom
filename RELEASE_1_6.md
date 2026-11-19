@@ -230,3 +230,13 @@ A RC11 usa APK 1611 e protocolo cooperativo 22. A conexão entre RC11 e versões
 Os limites por tipo da tabela são aplicados até a conclusão da horda 20. Na preparação seguinte, a equipe pode passar dessas quantidades. O desbloqueio acompanha o save e a partida cooperativa. A cota por preparação e o teto geral da base continuam sendo aplicados.
 
 A RC12 usa APK 1612 e protocolo cooperativo 23.
+
+### RC13 — locomoção de infectados e carteira local
+
+O modelo novo do Corredor usa pose neutra, albedo próprio e 15 ossos. O Demolidor tem pés separados na geometria e articulação independente dos joelhos e tornozelos.
+
+O Titã Enraizado só aparece em setores com pelo menos um eixo de módulo 2 ou mais. O carregamento elimina Titãs antigos dos nove setores centrais e preserva baús já conquistados. A caminhada alterna as pernas e os ataques passam por preparação, impacto e recuperação, com animação suavizada para os jogadores conectados.
+
+O Ateliê usa uma carteira de Brotos salva no aparelho. Cada horda elegível concluída credita 100 Brotos, inclusive sem conta conectada. Compras e equipamentos são locais. A primeira migração pode importar o saldo e os itens já confirmados no perfil em cache, e jogar novamente uma horda do mesmo save não paga duas vezes.
+
+A RC13 usa APK 1613 e protocolo cooperativo 24.

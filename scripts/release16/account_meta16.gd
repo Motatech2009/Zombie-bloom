@@ -18,6 +18,8 @@ var disk_left := 5.0
 var sync_left := 120.0
 var api_url := ""
 var backend := "firestore"
+var local_economy := false
+var wallet := LocalWallet16.new()
 var status := "Entre para sincronizar horas e cosméticos."
 var activity := false
 var last_horde := 0
@@ -30,6 +32,10 @@ func _ready() -> void:
 	if cfg.load("res://online.cfg")==OK:
 		api_url = str(cfg.get_value("services16","url",""))
 		backend = str(cfg.get_value("services16","backend","firestore"))
+	local_economy = bool(cfg.get_value("services16", "offline_wallet", true))
+	if local_economy:
+		wallet.load_wallet()
+		status = "Carteira salva neste aparelho."
 	Account.changed.connect(identity_changed)
 	identity_changed()
 func identity_changed() -> void:
@@ -44,6 +50,7 @@ func identity_changed() -> void:
 			if str(data.get("economy_backend","service"))!=backend:
 				registered = {}; confirmed = {"balance":0,"owned":[],"equipped":{},"active_seconds":0,"longest_seconds":0}
 			clock.total = maxf(0,float(data.get("total",0))); clock.longest = maxf(0,float(data.get("longest",0)))
+	if local_economy: wallet.import_legacy(confirmed)
 	session_id = Crypto.new().generate_random_bytes(16).hex_encode(); clock.last_ms = Time.get_ticks_msec(); sync_left = 2
 	changed.emit()
 func has_live_world() -> bool:
@@ -55,9 +62,10 @@ func observe_progress() -> void:
 		titan_victory(bound_run,str(world.player.get_meta("titan_victory16","")))
 	var reward_wave: int = int(world.upgrades.state(world.player).get("through",world.waves.wave))
 	var prior := int(observed_hordes.get(bound_run,reward_wave))
-	if reward_wave>prior:
-		for wave in range(prior+1,reward_wave+1): horde(bound_run,wave)
-	observed_hordes[bound_run] = maxi(prior,reward_wave)
+	for wave in range(prior+1,reward_wave+1):
+		if not horde(bound_run,wave): break
+		prior = wave
+	observed_hordes[bound_run] = prior
 func release_world(previous: Node3D) -> void:
 	if world!=previous: return
 	# Capture the final reward watermark before the old scene's children are freed.
@@ -109,16 +117,19 @@ func request(action: String,data: Dictionary = {}) -> Dictionary:
 func sync() -> void:
 	sync_left = 120
 	if busy or not available() or uid.is_empty(): return
-	var needs_registration: bool = has_live_world() and not registered.has(world.account_run_id)
-	var equip_pending := trophy_sync_pending()
-	if sessions.is_empty() and pending.is_empty() and titan_pending.is_empty() and profile_loaded and not needs_registration and not equip_pending: return
+	var needs_registration: bool = not local_economy and has_live_world() and not registered.has(world.account_run_id)
+	var wallet_pending := not local_economy and (not pending.is_empty() or not titan_pending.is_empty() or trophy_sync_pending())
+	if sessions.is_empty() and profile_loaded and not needs_registration and not wallet_pending: return
 	busy = true; var owner := uid
 	var reply := await request("sync",{"sessions":session_batch()}) if not sessions.is_empty() else await request("profile")
 	if owner!=uid: busy = false; return
 	if reply.ok:
-		confirmed = reply.profile; profile_loaded = true; status = "Perfil sincronizado."
+		confirmed = reply.profile; profile_loaded = true
 		for id in reply.get("ack_sessions",[]): sessions.erase(id)
-	else: status = str(reply.get("error","Sincronização pendente."))
+	if local_economy:
+		busy = false; persist(); changed.emit()
+		return
+	status = "Perfil sincronizado." if reply.ok else str(reply.get("error","Sincronização pendente."))
 	if reply.ok and has_live_world():
 		var run: String = world.account_run_id
 		if not registered.has(run) or str(confirmed.get("active_match",run))!=run:
@@ -158,11 +169,29 @@ func sync() -> void:
 			if equipment.ok: confirmed = equipment.profile
 			else: status = str(equipment.get("error","Equipamento pendente.")); break
 	busy = false; persist(); changed.emit()
-func horde(run: String,wave: int) -> void:
-	if uid.is_empty() or clock.afk: return
+func balance() -> int:
+	return int(wallet.data.balance if local_economy else confirmed.get("balance", 0))
+
+func shop_ready() -> bool:
+	return local_economy or (not busy and Account.signed_in() and available())
+
+func horde(run: String,wave: int) -> bool:
+	if clock.afk: return true
+	if local_economy:
+		var credited := wallet.credit(run, wave)
+		if credited > 0:
+			status = "+%d %s nesta horda." % [credited, Catalog16.data().currency.name]
+			changed.emit()
+		return credited >= 0
+	if uid.is_empty(): return true
 	var item := {"match_id":run,"wave":wave}
 	if not item in pending: pending.append(item); dirty = true; persist(); sync_left = 0
+	return true
 func purchase(id: String) -> void:
+	if local_economy:
+		status = wallet.purchase(id)
+		changed.emit()
+		return
 	if Catalog16.cosmetic(id).has("unlock"): status = "Exclusivo por derrotar o Titã."; changed.emit(); return
 	if busy: return
 	busy = true; var owner := uid
@@ -175,8 +204,16 @@ func equip(class_id: String,slot: String,id: String) -> void:
 	if class_id not in ["engineer","scout","shooter"] or slot not in ["head","outfit","backpack","effect"]: return
 	if id=="COS-TITAN-01" and slot=="head" and has_cosmetic(id):
 		trophy_equipped[class_id] = id; persist(); changed.emit()
-		if uid.is_empty() or id not in confirmed.get("owned",[]) or busy: return
-	elif slot=="head": trophy_equipped.erase(class_id); persist()
+		if local_economy or uid.is_empty() or id not in confirmed.get("owned",[]) or busy: return
+	if local_economy:
+		if wallet.equip(class_id, slot, id):
+			if slot=="head": trophy_equipped.erase(class_id); persist()
+			status = "Cosmético retirado." if id.is_empty() else "Cosmético equipado."
+		else:
+			status = "Não foi possível equipar este cosmético."
+		changed.emit()
+		return
+	elif slot=="head" and id!="COS-TITAN-01": trophy_equipped.erase(class_id); persist()
 	if uid.is_empty() and id.is_empty(): changed.emit(); return
 	if busy: return
 	busy = true; var owner := uid
@@ -186,7 +223,8 @@ func equip(class_id: String,slot: String,id: String) -> void:
 		else: status = str(reply.get("error","Não foi possível equipar."))
 	busy = false; persist(); changed.emit()
 func outfit(class_id: String) -> Dictionary:
-	var value: Dictionary = confirmed.get("equipped",{}).get(class_id,{}).duplicate()
+	var equipped: Dictionary = wallet.data.equipped if local_economy else confirmed.get("equipped", {})
+	var value: Dictionary = equipped.get(class_id,{}).duplicate()
 	if trophy_equipped.get(class_id,"")=="COS-TITAN-01" and has_cosmetic("COS-TITAN-01"): value.head = "COS-TITAN-01"
 	return value
 
@@ -198,14 +236,15 @@ func session_batch() -> Dictionary:
 	return result
 
 func has_cosmetic(id: String) -> bool:
-	return id in confirmed.get("owned",[]) or (id=="COS-TITAN-01" and not titan_earned.is_empty())
+	var owned: Array = wallet.data.owned if local_economy else confirmed.get("owned", [])
+	return id in owned or (id=="COS-TITAN-01" and not titan_earned.is_empty())
 
 func titan_victory(run: String,encounter: String) -> void:
 	if encounter.is_empty() or has_cosmetic("COS-TITAN-01"): return
 	titan_earned[encounter] = true
-	if not uid.is_empty():
+	if not local_economy and not uid.is_empty():
 		titan_pending.append({"match_id":run,"encounter_id":encounter}); sync_left = 0
-	status = "Coroa do Enraizado conquistada." if uid.is_empty() else "Coroa conquistada · confirmação online pendente."
+	status = "Coroa do Enraizado conquistada." if local_economy or uid.is_empty() else "Coroa conquistada · confirmação online pendente."
 	dirty = true; persist(); changed.emit()
 
 func trophy_sync_pending() -> bool:

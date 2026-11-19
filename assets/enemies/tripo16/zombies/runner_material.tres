@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/zombies/runner_albedo.jpg" id="albedo"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/zombies/runner_normal.jpg" id="normal"]
+
+[resource]
+metallic_specular = 0.22
+roughness = 0.94
+normal_enabled = true
+normal_scale = 0.45
+albedo_texture = ExtResource("albedo")
+normal_texture = ExtResource("normal")

@@ -11,13 +11,13 @@
   },
   {
     "bones": 15,
-    "bounds": "[P: (-0.548791, 0.0, -0.307633), S: (1.229038, 1.9, 0.861971)]",
+    "bounds": "[P: (-0.433595, 0.0, -0.237855), S: (0.867189, 1.9, 0.475711)]",
     "id": "runner",
     "kit": "zombies",
     "profile": "human",
-    "sha256": "09de21dc5b36530674234f2cedff202e0b21565319de72158e67755ca241540c",
+    "sha256": "a48cfdc885a75e80bfcc9b414fdfe2c0ddce9cd222ce29843cf240510f623b28",
     "source": "corredor.glb",
-    "triangles": 2742
+    "triangles": 1922
   },
   {
     "bones": 15,
@@ -47,7 +47,7 @@
     "profile": "human",
     "sha256": "134bb255bc4ff9d10007f08b65381d5453fbb70e07f2b7f709a7e2bed13d5993",
     "source": "demolidor.glb",
-    "triangles": 1746
+    "triangles": 2036
   },
   {
     "bones": 15,

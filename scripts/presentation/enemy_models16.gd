@@ -9,10 +9,13 @@ static func create(actor: Node3D,factor: float) -> Node3D:
 	if not ResourceLoader.exists(filename): return null
 	var rig: Node3D = load(filename).instantiate(); actor.add_child(rig)
 	if MobilePlatform.lightweight():
-		if not lean_materials.has(kit):
-			var original: StandardMaterial3D = rig.get_node("Skeleton3D/Character").get_surface_override_material(0)
-			var lean: StandardMaterial3D = original.duplicate(); lean.normal_enabled = false; lean.roughness_texture = null; lean.metallic_texture = null; lean_materials[kit] = lean
-		rig.get_node("Skeleton3D/Character").set_surface_override_material(0,lean_materials[kit])
+		var mesh: MeshInstance3D = rig.get_node("Skeleton3D/Character")
+		var original: StandardMaterial3D = mesh.get_surface_override_material(0)
+		if not lean_materials.has(original):
+			var lean: StandardMaterial3D = original.duplicate()
+			lean.normal_enabled = false
+			lean_materials[original] = lean
+		mesh.set_surface_override_material(0, lean_materials[original])
 	var profile: String = rig.get_meta("profile16","human")
 	rig.set_meta("source_model_id16",source_id); rig.set_meta("model_id16",id)
 	rig.scale = Vector3.ONE*(factor if profile=="human" else .45 if id=="parasite" else 1.0)

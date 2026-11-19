@@ -17,16 +17,23 @@ func run() -> void:
 	MobilePlatform.force_touch = "--mobile" in OS.get_cmdline_user_args()
 	GameSettings.volume = .5; GameSettings.music_volume = .45
 	var meta: Node = root.get_node("Meta16")
-	meta.uid = "scene-transition-test"; meta.api_url = ""; meta.sync_left = 999
+	meta.local_economy = false; meta.uid = "scene-transition-test"; meta.api_url = ""; meta.sync_left = 999
 	for scenario in ["campaign","endless","post","titan","rescue","host"]:
 		meta.titan_earned = {}; meta.titan_pending = []
 		if scenario=="host": check(root.get_node("Coop").host_session(24603)==OK,"real transport opens for host exit")
 		var w := make_world(scenario if scenario in ["campaign","rescue"] else "endless")
 		if scenario in ["endless","post","titan"]:
-			w.exp16.sectors["1:0"] = {"kind":scenario if scenario!="endless" else "normal","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
+			var state := {"kind":scenario if scenario!="endless" else "normal","hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
+			w.exp16.sectors["1:0"] = state
+			if scenario == "titan":
+				w.exp16.sectors["1:0"] = state.duplicate(true)
+				w.exp16.sectors["1:0"].kind = "normal"
+				w.exp16.sectors["2:0"] = state
 			w.player.position = SectorGenerator.EXITS[1]; w.travel_cooldown = 0
 			check(w.step_sector(1),scenario+" exit starts in an explored sector")
 		if scenario=="titan":
+			w.player.position = w.sector_offset(Vector2i(1,0))+SectorGenerator.EXITS[1]; w.travel_cooldown = 0
+			check(w.step_sector(1) and w.exp16.kind_at(Vector2i(2,0)) == "titan", "Titan exit starts in an eligible second-layer sector")
 			var boss: Node3D
 			for enemy in get_nodes_in_group("enemies"):
 				if enemy.spec.id=="titan16": boss = enemy

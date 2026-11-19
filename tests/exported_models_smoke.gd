@@ -7,11 +7,12 @@ func check(ok: bool,text: String) -> void:
 	if ok: print("PASS: "+text)
 	else: failures += 1; push_error("FAIL: "+text)
 func run() -> void:
-	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.12","actual exported package reports RC12")
+	check(ProjectSettings.get_setting("application/config/version")=="1.6.0-rc.13","actual exported package reports RC13")
 	check(FortressData.BUILD_LIMITS == {"turret": 12, "cannon": 5, "raised_turret": 5, "shock": 5, "wire": 30, "spikes": 30},
 		"export contains the RC11 construction limits")
 	check(FortressData.BUILD_LIMIT_UNLOCK_WAVE == 20, "export unlocks the construction limits after horde twenty")
-	check(root.get_node("Coop").PROTOCOL_VERSION == 23, "export uses the RC12 cooperative protocol")
+	check(root.get_node("Coop").PROTOCOL_VERSION == 24, "export uses the RC13 cooperative protocol")
+	check(root.get_node("Meta16").local_economy, "export enables the local Brotos wallet")
 	for id in ["cannon","shock","raised_turret","core"]:
 		for tier in range(1,5 if id=="core" else 4):
 			var scene: Node3D = load("res://assets/fortress/"+id+"_"+str(tier)+".tscn").instantiate()
@@ -40,7 +41,7 @@ func run() -> void:
 		for id in ids:
 			var visual: Node3D = load("res://assets/enemies/tripo16/"+kit+"/"+id+".tscn").instantiate(); holder.add_child(visual)
 			var model: MeshInstance3D = visual.get_node("Skeleton3D/Character")
-			check(visual.get_meta("imported_enemy16",false) and model.skin.get_bind_count()>0 and model.get_surface_override_material(0).albedo_texture.get_width()==2048,"export contains supplied skinned "+kit+"/"+id)
+			check(visual.get_meta("imported_enemy16",false) and model.skin.get_bind_count()>0 and model.get_surface_override_material(0).albedo_texture.get_width()==(512 if kit=="zombies" and id=="runner" else 2048),"export contains supplied skinned "+kit+"/"+id)
 			if kit == "zombies":
 				check(visual.has_meta("separated_source16"), "export contains the separated GLB bake for " + id)
 	holder.queue_free(); await process_frame; await process_frame

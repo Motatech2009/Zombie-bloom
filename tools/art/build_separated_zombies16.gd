@@ -1,5 +1,5 @@
 extends SceneTree
-## Bake the creator's separated GLBs into the gameplay scenes and shared RC9 atlas.
+## Bake the creator's separated GLBs into gameplay scenes. Pass optional model IDs to rebuild only those models.
 ## godot --headless --path . --script res://tools/art/build_separated_zombies16.gd -- /path/to/ZombieBloom_Modelos_Separados
 
 const OUT := "res://assets/enemies/tripo16/zombies/"
@@ -31,6 +31,10 @@ const LEG_LANDMARKS := {
 		Vector3(-.20, .46, .09), Vector3(-.19, .13, .02),
 		Vector3(.18, .46, .09), Vector3(.17, .13, .02),
 	],
+	"demolisher": [
+		Vector3(-.19, .45, .00), Vector3(-.184, .15, -.015),
+		Vector3(.15, .45, .06), Vector3(.174, .15, .02),
+	],
 	"charger": [
 		Vector3(-.18, .41, .02), Vector3(-.20, .13, .01),
 		Vector3(.14, .41, .04), Vector3(.17, .13, .00),
@@ -53,11 +57,16 @@ func _initialize() -> void:
 
 func run() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() != 1:
+	if args.is_empty():
 		printerr("Pass the directory containing the separated GLBs.")
 		quit(1)
 		return
-	for id: String in MODELS:
+	var ids: Array = MODELS.keys() if args.size() == 1 else Array(args.slice(1))
+	for id: String in ids:
+		if not MODELS.has(id):
+			printerr("Unknown model: ", id)
+			quit(1)
+			return
 		var source := args[0].path_join(MODELS[id] + ".glb")
 		if not FileAccess.file_exists(source):
 			printerr("Missing source: ", source)
@@ -66,16 +75,20 @@ func run() -> void:
 
 	var report_path := OUT.trim_suffix("/").get_base_dir().path_join("geometry.json")
 	var previous: Array = JSON.parse_string(FileAccess.get_file_as_string(report_path))
-	var report: Array = []
-	for id: String in MODELS:
+	var updated := {}
+	for id: String in ids:
 		var path := args[0].path_join(MODELS[id] + ".glb")
 		var info := bake_model(path, id)
 		if info.is_empty():
 			printerr("Failed to bake ", id)
 			quit(1)
 			return
-		report.append(info)
-	report.append_array(previous.filter(func(row: Dictionary) -> bool: return row.kit == "bosses"))
+		updated[id] = info
+	var report: Array = previous.map(func(row: Dictionary) -> Dictionary:
+		if row.kit != "zombies": return row
+		row.bones = int(row.bones)
+		row.triangles = int(row.triangles)
+		return updated.get(row.id, row))
 	var file := FileAccess.open(report_path, FileAccess.WRITE)
 	if file == null:
 		quit(1)
@@ -93,6 +106,8 @@ func bake_model(path: String, id: String) -> Dictionary:
 	var source := document.generate_scene(state)
 	var source_mesh := source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
 	var data := source_mesh.mesh.surface_get_arrays(0)
+	# The replacement runner is a standalone unskinned sculpt with its own UVs.
+	var standalone_runner := id == "runner" and source_mesh.skin == null
 	source.free()
 
 	var points: PackedVector3Array = data[Mesh.ARRAY_VERTEX]
@@ -197,7 +212,7 @@ func bake_model(path: String, id: String) -> Dictionary:
 	model.skeleton = NodePath("..")
 	model.skin = skeleton.create_skin_from_rest_transforms()
 	model.custom_aabb = fit.grow(.5)
-	model.set_surface_override_material(0, load(OUT + "material.tres"))
+	model.set_surface_override_material(0, load(OUT + ("runner_material.tres" if standalone_runner else "material.tres")))
 
 	var controls := ["ArmL", "ArmR", "LegL", "LegR"]
 	if profile == "flyer":
@@ -289,8 +304,11 @@ func separate_legs(geometry: Array, index: PackedInt32Array, seam: float, hip_he
 					outlines[from].append(to)
 	for loop in closed_outlines(outlines):
 		var contour := PackedVector2Array()
+		var cap_sample: Vector2i = loop[0]
 		for point: Vector2i in loop:
 			contour.append(Vector2(point) / 10000.0)
+			if point.x < cap_sample.x:
+				cap_sample = point
 		# The cap stops where both sides share the pelvis weight.
 		var below_hip := PackedVector2Array([
 			Vector2(-4, -4), Vector2(hip_height, -4),
@@ -306,12 +324,7 @@ func separate_legs(geometry: Array, index: PackedInt32Array, seam: float, hip_he
 				for vertex in cap:
 					points.append(Vector3(seam, vertex.x, vertex.y))
 					normals.append(Vector3.RIGHT if side == 0 else Vector3.LEFT)
-					var nearest: Vector2i = loop[0]
-					var quantized := Vector2i((vertex * 10000.0).round())
-					for candidate: Vector2i in loop:
-						if candidate.distance_squared_to(quantized) < nearest.distance_squared_to(quantized):
-							nearest = candidate
-					uvs.append(cut_uvs[nearest])
+					uvs.append(cut_uvs[cap_sample] + vertex * .001)
 					sides.append(side)
 				for i in range(0, triangles.size(), 3):
 					var first := start + triangles[i]

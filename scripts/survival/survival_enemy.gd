@@ -170,7 +170,7 @@ func warning_color() -> Color:
 func ranged_only() -> bool:
 	return spec.id in ["spitter","mortar","lobber"]
 
-func normal_step(delta: float) -> void:
+func normal_step(delta: float, update_pose: bool = true) -> void:
 	clock += delta
 	attack_left = maxf(0,attack_left-delta)
 	think_left -= delta
@@ -212,12 +212,13 @@ func normal_step(delta: float) -> void:
 			melee_target = victim; melee_left = .45 if is_boss or spec.id=="cleaver" else .28
 			attack_left = float(spec.values.interval)+melee_left
 	rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-flat.x,-flat.z),minf(1,delta*10))
-	if spec.id=="flyer":
-		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
-	elif spec.id=="hound":
-		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
-	else: animate_ground(clock * speed / 2, 1.0 if speed > 0 else 0.0)
-	animate_melee()
+	if update_pose:
+		if spec.id=="flyer":
+			for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
+		elif spec.id=="hound":
+			for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
+		else: animate_ground(clock * speed / 2, 1.0 if speed > 0 else 0.0)
+		animate_melee()
 	recoil = maxf(0,recoil-delta*3)
 
 func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
@@ -283,11 +284,14 @@ func animate_cast() -> void:
 	rig.get_node("ArmR").rotation.x = 1.6-sin(Time.get_ticks_msec()*.015)*.1
 	rig.rotation.x = -.15
 
-func _process(_delta: float) -> void:
-	visibility_left -= _delta
+func update_visibility(delta: float) -> void:
+	visibility_left -= delta
 	if visibility_left<=0:
 		visibility_left = .2
 		rig.visible = visible_near_camera()
+
+func _process(delta: float) -> void:
+	update_visibility(delta)
 	if proxy or health.dead or not rig.visible: return
 	if windup>0: animate_cast()
 	else: rig.rotation.x = 0

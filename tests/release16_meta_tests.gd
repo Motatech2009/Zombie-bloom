@@ -40,5 +40,28 @@ func run() -> void:
 	meta.world = null; meta.persist()
 	var stored = JSON.parse_string(FileAccess.get_file_as_string(meta.path()))
 	check(stored.observed_hordes.has(w.account_run_id),"reward observation watermark is persisted with the queue")
-	DirAccess.remove_absolute(meta.path()); meta.queue_free(); w.queue_free(); await create_timer(.35).timeout
+	DirAccess.remove_absolute(meta.path())
+	meta.local_economy = true; meta.uid = ""; meta.pending = []
+	meta.wallet.path = "user://wallet16-test-" + Crypto.new().generate_random_bytes(4).hex_encode() + ".json"
+	meta.observed_hordes = {}; meta.bound_run = ""; meta.world = w; meta._process(0)
+	var requests_before: int = meta.requests
+	for wave in range(2, 5):
+		w.waves.wave = wave; w.waves.running = true
+		w.waves.complete(); meta._process(0)
+	check(meta.balance() == 300 and meta.pending.is_empty() and meta.requests == requests_before,
+		"three completed hordes award 300 immediately to a guest with no service request")
+	meta.horde(w.account_run_id, 4); meta.horde(w.account_run_id, 2)
+	check(meta.balance() == 300, "replaying the same wave or restoring an older checkpoint grants no duplicate")
+	await meta.purchase("COS-ENG-01")
+	await meta.purchase("COS-ENG-01")
+	check(meta.balance() == 0 and meta.wallet.data.owned.size() == 1, "offline purchase debits exactly once")
+	await meta.equip("scout", "head", "COS-ENG-01")
+	await meta.equip("engineer", "head", "COS-ENG-01")
+	var reloaded := LocalWallet16.new()
+	reloaded.path = meta.wallet.path; reloaded.load_wallet()
+	check(reloaded.data.owned == ["COS-ENG-01"] and reloaded.data.equipped.engineer.head == "COS-ENG-01" and not reloaded.data.equipped.has("scout"),
+		"purchase and class-validated equipment persist with the offline wallet")
+	check(reloaded.credit(w.account_run_id, 3) == 0, "disk reload preserves the anti-duplicate watermark")
+	DirAccess.remove_absolute(meta.wallet.path); meta.world = null
+	meta.queue_free(); w.queue_free(); await create_timer(.35).timeout
 	print("RELEASE16 META RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

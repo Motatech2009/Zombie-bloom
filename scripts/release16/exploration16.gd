@@ -4,11 +4,23 @@ var world: Node3D
 var sectors: Dictionary = {}
 var nodes: Dictionary = {}
 var tick_left := 0.0
+const TITAN_SECTOR_EDGE := 58.0
+
+static func titan_allowed(coord: Vector2i) -> bool:
+	return maxi(absi(coord.x), absi(coord.y)) >= 2
+
+static func sanitize_encounter(coord: Vector2i, state: Dictionary) -> void:
+	if state.get("kind") != "titan" or titan_allowed(coord):
+		return
+	state.kind = "normal"
+	# A chest from a previously defeated Titan remains collectible.
+	state.loot_created = state.dead and not state.reward.is_empty()
+
 static func roll(seed_value: int,coord: Vector2i) -> String:
 	if coord==Vector2i.ZERO: return "normal"
 	var rng := RandomNumberGenerator.new(); rng.seed = hash("special16:%d:%s" % [seed_value,SectorGenerator.key(coord)])
 	var n := rng.randi_range(0,99)
-	return ("titan" if maxi(absi(coord.x),absi(coord.y))>=2 else "normal") if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
+	return ("titan" if titan_allowed(coord) else "normal") if n<int(Catalog16.data().encounters.boss_percent) else "post" if n<int(Catalog16.data().encounters.boss_percent)+int(Catalog16.data().encounters.post_percent) else "normal"
 func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 	if coord==Vector2i.ZERO: return d
 	if world.game_mode=="rescue":
@@ -16,6 +28,7 @@ func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 	var key := SectorGenerator.key(coord)
 	if not sectors.has(key): sectors[key] = {"kind":roll(world.world_seed,coord),"hp":20000.0,"dead":false,"reward":{},"loot_created":false,"stocks":{},"pos":[15.0,0.0]}
 	var s: Dictionary = sectors[key]
+	sanitize_encounter(coord, s)
 	d.special16 = s.kind
 	if s.kind=="normal": return d
 	# Stable special encounter; normal sector cache expiry never rerolls it.
@@ -26,7 +39,9 @@ func decorate(d: Dictionary,coord: Vector2i) -> Dictionary:
 		d.roster = d.roster.map(func(k): return 2 if int(k)==8 else k)
 		if d.has("base_roster"): d.base_roster = d.base_roster.map(func(k): return 2 if int(k)==8 else k)
 	return d
-func kind_at(coord: Vector2i) -> String: return sectors.get(SectorGenerator.key(coord),{}).get("kind","normal")
+func kind_at(coord: Vector2i) -> String:
+	var kind: String = sectors.get(SectorGenerator.key(coord), {}).get("kind", "normal")
+	return "normal" if kind == "titan" and not titan_allowed(coord) else kind
 func safe(point: Vector3) -> bool:
 	var coord: Vector2i = world.coord_at(point)
 	return kind_at(coord)=="post" and (point-world.sector_offset(coord)).length()<14
@@ -34,7 +49,10 @@ func load_sector() -> void:
 	if world.field_root==null: return
 	var key := SectorGenerator.key(world.sector_coord)
 	var s: Dictionary = sectors.get(key,{})
-	if s.is_empty() or s.kind=="normal": return
+	if s.is_empty(): return
+	sanitize_encounter(world.sector_coord, s)
+	var previous_reward: bool = s.dead and not s.reward.is_empty() and (s.kind == "titan" or s.get("loot_created", false))
+	if s.kind == "normal" and not previous_reward: return
 	var existing: Node3D = nodes.get(key,{}).get("root")
 	if is_instance_valid(existing) and existing.is_inside_tree() and not existing.is_queued_for_deletion(): return
 	var root := Node3D.new(); root.name = "Special16"; world.field_root.add_child(root)
@@ -42,16 +60,16 @@ func load_sector() -> void:
 	if s.kind=="post":
 		build_post(root); return
 	if world.is_client: return
-	if not s.dead:
+	if s.kind == "titan" and not s.dead:
 		var boss := CharacterBody3D.new(); boss.set_script(load("res://scripts/release16/titan16.gd")); boss.world = world
 		boss.spec = CampaignData.enemy_spec(2).duplicate(true); boss.spec.id = "titan16"; boss.spec.title = "Titã Enraizado"
 		boss.spec.values.scale = 3.0; boss.spec.values.speed = 1.5; boss.spec.values.damage = 25
 		boss.enemy_kind = 20; boss.is_boss = true; boss.field_enemy = true; boss.encounter_index = -1; boss.net_id = world.next_id()
-		boss.aim_height = 3.4; boss.position = Vector3(float(s.pos[0]),0,float(s.pos[1])); boss.set_meta("titan16",true); boss.encounter_key = key
+		boss.aim_height = 3.4; boss.position = Vector3(clampf(s.pos[0], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE), 0, clampf(s.pos[1], -TITAN_SECTOR_EDGE, TITAN_SECTOR_EDGE)); boss.set_meta("titan16",true); boss.encounter_key = key
 		world.field_root.add_child(boss); boss.health.setup(20000); boss.health.current = float(s.hp); boss.set_meta("night_hp",1.0); boss.set_meta("night_damage",1.0); world.v15.day.apply_enemy(boss)
 		world.enemy_index[boss.net_id] = boss; var id: int = boss.net_id; boss.tree_exiting.connect(func(): world.enemy_index.erase(id)); nodes[key].boss = boss
 		call_deferred("announce_titan",key)
-	if s.kind=="titan" and s.dead and not s.reward.is_empty():
+	if previous_reward:
 		var loot: Node3D = world.spawn_loot(world.field_root.to_global(Vector3(15,0,3)),s.reward.duplicate(),0,"",0,false,true,true)
 		if loot!=null: loot.set_meta("special16",true); loot.set_meta("encounter16",key); world.mark_boss_drop(loot); nodes[key].loot = loot
 func announce_titan(key: String) -> void:
@@ -148,7 +166,12 @@ func tick(delta: float) -> void:
 	for key in nodes.keys():
 		if not is_instance_valid(nodes[key].get("root")): nodes.erase(key)
 func dump() -> Dictionary: remember(); return {"sectors":sectors.duplicate(true)}
-func restore(data: Dictionary) -> void: sectors = data.get("sectors",{}).duplicate(true)
+func restore(data: Dictionary) -> void:
+	sectors = data.get("sectors", {}).duplicate(true)
+	for key: String in sectors:
+		var axes := key.split(":")
+		if axes.size() == 2 and axes[0].is_valid_int() and axes[1].is_valid_int():
+			sanitize_encounter(Vector2i(int(axes[0]), int(axes[1])), sectors[key])
 static func valid(data: Variant) -> bool:
 	if not data is Dictionary or not data.get("sectors") is Dictionary or data.sectors.size()>8192: return false
 	for key in data.sectors:
