@@ -29,6 +29,26 @@ static var fragment_mesh: Mesh
 static var fungus_mesh: SphereMesh
 static var solid_material: StandardMaterial3D
 static var light_material: StandardMaterial3D
+static var warmed := false
+
+static func warm_render(owner_world: Node3D) -> void:
+	if warmed or DisplayServer.get_name() == "headless": return
+	var stage := Node3D.new()
+	stage.process_mode = Node.PROCESS_MODE_DISABLED
+	owner_world.add_child(stage)
+	var focus: Vector3 = owner_world.player.global_position
+	stage.global_position = focus - Vector3.UP * .8
+	var samples := ["area", "line", "square", "mold", "wind", "howl", "mushrooms"]
+	for i in range(samples.size()):
+		var effect := from_state(owner_world, {"p":focus,"dir":Vector3.FORWARD,"fx18":samples[i],
+			"s":1.0,"w":.5,"life":1.0,"age":.35,"warning":i<3})
+		effect.position = Vector3((i % 4) * .32 - .48, 0, floorf(i / 4.0) * .4)
+		effect.scale = Vector3.ONE * .13
+		stage.add_child(effect)
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(stage):
+		warmed = true
+		stage.queue_free()
 
 static func prepare() -> void:
 	if fragment_mesh != null: return
@@ -147,6 +167,12 @@ func _ready() -> void:
 	extent = data.s
 	width = data.w
 	lifetime = data.life
+	if in_local_sector(): create_visual()
+
+func in_local_sector() -> bool:
+	return world.player == null or world.region_at(world.player.global_position) == region_key
+
+func create_visual() -> void:
 	if data.warning:
 		create_warning()
 	else:
@@ -298,7 +324,12 @@ func _process(delta: float) -> void:
 			set_process(false)
 		else: queue_free()
 		return
-	if fragments != null: update_visual()
+	if not in_local_sector():
+		hide()
+		return
+	show()
+	if get_child_count() == 0: create_visual()
+	elif fragments != null: update_visual()
 
 func state() -> Dictionary:
 	var row := data.duplicate()

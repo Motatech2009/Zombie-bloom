@@ -1,12 +1,15 @@
 class_name Director15
 extends RefCounted
 const CONVOY_SECONDS := 60.0
+const CONVOY_SCALE := 1.6
+const CONVOY_REACH := 6.0
 const CONVOY_CAP := 12
 const CONVOY_THREATS := [1, 3, 1, 5, 12, 1, 4, 9, 1, 3, 12, 5]
 const CONVOY_SUPPLIES := {"rifle_ammo": 90, "parts": 28, "scrap": 180}
 const NEST_MAX_HP := 520.0
 const NEST_CAP := 9
 const NEST_THREATS := [1, 0, 1, 3, 5, 1, 12, 10, 4]
+const CLASSES := {"engineer":"Engenheiro","scout":"Batedor","shooter":"Atirador","medic":"Médico"}
 static var selected_class = "engineer"
 static var selected_cosmetic = 0
 static var selected_mutators: Array = []
@@ -35,7 +38,8 @@ func campaign_completed() -> bool:
 func unlock_campaign() -> void:
 	var cfg = ConfigFile.new(); cfg.load("user://meta15.cfg"); cfg.set_value("meta","completed",true); cfg.save("user://meta15.cfg")
 func apply_class(actor: Node3D,id: String,starter: bool = false) -> void:
-	actor.specialization = id if id in ["engineer","scout","shooter"] else "engineer"
+	actor.specialization = id if CLASSES.has(id) else "engineer"
+	actor.bag.medical = actor.specialization == "medic"
 	if actor.specialization=="scout": actor.bag.resize_bag(20)
 	if starter and actor.specialization=="shooter": actor.weapons.tuning[0] = maxi(1,actor.weapons.tuning[0])
 	world.upgrades.apply_actor(actor)
@@ -204,6 +208,16 @@ func tick_sector_event(delta: float) -> void:
 	var node: Node3D = active_events.get(key)
 	if not is_instance_valid(node) or node.is_queued_for_deletion():
 		var location := Vector3(12, 0, -8)
+		if state.type == "convoy":
+			# Park along the clear crossroad, with room to walk around the expanded truck.
+			var points: Array = world.descriptor.caches.duplicate()
+			if int(world.descriptor.get("rare",-1)) >= 0: points.append(world.descriptor.rare_pos)
+			location = Vector3(30,0,-3)
+			for x in [12,18,24]:
+				var candidate := Vector3(x,0,-3)
+				if not points.any(func(p): return absf(p.x-candidate.x)<3.0 and absf(p.z-candidate.z)<5.4):
+					location = candidate
+					break
 		if state.type == "escort" and not world.descriptor.get("houses", []).is_empty():
 			location = world.descriptor.houses[0].pos + Vector3(0, 0, 1)
 		node = make_event(key, state.type, world.field_root, location)
@@ -245,7 +259,7 @@ func tick_convoy(node: Node3D, state: Dictionary, key: String, delta: float) -> 
 	if not guards.is_empty():
 		node.label.text = "COMBOIO · elimine os %d atacantes restantes" % guards.size()
 		return
-	var reward: Node3D = world.spawn_loot(node.global_position + Vector3(0, 0, 4), CONVOY_SUPPLIES, 0, "", 0, true, true, true)
+	var reward: Node3D = world.spawn_loot(node.global_position + Vector3(0, 0, 5.2), CONVOY_SUPPLIES, 0, "", 0, true, true, true)
 	if reward == null: return
 	state.complete = true
 	world.mark_boss_drop(reward)
@@ -302,7 +316,7 @@ func spawn_event_guard(node: Node3D, meta: String, key: String, kind: int, seria
 func interact_event(actor: Node3D) -> bool:
 	for key in active_events:
 		var node = active_events[key]
-		if not is_instance_valid(node) or not node.is_inside_tree() or node.global_position.distance_to(actor.global_position)>4: continue
+		if not event_in_reach(node,actor): continue
 		var state: Dictionary = event_states[key]
 		if state.complete or state.started or state.type=="nest": continue
 		state.started = true; state.owner = actor.profile_id
@@ -389,5 +403,10 @@ func apply_visuals(rows: Array) -> void:
 func event_interactable(actor: Node3D) -> bool:
 	for key in active_events:
 		var node = active_events[key]
-		if is_instance_valid(node) and node.is_inside_tree() and node.global_position.distance_to(actor.global_position)<4 and not event_states[key].get("started",false) and not event_states[key].get("complete",false) and event_states[key].type!="nest": return true
+		if event_in_reach(node,actor) and not event_states[key].get("started",false) and not event_states[key].get("complete",false) and event_states[key].type!="nest": return true
 	return false
+
+func event_in_reach(node: Variant, actor: Node3D) -> bool:
+	if not is_instance_valid(node) or not node.is_inside_tree(): return false
+	var reach := CONVOY_REACH if node.kind == "convoy" else 4.0
+	return node.global_position.distance_squared_to(actor.global_position) < reach * reach

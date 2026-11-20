@@ -1,6 +1,6 @@
 extends Node
 
-const PROTOCOL_VERSION := 31
+const PROTOCOL_VERSION := 32
 const VERSION_MESSAGE := "Versões incompatíveis. Atualize o Zombie Bloom no PC e no Android para jogar juntos."
 
 signal status_changed(message: String)
@@ -171,7 +171,7 @@ func _boss_sound(cue: int, point: Vector3, revision: int) -> void:
 @rpc("any_peer","call_remote","reliable",0)
 func _join_ready(token: String,name_text: String,protocol: int = 0,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
 	if account_uid.length()>128: return
-	if not Cosmetics16.valid(outfit,specialization): return
+	if not Director15.CLASSES.has(specialization) or not Cosmetics16.valid(outfit,specialization): return
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
 	if id<=1 or not multiplayer.get_peers().has(id): return

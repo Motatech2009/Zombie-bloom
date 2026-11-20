@@ -3,7 +3,7 @@ extends RefCounted
 var world: Node3D
 var sessions: Dictionary = {}
 var depth := 0
-const FIELDS := ["sector_coord","area_index","descriptor","field_root","arena","caches","claimed","field_queue","field_dead","field_spawn_left","exit_labels","sector_deadline","field_defeated"]
+const FIELDS := ["sector_coord","area_index","descriptor","field_root","arena","caches","claimed","field_queue","field_dead","field_spawn_left","exit_labels","field_defeated"]
 
 func enabled() -> bool: return not world.is_client and world.connected_game()
 func capture() -> Dictionary:

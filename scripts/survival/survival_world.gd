@@ -2,6 +2,10 @@ extends "res://scripts/sectors/roaming_world.gd"
 const ENEMY_MODELS := preload("res://scripts/presentation/enemy_models16.gd")
 const INFECTED_SCRIPT := preload("res://scripts/release15/enemy15.gd")
 const TITAN_SCRIPT := preload("res://scripts/release16/titan16.gd")
+const HEAL_RANGE := 3.2
+const HEAL_TIME := 4.0
+const HEAL_COOLDOWN := 30.0
+const HEAL_AMOUNT := 50.0
 const CORE_MESHES := [
 	preload("res://assets/defenses/core/base_1.res"),
 	preload("res://assets/defenses/core/base_2.res"),
@@ -45,7 +49,6 @@ var touch_controls: TouchControls
 var pending_slot: int = -1
 var enemy_index: Dictionary = {}
 var sector_memory: Dictionary = {}
-var sector_deadline: float = 0
 var pending_sector_memory: Dictionary = {}
 var field_defeated: Array[int] = []
 var remote_sector_times: Dictionary = {}
@@ -67,20 +70,19 @@ func prune_sector_memory() -> void:
 func remember_sector() -> void:
 	exp16.remember()
 	prune_sector_memory()
-	if sector_deadline>elapsed: sector_memory[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+	sector_memory[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+	SectorMemory.trim(sector_memory)
 
 func sector_descriptor(coord: Vector2i,visits: int) -> Dictionary:
 	prune_sector_memory()
 	var key := SectorGenerator.key(coord)
-	pending_sector_memory = sector_memory.get(key,{}).duplicate(true)
+	pending_sector_memory = sector_memory.get(key,{})
+	sector_memory.erase(key)
 	if not Exploration16.special_allowed(coord) and pending_sector_memory.get("layout", {}).get("special16") == "post":
 		# An old post layout has neither loot caches nor a regular spawn roster.
-		sector_memory.erase(key)
 		pending_sector_memory.clear()
 	if not pending_sector_memory.is_empty():
-		sector_deadline = float(pending_sector_memory.expires)
 		return exp16.decorate(airdrops.decorate(SectorMemory.decode_layout(pending_sector_memory.layout)),coord)
-	sector_deadline = elapsed+SectorMemory.LIFETIME
 	return exp16.decorate(super.sector_descriptor(coord,visits),coord)
 
 func restore_sector_state() -> void:
@@ -90,24 +92,28 @@ func restore_sector_state() -> void:
 	exp16.load_sector(); rescue16.load_sector()
 
 func sector_remaining(coord: Vector2i) -> float:
-	if regions.enabled() and coord!=sector_coord and regions.sessions.has(coord): return maxf(0,float(regions.sessions[coord].sector_deadline)-elapsed)
+	if coord == Vector2i.ZERO: return 0
+	if coord == sector_coord or (regions.enabled() and regions.sessions.has(coord)): return -1.0
 	var key := SectorGenerator.key(coord)
 	if is_client: return float(remote_sector_times.get(key,0))
-	if coord==sector_coord and area_index!=-1: return maxf(0,sector_deadline-elapsed)
 	return maxf(0,float(sector_memory.get(key,{"expires":0}).expires)-elapsed)
 
 func sector_refresh_text(coord: Vector2i) -> String:
+	if coord == Vector2i.ZERO: return "O Núcleo é permanente."
+	if sector_remaining(coord) < 0: return "Setor ocupado. O reset começa quando todos saírem."
 	var remaining := ceili(sector_remaining(coord))
-	if remaining>0: return "Área preservada por mais %02d:%02d. Caixas, casas e inimigos mantêm seu estado." % [remaining/60,remaining%60]
-	return "A próxima entrada gera outra área e renova o loot. Cada geração fica preservada por 3 minutos."
+	if remaining>0: return "Reset em %02d:%02d enquanto o setor estiver vazio." % [remaining/60,remaining%60]
+	return "A próxima entrada gera outra área com novos suprimentos."
 
 func sector_times() -> Dictionary:
 	var times := {}
 	if regions.enabled():
 		for coord in regions.sessions:
-			if coord!=Vector2i.ZERO: times[SectorGenerator.key(coord)] = maxf(0,float(regions.sessions[coord].sector_deadline)-elapsed)
-	for key in sector_memory: times[key] = maxf(0,float(sector_memory[key].expires)-elapsed)
-	if area_index!=-1: times[SectorGenerator.key(sector_coord)] = maxf(0,sector_deadline-elapsed)
+			if coord!=Vector2i.ZERO: times[SectorGenerator.key(coord)] = -1.0
+	for key in sector_memory:
+		var remaining := float(sector_memory[key].expires)-elapsed
+		if remaining > 0: times[key] = remaining
+	if area_index!=-1: times[SectorGenerator.key(sector_coord)] = -1.0
 	return times
 
 func target_enemy(id: int) -> Node3D:
@@ -185,6 +191,7 @@ func _ready() -> void:
 	player.weapons.sync_hand()
 	refresh_core_model()
 	ENEMY_MODELS.warm_render(self)
+	BossFx18.warm_render(self)
 	if network!=null and network.mode=="host": player.display_name = network.nickname
 	if is_client:
 		player.proxy = true
@@ -261,6 +268,9 @@ func _process(delta: float) -> void:
 	rockets = player.bag.count("rocket")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact") and not event.is_echo() and hud.mode.is_empty() and local_heal_available():
+		send_action("heal",{})
+		return
 	if event.is_action_pressed("interact") and hud.mode.is_empty() and game_mode=="rescue": send_action("mission16",{})
 	if event.is_action_pressed("interact") and hud.mode.is_empty() and exp16.safe(player.global_position): hud.show_post16(); return
 	if event.is_action_pressed("melee") and hud.mode.is_empty():
@@ -367,6 +377,7 @@ func perform_action(peer: int,action: String,data: Dictionary) -> bool:
 			if data.get("weapon") is int: result = buy_weapon(data.weapon)
 		"tune": result = tune_weapon()
 		"mission16": result = rescue16.interact(actor)
+		"heal": result = start_heal(actor)
 		"post_trade":
 			if data.get("id") is String: result = exp16.trade(actor,data.id)
 		"decoy16": result = truce16.activate(actor)
@@ -450,8 +461,7 @@ func step_sector(direction: int) -> bool:
 	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
 	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
 	elif area_index!=-1:
-		var seconds := ceili(sector_remaining(sector_coord))
-		notify("SETOR (%d,%d) · %s · %d infectados\nNova geração em %02d:%02d ao reentrar · %s" % [sector_coord.x,sector_coord.y,SectorGenerator.RISKS[descriptor.risk],descriptor.count,seconds/60,seconds%60,return_hint()])
+		notify("SETOR (%d,%d) · %s · %d infectados\nReset após 5 min vazio · %s" % [sector_coord.x,sector_coord.y,SectorGenerator.RISKS[descriptor.risk],descriptor.count,return_hint()])
 	return true
 
 func scale_field_population() -> void:
@@ -658,6 +668,37 @@ func nearest_source(actor: Node3D) -> Node3D:
 		if d<distance: result = source; distance = d
 	return result
 
+func can_heal_target(actor: Node3D, target: Node3D) -> bool:
+	if not is_instance_valid(target) or target==actor or target.is_queued_for_deletion() or target.health.dead:
+		return false
+	if actor.region_coord!=target.region_coord or target.health.current>=target.health.maximum:
+		return false
+	if actor.global_position.distance_squared_to(target.global_position)>HEAL_RANGE*HEAL_RANGE:
+		return false
+	var ray := PhysicsRayQueryParameters3D.create(actor.global_position+Vector3.UP,target.global_position+Vector3.UP,1|8)
+	return get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
+
+func heal_target(actor: Node3D) -> Node3D:
+	if actor.specialization!="medic" or actor.health.dead or actor.heal_cooldown>0 or actor.roll_left>0 or actor.rooted_left18>0 or actor.gather_target!=null or actor.bag.count("medkit")==0:
+		return null
+	var nearest: Node3D
+	var distance := INF
+	for ally in avatars.values():
+		if not can_heal_target(actor,ally): continue
+		var candidate: float = actor.global_position.distance_squared_to(ally.global_position)
+		if candidate<distance: nearest = ally; distance = candidate
+	return nearest
+
+func local_heal_available() -> bool:
+	if player.specialization!="medic" or player.heal_cooldown>0 or player.gather_kind=="heal" or combat_paused(): return false
+	return remote_mobile_context.get("heal",false) if is_client else heal_target(player)!=null
+
+func start_heal(actor: Node3D) -> bool:
+	var ally := heal_target(actor)
+	if ally==null: return false
+	begin_gather(actor,ally,"heal",HEAL_TIME)
+	return true
+
 func tick_gather(actor: Node3D,delta: float) -> void:
 	if regions.enabled() and actor.region_coord!=sector_coord:
 		regions.run_in(actor.region_coord,func(): tick_gather(actor,delta)); return
@@ -686,7 +727,11 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 					break
 	if actor.gather_target==null: return
 	var target: Node3D = actor.gather_target
-	if not is_instance_valid(target) or target.is_queued_for_deletion() or actor.position.distance_to(actor.gather_start)>.45 or actor.last_damage!=actor.gather_damage_mark or actor.position.distance_to(target.global_position)>(4.2 if target==core else 3.1): actor.cancel_gather(); return
+	var reach := HEAL_RANGE if actor.gather_kind=="heal" else 4.2 if target==core else 3.1
+	if not is_instance_valid(target) or target.is_queued_for_deletion() or actor.position.distance_to(actor.gather_start)>.45 or actor.last_damage!=actor.gather_damage_mark or actor.position.distance_to(target.global_position)>reach: actor.cancel_gather(); return
+	if actor.gather_kind=="heal" and (actor.rooted_left18>0 or not can_heal_target(actor,target)):
+		actor.cancel_gather()
+		return
 	if actor.gather_kind=="loot":
 		if not house_source_open(actor,target): actor.cancel_gather(); return
 		if target.get_meta("airdrop",false) and not airdrops.can_open(): actor.cancel_gather(); return
@@ -706,6 +751,11 @@ func tick_gather(actor: Node3D,delta: float) -> void:
 	elif kind=="repair": repair_for15(actor,target)
 	elif kind=="revive":
 		if target.health.dead and actor.bag.remove("medkit",1): target.revive()
+	elif kind=="heal":
+		if actor.bag.remove("medkit",1):
+			target.health.heal(HEAL_AMOUNT)
+			actor.heal_cooldown = HEAL_COOLDOWN
+			private_notice(actor.peer_id,"CURA CONCLUÍDA · "+target.display_name)
 	else: transfer_source(actor,target)
 
 func begin_gather(actor: Node3D,target: Node3D,kind: String,duration: float) -> void:
@@ -874,16 +924,17 @@ func choose_team_upgrade(index: int) -> bool:
 	return upgrades.choose(index)
 
 func actor_profile(actor: Node3D) -> Dictionary:
-	return {"titan_owner16":str(actor.get_meta("titan_owner16","")),"titan_victory16":str(actor.get_meta("titan_victory16","")),"outfit16":actor.outfit16.duplicate(),"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown}
+	return {"titan_owner16":str(actor.get_meta("titan_owner16","")),"titan_victory16":str(actor.get_meta("titan_victory16","")),"outfit16":actor.outfit16.duplicate(),"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown,"heal_cd":actor.heal_cooldown}
 
 func valid_profile(data: Variant) -> bool:
 	if data is Dictionary and (not data.get("titan_owner16","") is String or str(data.get("titan_owner16","")).length()>128): return false
 	if data is Dictionary and (not data.get("titan_victory16","") is String or str(data.get("titan_victory16","")).length()>64): return false
 	if data is Dictionary and not Cosmetics16.valid(data.get("outfit16",{}),str(data.get("class","engineer"))): return false
-	if data is Dictionary and (data.get("class","engineer") not in ["engineer","scout","shooter"] or not bounded(data.get("cosmetic",0),0,10)): return false
+	if data is Dictionary and (not Director15.CLASSES.has(data.get("class","engineer")) or not bounded(data.get("cosmetic",0),0,10) or not bounded(data.get("heal_cd",0),0,HEAL_COOLDOWN)): return false
 	if data is Dictionary and data.has("tuning"):
 		if not data.tuning is Array or data.tuning.size()!=9 or not data.tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
 	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
+	if data.bag.get("medical",false)!=(data.get("class","engineer")=="medic"): return false
 	for value in data.ammo:
 		if not bounded(value,0,100000): return false
 	for value in data.gun:
@@ -899,6 +950,7 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	apply_appearance(actor, class_id, int(data.get("cosmetic", 0)), outfit)
 	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
 	actor.bag.restore(data.bag)
+	actor.heal_cooldown = float(data.get("heal_cd",0))
 	actor.weapons.ammo.assign(data.ammo)
 	actor.weapons.damage_multiplier = data.gun[0]
 	actor.weapons.rate_multiplier = data.gun[1]
@@ -916,11 +968,17 @@ func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.weapons.sync_hand()
 
 func snapshot() -> Dictionary:
+	prune_sector_memory()
+	exp16.remember()
+	var saved_sectors := sector_memory.duplicate(true)
 	if regions.enabled():
 		regions.initialize()
 		for coord in regions.sessions.keys():
-			if coord!=Vector2i.ZERO: regions.run_in(coord,remember_sector)
-	prune_sector_memory()
+			if coord!=Vector2i.ZERO:
+				saved_sectors[SectorGenerator.key(coord)] = regions.run_in(coord,func(): return SectorMemory.capture(self))
+	elif is_instance_valid(field_root):
+		saved_sectors[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+	SectorMemory.trim(saved_sectors)
 	var saved_player: CharacterBody3D = player
 	player = avatars.get(1,player)
 	player.weapons.sync_hand()
@@ -937,7 +995,8 @@ func snapshot() -> Dictionary:
 	data.records = records.dump()
 	data.account_run_id = account_run_id
 	data.airdrops = airdrops.dump()
-	data.sector_memory = sector_memory.duplicate(true)
+	data.sector_memory = saved_sectors
+	data.sector_reset_policy = 1
 	data.weapon_tuning = player.weapons.tuning.duplicate()
 	data.bag = player.bag.dump()
 	data.depot_items = depot_items.duplicate()
@@ -1056,7 +1115,9 @@ func apply_snapshot(data: Dictionary) -> void:
 		if profile.is_empty():
 			profile = actor_profile(player)
 			var bag := ItemBag.new(); starter_bag(bag)
+			bag.medical = profile.class == "medic"
 			profile.bag = bag.dump(); profile.ammo = [12,0,0,0,0,0,0,0,0]
+			profile.heal_cd = 0.0
 			profile.hp = profile.max_hp; profile.downed = false; profile.roll_cd = 0
 		restore_profile(actor,profile)
 		actor.position = player.position+Vector3(peer%2*1.2,0,1.2)
@@ -1064,6 +1125,10 @@ func apply_snapshot(data: Dictionary) -> void:
 	for actor in avatars.values(): upgrades.apply_actor(actor)
 	airdrops.restore(data.airdrops)
 	sector_memory = data.get("sector_memory",{}).duplicate(true)
+	if data.get("sector_reset_policy",0) == 0:
+		for state in sector_memory.values():
+			if float(state.expires) > elapsed:
+				state.expires = minf(elapsed+SectorMemory.LIFETIME,float(state.expires)+SectorMemory.LIFETIME-SectorMemory.LEGACY_LIFETIME)
 	prune_sector_memory()
 	for loot in get_tree().get_nodes_in_group("survival_loot"):
 		loot.get_parent().remove_child(loot)
@@ -1599,7 +1664,7 @@ func mobile_context(actor: Node3D) -> Dictionary:
 			upgrade = {"title":nearest.spec.title,"tier":tier,"cost":{"scrap":75*tier,"wood":10*tier,"parts":5*tier} if nearest==core else nearest.upgrade_cost()}
 	var hint := interaction_hint(actor)
 	if at_post: collect = "NEGOCIAR"
-	return {"post16":at_post,"build":preparing,"collect":collect,"upgrade":upgrade,"shop":at_post or (preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5),"travel":hint=="VIAJAR","revive":hint=="REANIMAR","repair":hint=="REPARAR","gate":gate}
+	return {"post16":at_post,"build":preparing,"collect":collect,"upgrade":upgrade,"shop":at_post or (preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5),"travel":hint=="VIAJAR","revive":hint=="REANIMAR","heal":heal_target(actor)!=null,"repair":hint=="REPARAR","gate":gate}
 
 func local_mobile_context() -> Dictionary:
 	if is_client: return remote_mobile_context if client_scene_ready else {}

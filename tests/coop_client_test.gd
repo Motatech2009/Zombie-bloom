@@ -151,7 +151,7 @@ func run() -> void:
 	check(world.sector_coord==Vector2i.ZERO and world.core.health.current==600,"return scene revision preserves the shared core state")
 	deadline = Time.get_ticks_msec()+7000
 	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
-	check(world.sector_coord==Vector2i(0,-1) and world.descriptor.seed==sector_seed and world.sector_remaining(Vector2i(0,-1))>150,"guests receive the same generation and its shared three-minute countdown")
+	check(world.sector_coord==Vector2i(0,-1) and world.descriptor.seed==sector_seed and world.sector_remaining(Vector2i(0,-1))==-1,"guests receive the same occupied generation with its reset suspended")
 	check(world.client_loot.values().any(func(pile): return pile.get_meta("contents",{})=={"rifle_ammo":7,"parts":2}) and world.raid_house(0).dead==[0],"partial cache contents and house deaths survive a real network scene reload")
 	deadline = Time.get_ticks_msec()+7000
 	while (world.sector_coord!=Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

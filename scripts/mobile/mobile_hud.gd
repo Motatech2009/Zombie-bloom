@@ -53,6 +53,9 @@ func create_bottom() -> void:
 	weapon_text.clip_text = true; weapon_text.custom_minimum_size.x = 150
 	ammo_text.add_theme_font_size_override("font_size",18); power_text.hide()
 	belt = hotbar[0].get_parent()
+	var desktop_belt_frame := belt.get_parent()
+	belt.reparent(root,false)
+	desktop_belt_frame.hide()
 	place_panel(belt,Control.PRESET_BOTTOM_RIGHT,Rect2(-392,-66,346,56))
 	belt.add_theme_constant_override("separation",4)
 	for button in hotbar:
@@ -68,6 +71,7 @@ func create_bottom() -> void:
 	location_text.add_theme_font_size_override("font_size",11); location_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hints.hide(); quota_text.hide()
 	status_text.position = Vector2(14,128)
+	heal_status.position = Vector2(14,150)
 	place_panel(build_text,Control.PRESET_CENTER_TOP,Rect2(-290,115,580,30)); build_text.add_theme_font_size_override("font_size",12)
 	place_panel(notice_text,Control.PRESET_CENTER_TOP,Rect2(-320,148,640,38)); notice_text.add_theme_font_size_override("font_size",12)
 	gather_bar.offset_top = 40; gather_bar.offset_bottom = 47
@@ -148,6 +152,7 @@ func adapt_modal(node: Variant) -> void:
 	for child in node.get_children(): adapt_modal(child)
 
 func show_inventory() -> void:
+	inventory_selected = -1
 	var box := open_modal("inventory",880)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",24,UI.LIME)
 	add_decoy16_button(box)

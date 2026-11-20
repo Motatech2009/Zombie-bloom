@@ -56,7 +56,9 @@ func run() -> void:
 	clear_enemies(); await process_frame
 	w.player.position = SectorGenerator.EXITS[1]; w.travel_cooldown = 0; w.resources.pending = 0; w.step_sector(1)
 	var key: String = w.v15.sector_event_key(); w.v15.event_states[key] = {"type":"convoy","complete":false,"started":false,"left":45.0,"spawn":0.0,"bonus":false,"owner":""}
-	w.v15.tick_sector_event(.1); var convoy = w.v15.active_events[key]; w.player.position = convoy.global_position+Vector3(0,0,3)
+	w.v15.tick_sector_event(.1); var convoy = w.v15.active_events[key]; w.player.position = convoy.global_position+Vector3(0,0,5)
+	var truck_shape: CollisionShape3D = convoy.find_children("*","CollisionShape3D",false,false)[0]
+	check(convoy.get_node("convoy").scale.is_equal_approx(Vector3.ONE*1.6) and truck_shape.shape.size.z>=7.9,"larger truck keeps its collision aligned")
 	check(w.v15.event_interactable(w.player) and w.v15.interact_event(w.player),"convoy exposes the same PC and touch interaction")
 	w.v15.tick_sector_event(1.0)
 	var attackers: Array = w.v15.guards_for("convoy_owner17", key)

@@ -14,7 +14,7 @@ func _ready() -> void:
 	var loadout := ConfigFile.new()
 	if loadout.load("user://loadout15.cfg")==OK:
 		var chosen: String = str(loadout.get_value("loadout","class","engineer"))
-		Director15.selected_class = chosen if chosen in ["engineer","scout","shooter"] else "engineer"
+		Director15.selected_class = chosen if Director15.CLASSES.has(chosen) else "engineer"
 		Director15.selected_cosmetic = clampi(int(loadout.get_value("loadout","cosmetic",0)),0,10)
 	var music := MusicDirector.new(); add_child(music)
 	MobilePlatform.configure(get_tree().root)
@@ -370,12 +370,16 @@ func show_rankings() -> void:
 func show_loadout15(_mode: String,new_game: bool) -> void:
 	clear_content()
 	UI.label(content,"PREPARE SEU SOBREVIVENTE",22,UI.LIME)
-	var classes := OptionButton.new(); classes.add_item("Engenheiro"); classes.add_item("Batedor"); classes.add_item("Atirador"); content.add_child(classes); classes.custom_minimum_size.y = 44
-	classes.select(["engineer","scout","shooter"].find(Director15.selected_class))
+	var classes := OptionButton.new()
+	var class_ids := Director15.CLASSES.keys()
+	for id in class_ids: classes.add_item(Director15.CLASSES[id])
+	content.add_child(classes)
+	classes.custom_minimum_size.y = 44
+	classes.select(class_ids.find(Director15.selected_class))
 	var description := UI.label(content,"",13,UI.MUTED); description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var update := func(index):
-		Director15.selected_class = ["engineer","scout","shooter"][index]
-		description.text = ["+1 cota por preparação; reparos custam 15% menos sucata.","+10% velocidade fora de combate; mochila com 20 espaços.","Pistola Reforçada inicial; recarga 15% mais rápida."][index]
+		Director15.selected_class = class_ids[index]
+		description.text = ["+1 cota por preparação; reparos custam 15% menos sucata.","+10% velocidade fora de combate; mochila com 20 espaços.","Pistola Reforçada inicial; recarga 15% mais rápida.","Até 6 kits por espaço. Use 1 kit para curar um aliado vivo em 4 s. Recarga de 30 s."][index]
 	classes.item_selected.connect(update); update.call(classes.selected)
 	UI.label(content,"ACESSÓRIO POR ELO",12,UI.LIME)
 	var cosmetics := OptionButton.new(); cosmetics.add_item("Sem acessório")

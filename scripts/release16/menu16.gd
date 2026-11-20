@@ -77,8 +77,7 @@ static func equipment_button(parent: Node, item: Dictionary, class_id: String, p
 	button.tree_exiting.connect(func(): service.changed.disconnect(refresh))
 
 static func wardrobe(box: VBoxContainer, class_id: String, height: float) -> void:
-	var title := {"engineer": "Engenheiro", "scout": "Batedor", "shooter": "Atirador"}
-	UI.label(box, ("MEUS COSMÉTICOS · " if height > 0 else "Classe · ") + title[class_id], 23, UI.LIME)
+	UI.label(box, ("MEUS COSMÉTICOS · " if height > 0 else "Classe · ") + Director15.CLASSES[class_id], 23, UI.LIME)
 	var container: Control = box
 	if height > 0:
 		var scroll := ScrollContainer.new()

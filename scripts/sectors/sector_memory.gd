@@ -1,6 +1,7 @@
 class_name SectorMemory
 extends RefCounted
-const LIFETIME := 180.0
+const LIFETIME := 300.0
+const LEGACY_LIFETIME := 180.0
 const LIMIT := 256
 
 static func vector(point: Vector3) -> Array:
@@ -39,7 +40,7 @@ static func decode_layout(saved: Dictionary) -> Dictionary:
 	return d
 
 static func capture(world: Node3D) -> Dictionary:
-	var state := {"expires":world.sector_deadline,"layout":encode_layout(world.descriptor),"claimed":world.claimed.duplicate(),"dead":world.field_defeated.duplicate(),"caches":[],"houses":[],"enemies":[],"loose":[]}
+	var state := {"expires":world.elapsed+LIFETIME,"layout":encode_layout(world.descriptor),"claimed":world.claimed.duplicate(),"dead":world.field_defeated.duplicate(),"caches":[],"houses":[],"enemies":[],"loose":[]}
 	for cache in world.caches: state.caches.append(cache.get_meta("contents",{}).duplicate())
 	for house in world.get_tree().get_nodes_in_group("raid_houses"):
 		if world.field_root.is_ancestor_of(house): state.houses.append(house.dump())
@@ -50,6 +51,12 @@ static func capture(world: Node3D) -> Dictionary:
 		if loot.get_parent()!=world.field_root or loot.is_queued_for_deletion() or loot.get_meta("special16",false): continue
 		state.loose.append({"pos":vector(loot.position),"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":str(loot.get_meta("power","")),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false)),"origin":bool(loot.get_meta("world_origin",false))})
 	return state
+
+static func trim(memory: Dictionary) -> void:
+	if memory.size() <= LIMIT: return
+	var keys := memory.keys()
+	keys.sort_custom(func(a,b): return float(memory[a].expires) < float(memory[b].expires))
+	for i in range(keys.size() - LIMIT): memory.erase(keys[i])
 
 static func restore(world: Node3D,state: Dictionary) -> void:
 	world.claimed.assign(state.claimed); world.field_defeated.assign(state.dead)

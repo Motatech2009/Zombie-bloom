@@ -215,7 +215,7 @@ func purchase(id: String) -> void:
 		else: status = str(reply.get("error","Compra não confirmada."))
 	busy = false; persist(); changed.emit()
 func equip(class_id: String,slot: String,id: String) -> void:
-	if class_id not in ["engineer","scout","shooter"] or slot not in ["head","outfit","backpack","effect"]: return
+	if not Director15.CLASSES.has(class_id) or slot not in ["head","outfit","backpack","effect"]: return
 	if id=="COS-TITAN-01" and slot=="head" and has_cosmetic(id):
 		trophy_equipped[class_id] = id; persist(); changed.emit()
 		if local_economy or uid.is_empty() or id not in confirmed.get("owned",[]) or busy: return

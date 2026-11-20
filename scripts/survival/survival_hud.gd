@@ -26,38 +26,54 @@ var drop_map_stamp: String = ""
 var desktop_shop: ShopBrowser
 var roll_text: Label
 var roll_bar: ProgressBar
+var heal_action: Button
+var heal_status: Label
+var heal_hint_left := 0.0
+var inventory_meter: ProgressBar
+var inventory_selection: Label
+var inventory_selection_icon: TextureRect
+var inventory_depot_hint: Label
+var inventory_store: Button
+var inventory_drop: Button
 
 func make_panel(left: float,top: float,right: float,bottom: float,preset: int) -> PanelContainer:
 	var panel := UI.panel(root)
 	panel.set_anchors_and_offsets_preset(preset)
 	panel.offset_left = left; panel.offset_top = top; panel.offset_right = right; panel.offset_bottom = bottom
-	var frame := UI.style(Color(.035,.075,.1,.94),Color("344d5a"),10)
+	var frame := UI.style(Color("132122ed"),Color("536157"),12)
+	frame.border_width_left = 3
+	frame.shadow_color = Color(0,0,0,.4)
+	frame.shadow_size = 7
+	frame.shadow_offset = Vector2(0,3)
 	frame.content_margin_left = 14; frame.content_margin_right = 14
 	frame.content_margin_top = 10; frame.content_margin_bottom = 10
 	panel.add_theme_stylebox_override("panel",frame)
 	return panel
 
 func create_top() -> void:
-	var vitals := make_panel(18,14,326,112,Control.PRESET_TOP_LEFT)
+	var vitals := make_panel(20,18,334,125,Control.PRESET_TOP_LEFT)
 	var vitals_box := UI.vbox(vitals,5)
 	var hp_row := UI.hbox(vitals_box,9)
 	ItemIcons.image(hp_row,"health",Vector2(23,23))
-	health_text = UI.label(hp_row,"",16)
+	health_text = UI.label(hp_row,"",19)
 	health_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	xp_text = UI.label(hp_row,"",11,UI.MUTED)
 	health_bar = UI.meter(vitals_box,Color("e99b84"))
+	health_bar.custom_minimum_size.y = 7
 	var core_row := UI.hbox(vitals_box,9)
 	ItemIcons.image(core_row,"core",Vector2(23,23))
 	core_text = UI.label(core_row,"",14,Color("9ddde0"))
 	core_bar = UI.meter(vitals_box,Color("70c9d5"))
-	var siege := make_panel(-158,14,158,91,Control.PRESET_CENTER_TOP)
+	core_bar.custom_minimum_size.y = 5
+	var siege := make_panel(-178,18,178,112,Control.PRESET_CENTER_TOP)
 	var row := UI.hbox(siege,10)
 	ItemIcons.image(row,"wave",Vector2(43,43))
 	var wave_box := UI.vbox(row,1)
-	wave_text = UI.label(wave_box,"",21)
+	wave_text = UI.label(wave_box,"",25,Color("ebeed6"))
 	wave_detail = UI.label(wave_box,"",14,Color("edbd72"))
 	phase_text = UI.label(wave_box,"",10,UI.MUTED)
-	var depot := make_panel(-350,14,-18,99,Control.PRESET_TOP_RIGHT)
+	quota_text = UI.label(wave_box,"",10,Color("d9c79c"))
+	var depot := make_panel(-351,18,-20,109,Control.PRESET_TOP_RIGHT)
 	var box := UI.vbox(depot,7)
 	var header := UI.hbox(box,10)
 	UI.label(header,"ESTOQUE DO NÚCLEO",11,UI.MUTED).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -81,7 +97,7 @@ func create_top() -> void:
 	airdrop_text = UI.label(root,"",13,Color("e8bc77"))
 	airdrop_text.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	airdrop_text.offset_left = -348; airdrop_text.offset_right = -18
-	airdrop_text.offset_top = 106; airdrop_text.offset_bottom = 129
+	airdrop_text.offset_top = 117; airdrop_text.offset_bottom = 140
 	airdrop_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func create_bottom() -> void:
@@ -94,12 +110,13 @@ func create_bottom() -> void:
 	ammo_text = UI.label(held_info,"",25,Color("edcf95"))
 	reload_bar = UI.meter(held_info,Color("edbd72"))
 	power_text = UI.label(held_info,"",11,UI.MUTED)
-	var belt := HBoxContainer.new()
-	root.add_child(belt)
-	belt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	belt.offset_left = -357; belt.offset_right = 357
-	belt.offset_top = -100; belt.offset_bottom = -16
-	belt.add_theme_constant_override("separation",6)
+	var belt_frame := make_panel(-372,-112,372,-16,Control.PRESET_CENTER_BOTTOM)
+	var belt_style := UI.style(Color("10191cdb"),Color("556053"),11)
+	belt_style.content_margin_left = 7; belt_style.content_margin_right = 7
+	belt_style.content_margin_top = 6; belt_style.content_margin_bottom = 6
+	belt_frame.add_theme_stylebox_override("panel",belt_style)
+	var belt := UI.hbox(belt_frame,6)
+	belt.alignment = BoxContainer.ALIGNMENT_CENTER
 	for i in range(9):
 		var index := i
 		var button := ItemSlot.new()
@@ -110,8 +127,9 @@ func create_bottom() -> void:
 	hints = make_panel(-300,-119,-18,-16,Control.PRESET_BOTTOM_RIGHT)
 	var hint_box := UI.vbox(hints,3)
 	var actions := UI.hbox(hint_box,5)
-	for entry in [["map","M",show_routes],["bag","I",show_inventory],["build","B",show_build_catalog]]:
+	for entry in [["map","M",show_routes,"Mapa dos setores"],["bag","I",show_inventory,"Bolsa"],["build","B",show_build_catalog,"Construir"]]:
 		var button := UI.button(actions,entry[1],entry[2])
+		button.tooltip_text = entry[3]
 		button.icon = ItemIcons.get_icon(entry[0])
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width",27)
@@ -127,13 +145,16 @@ func create_bottom() -> void:
 	roll_bar.custom_minimum_size.y = 3
 	location_text = UI.label(hint_box,"",11,UI.MUTED)
 	location_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	heal_action = UI.button(root,"CURAR ALIADO · E",func(): world.send_action("heal",{}),true)
+	heal_action.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	heal_action.offset_left = -300; heal_action.offset_right = -18
+	heal_action.offset_top = -240; heal_action.offset_bottom = -196
+	heal_action.hide()
 	next_button = Button.new(); root.add_child(next_button); next_button.hide()
-	quota_text = UI.label(root,"",12,Color("d9c79c"))
-	quota_text.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	quota_text.offset_left = -320; quota_text.offset_right = 320; quota_text.offset_top = 99; quota_text.offset_bottom = 119
-	quota_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_text = UI.label(root,"",14,Color("98d9f1"))
-	status_text.position = Vector2(30,119)
+	status_text.position = Vector2(30,151)
+	heal_status = UI.label(root,"",13,Color("b6e0aa"))
+	heal_status.position = Vector2(30,174)
 	notice_text = UI.label(root,"",15,Color("ead4a7"))
 	notice_text.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	notice_text.offset_left = -355; notice_text.offset_right = 355
@@ -161,8 +182,8 @@ func _process(delta: float) -> void:
 		var overlay := Control.new(); overlay.set_script(load("res://scripts/release15/core_alert15.gd")); overlay.world = world; root.add_child(overlay)
 		systems15_button = UI.button(root,"BASE" if MobilePlatform.enabled() else "REFÚGIO",show_systems15)
 		systems15_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT); systems15_button.offset_left = -195; systems15_button.offset_right = -14; systems15_button.offset_top = -195; systems15_button.offset_bottom = -151
-		alert15_label = UI.label(root,"",14,Color("ffa276")); alert15_label.position = Vector2(20,180)
-		day15_label = UI.label(root,"",12,UI.LIME); day15_label.position = Vector2(20,155)
+		alert15_label = UI.label(root,"",14,Color("ffa276")); alert15_label.position = Vector2(30,218)
+		day15_label = UI.label(root,"",12,UI.LIME); day15_label.position = Vector2(30,195)
 	if world.game_mode=="rescue":
 		status_text.text = world.rescue16.hint()
 	day15_label.text = ("NOITE VERMELHA" if world.v15.day.blood and world.v15.day.night() else "NOITE" if world.v15.day.night() else "DIA")+" · %02d:%02d" % [int(fposmod(world.v15.day.clock,900))/60,int(world.v15.day.clock)%60]
@@ -202,6 +223,14 @@ func _process(delta: float) -> void:
 	wood_count.text = str(world.stock.wood)
 	parts_count.text = str(world.stock.parts)
 	status_text.text = "CONGELADO · %.1f s" % actor.slow_left if actor.slow_left>0 else "CAÍDO · Aguarde um aliado" if actor.health.dead else ""
+	if is_instance_valid(heal_action) and not MobilePlatform.enabled():
+		heal_hint_left -= delta
+		if mode!="": heal_action.hide()
+		elif heal_hint_left<=0:
+			heal_hint_left = .12
+			heal_action.visible = world.local_heal_available()
+	if is_instance_valid(heal_status):
+		heal_status.text = "CURA · RECARGA %ds" % ceili(actor.heal_cooldown) if actor.heal_cooldown>0 else ""
 	if not world.truce16.hint().is_empty(): wave_detail.text = world.truce16.hint()
 	roll_text.text = "ESPAÇO · ROLANDO" if actor.roll_left>0 else "ESPAÇO · %.1f s" % actor.roll_cooldown if actor.roll_cooldown>0 else "ESPAÇO · ROLAMENTO PRONTO"
 	roll_text.modulate = UI.MUTED if actor.health.dead else UI.TEXT if actor.roll_cooldown>0 else UI.LIME
@@ -220,7 +249,7 @@ func _process(delta: float) -> void:
 	if gather_bar.visible:
 		gather_bar.max_value = actor.gather_duration
 		gather_bar.value = actor.gather_progress
-		gather_label.text = "SEGURE E · "+{"build":"construindo (dano cancela)","upgrade":"melhorando defesa","extract":"retornando ao Núcleo","loot":"coletando para a bolsa","deposit":"guardando no Núcleo","revive":"reanimando aliado","repair":"reparando defesa"}.get(actor.gather_kind,"coletando")
+		gather_label.text = "CURANDO ALIADO · %.1f s" % maxf(0.0,actor.gather_duration-actor.gather_progress) if actor.gather_kind=="heal" else "SEGURE E · "+{"build":"construindo (dano cancela)","upgrade":"melhorando defesa","extract":"retornando ao Núcleo","loot":"coletando para a bolsa","deposit":"guardando no Núcleo","revive":"reanimando aliado","repair":"reparando defesa"}.get(actor.gather_kind,"coletando")
 	airdrop_text.text = airdrop_summary()
 	if mode=="routes":
 		var stamp := str(world.airdrops.serial)+str(world.airdrops.state.get("collected",true))
@@ -238,69 +267,118 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	return box
 
 func show_inventory() -> void:
-	var box := open_modal("inventory",1210)
-	UI.label(box,"BOLSA / BARRA RÁPIDA",29,UI.LIME)
-	UI.label(box,"Capacidade: %d · Mochila nível %d" % [world.player.bag.slots.size(),world.player.bag.bag_level],15,UI.MUTED)
-	add_decoy16_button(box)
-	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
-	UI.label(box,"Clique dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
-	inventory_status = UI.label(box,"Primeiros nove espaços = barra rápida. Clique dois espaços para trocar.",15,UI.MUTED)
-	var row := UI.hbox(box,20)
-	var left := UI.vbox(row,8)
-	var grid := GridContainer.new()
-	grid.columns = 9
-	grid.add_theme_constant_override("h_separation",5)
-	grid.add_theme_constant_override("v_separation",5)
-	left.add_child(grid)
+	var box := open_modal("inventory",1120)
+	inventory_selected = -1
+	var header := UI.hbox(box,16)
+	ItemIcons.image(header,"bag",Vector2(43,43))
+	var title := UI.vbox(header,3)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(title,"BOLSA DE CAMPO",27,UI.LIME)
+	inventory_status = UI.label(title,"",13,UI.MUTED)
+	inventory_meter = UI.meter(title,Color("c7d98a"))
+	inventory_meter.custom_minimum_size.y = 5
+	var close := UI.button(header,"VOLTAR AO JOGO · I",close_modal,true)
+	close.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var row := UI.hbox(box,14)
+	var left := UI.vbox(UI.panel(row),8)
+	left.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(left,"BARRA RÁPIDA · TECLAS 1–9",13,Color("e7c38b"))
+	var quick := inventory_grid(left)
+	UI.label(left,"COMPARTIMENTOS DA BOLSA",13,UI.MUTED)
+	var storage := inventory_grid(left)
 	inventory_buttons.clear()
 	for i in range(world.player.bag.slots.size()):
 		var index := i
 		var button := ItemSlot.new()
-		button.key_number = index+1
+		button.key_number = i+1 if i<9 else 0
 		button.pressed.connect(func():
 			if inventory_selected<0: inventory_selected = index
 			else:
-				world.send_action("swap",{"a":inventory_selected,"b":index})
+				if inventory_selected!=index: world.send_action("swap",{"a":inventory_selected,"b":index})
 				inventory_selected = -1
+			refresh_inventory()
 		)
+		var grid := quick if i<9 else storage
 		grid.add_child(button)
-		button.custom_minimum_size = Vector2(78,88)
-		button.add_theme_font_size_override("font_size",12)
+		button.custom_minimum_size = Vector2(65,69)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		inventory_buttons.append(button)
-	var controls := UI.hbox(left,8)
-	UI.button(controls,"GUARDAR SELEÇÃO",func():
-		if inventory_selected>=0: world.send_action("store",{"slot":inventory_selected}); inventory_selected = -1
+
+	var selected := UI.hbox(left,9)
+	inventory_selection_icon = ItemIcons.image(selected,"",Vector2(32,32))
+	inventory_selection = UI.label(selected,"",15)
+	inventory_selection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var actions := UI.hbox(left,8)
+	inventory_store = UI.button(actions,"GUARDAR NO NÚCLEO",func():
+		world.send_action("store",{"slot":inventory_selected})
+		inventory_selected = -1
 	)
-	UI.button(controls,"DESCARTAR SELEÇÃO",func():
-		if inventory_selected>=0: world.send_action("drop",{"slot":inventory_selected}); inventory_selected = -1
+	inventory_drop = UI.button(actions,"LARGAR ITEM",func():
+		world.send_action("drop",{"slot":inventory_selected})
+		inventory_selected = -1
 	)
-	var right := UI.vbox(row,7)
-	right.custom_minimum_size.x = 350
-	UI.label(right,"DEPÓSITO DO NÚCLEO",21,UI.LIME)
-	UI.label(right,"Guardar/retirar exige estar junto ao Núcleo. Materiais guardados pagam construções.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_decoy16_button(left)
+	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0:
+		UI.button(left,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
+
+	var right := UI.vbox(UI.panel(row),8)
+	right.custom_minimum_size.x = 295
+	UI.label(right,"DEPÓSITO DO NÚCLEO",17,UI.LIME)
+	inventory_depot_hint = UI.label(right,"",13,UI.MUTED)
+	inventory_depot_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 260
+	scroll.custom_minimum_size.y = 290
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(scroll)
 	var list := UI.vbox(scroll,5)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	depot_buttons.clear()
 	for id in ItemBag.IDS:
 		var chosen: String = id
-		depot_buttons[id] = UI.button(list,ItemBag.TITLES[id]+" / retirar",func(): world.send_action("withdraw",{"id":chosen,"qty":20}))
-	UI.button(box,"CONTINUAR / I",close_modal,true)
+		var button := UI.button(list,ItemBag.TITLES[id],func(): world.send_action("withdraw",{"id":chosen,"qty":20}))
+		button.icon = ItemIcons.get_icon(id)
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width",24)
+		button.add_theme_font_size_override("font_size",14)
+		depot_buttons[id] = button
 	refresh_inventory()
+
+func inventory_grid(parent: Node) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 9
+	grid.add_theme_constant_override("h_separation",5)
+	grid.add_theme_constant_override("v_separation",5)
+	parent.add_child(grid)
+	return grid
 
 func refresh_inventory() -> void:
 	if not is_instance_valid(inventory_status): return
-	inventory_status.text = "%d/%d espaços · Núcleo: %d sucata, %d madeira, %d componentes · Seleção %s" % [world.player.bag.slots.size()-world.player.bag.free_slots(),world.player.bag.slots.size(),world.resources.scrap,world.stock.wood,world.stock.parts,str(inventory_selected+1) if inventory_selected>=0 else "—"]
-	for id in depot_buttons:
-		depot_buttons[id].text = "%s ×%d / retirar" % [ItemBag.TITLES[id],world.depot_count(id)]
-		depot_buttons[id].disabled = world.depot_count(id)<=0
-		depot_buttons[id].icon = ItemIcons.get_icon(id)
-		depot_buttons[id].expand_icon = true
-		depot_buttons[id].add_theme_constant_override("icon_max_width",28)
-	for i in range(inventory_buttons.size()):
-		var item: Dictionary = world.player.bag.slots[i]
+	var bag: ItemBag = world.player.bag
+	var used := bag.slots.size()-bag.free_slots()
+	if is_instance_valid(inventory_meter):
+		inventory_status.text = "%d de %d espaços usados · Mochila nível %d" % [used,bag.slots.size(),bag.bag_level]
+		inventory_meter.max_value = bag.slots.size()
+		inventory_meter.value = used
+		var at_depot: bool = world.area_index==-1 and world.player.position.distance_to(world.core.position)<=4
+		var item: Dictionary = bag.slots[inventory_selected] if inventory_selected>=0 and inventory_selected<bag.slots.size() else {}
+		var id := str(item.get("id",""))
+		inventory_selection.text = "%s ×%d" % [ItemBag.TITLES[id],item.qty] if not id.is_empty() else "Clique em dois espaços para mover um item."
+		inventory_selection_icon.texture = ItemIcons.get_icon(id)
+		inventory_store.disabled = id.is_empty() or not at_depot
+		inventory_drop.disabled = id.is_empty()
+		inventory_depot_hint.text = "Itens disponíveis para retirar." if at_depot else "Aproxime-se do Núcleo para guardar ou retirar."
+		for depot_id in depot_buttons:
+			var amount: int = world.depot_count(depot_id)
+			var button: Button = depot_buttons[depot_id]
+			button.visible = amount>0
+			button.disabled = not at_depot or amount<=0
+			button.text = "%s ×%d" % [ItemBag.TITLES[depot_id],amount]
+	else:
+		inventory_status.text = "%d/%d espaços · Núcleo: %d sucata, %d madeira, %d componentes · Seleção %s" % [used,bag.slots.size(),world.resources.scrap,world.stock.wood,world.stock.parts,str(inventory_selected+1) if inventory_selected>=0 else "—"]
+	for i in range(mini(inventory_buttons.size(),bag.slots.size())):
+		var item: Dictionary = bag.slots[i]
 		inventory_buttons[i].set_item(item.id,int(item.qty),inventory_selected==i)
 
 func show_equipment() -> void:
@@ -562,7 +640,7 @@ func show_systems15() -> void:
 		UI.button(box,"MISSÃO · INTERAGIR COM OBJETIVO",func(): world.send_action("mission16",{}); close_modal())
 	if world.resources.pending>0 and not world.waves.running:
 		UI.button(box,"SUAS EVOLUÇÕES PENDENTES · %d" % world.resources.pending,func(): close_modal(); show_upgrade())
-	UI.label(box,"Classe: "+{"engineer":"Engenheiro","scout":"Batedor","shooter":"Atirador"}.get(world.player.specialization,"Engenheiro")+" · obras interrompidas por dano ou movimento.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.label(box,"Classe "+Director15.CLASSES.get(world.player.specialization,"Engenheiro")+" · obras interrompidas por dano ou movimento.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.button(box,"FUNDIR DUAS TORRES IDÊNTICAS PRÓXIMAS",func(): world.send_action("fuse",{}); close_modal())
 	UI.button(box,"RECICLAR ARMA SELECIONADA / 20 MADEIRA",func(): world.send_action("recycle",{}); close_modal())
 	UI.button(box,"BENTO: SINALIZADOR / 140 SUCATA + 6 COMPONENTES",func(): world.send_action("beacon",{}); close_modal())

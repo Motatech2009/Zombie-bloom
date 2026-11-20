@@ -39,12 +39,14 @@ func _ready() -> void:
 				VisualFactory.cylinder(self, .6, 1.5, Vector3((i % 2 - .5) * 1.1, .7, (i / 2 - .5) * 1.1), Color("a278c5"))
 		"convoy":
 			collision_layer = 1
-			VisualFactory.collider(self, Vector3(3, 2, 5), Vector3(0, 1, 0))
-			add_child(preload("res://assets/scenery/tripo16/comboio/convoy.tscn").instantiate())
+			VisualFactory.collider(self, Vector3(1.86, 1.96, 5.0) * Director15.CONVOY_SCALE, Vector3.UP * .98 * Director15.CONVOY_SCALE)
+			var truck: Node3D = preload("res://assets/scenery/tripo16/comboio/convoy.tscn").instantiate()
+			truck.scale = Vector3.ONE * Director15.CONVOY_SCALE
+			add_child(truck)
 		"escort":
 			collision_layer = 0
 			escort_rig = VisualFactory.human(self, Color("a5b897"), true)
-	label = VisualFactory.health_label(self, 2.8)
+	label = VisualFactory.health_label(self, 3.8 if kind == "convoy" else 2.8)
 	label.text = {
 		"nest": "NINHO DE ESPOROS · destrua",
 		"convoy": "COMBOIO · E / COLETAR inicia defesa de %d s" % int(Director15.CONVOY_SECONDS),

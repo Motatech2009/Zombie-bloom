@@ -2,6 +2,7 @@ extends "res://scripts/entities/player.gd"
 var specialization := "engineer"
 var cosmetic := 0
 var outfit16: Dictionary = {}
+var heal_cooldown := 0.0
 var pinned_left := 0.0
 var pin_owner: Node3D
 var combat_left := 0.0
@@ -138,6 +139,7 @@ func _physics_process(delta: float) -> void:
 	if world.combat_paused(): velocity = Vector3.ZERO; net_input.clear(); input_queue.clear(); roll_intents.clear(); return
 	region_travel_left = maxf(0,region_travel_left-delta)
 	roll_cooldown = maxf(0,roll_cooldown-delta)
+	heal_cooldown = maxf(0,heal_cooldown-delta)
 	pinned_left = maxf(0,pinned_left-delta); combat_left = maxf(0,combat_left-delta)
 	if health.dead: return
 	var frame := read_input()
@@ -169,7 +171,7 @@ func _physics_process(delta: float) -> void:
 	var reload_pressed: bool = frame.get("reload",false)
 	if reload_pressed and not previous_reload: weapons.reload()
 	previous_reload = reload_pressed
-	if frame.get("interact",false): world.tick_gather(self,delta)
+	if gather_kind=="heal" or frame.get("interact",false): world.tick_gather(self,delta)
 	elif not world.channel15.jobs.has(peer_id): cancel_gather()
 	rig.visible = true
 
