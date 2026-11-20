@@ -60,3 +60,7 @@ O Estourador acende um pavio de 0,6 segundo ao se aproximar de um sobrevivente o
 O Lançador de Esporos arremessa sementes que germinam em 0,9 segundo. Os cogumelos duram sete segundos e liberam uma nuvem que causa dano leve e reduz a velocidade dos sobreviventes em 45%. A lentidão dura até 1,25 segundo depois de sair. O Corrosivo continua lançando ácido.
 
 O APK principal usa o código 1705 e o cooperativo exige a 1.7.5 para todos os participantes.
+
+## 1.7.6
+
+O jogo prepara e mantém em memória os modelos do Corredor e dos demais infectados antes do primeiro aparecimento. A primeira renderização dos materiais acontece durante o carregamento, incluindo no modo gráfico leve. O protocolo cooperativo é o mesmo da 1.7.5.

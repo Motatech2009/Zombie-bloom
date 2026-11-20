@@ -1,4 +1,7 @@
 extends "res://scripts/sectors/roaming_world.gd"
+const ENEMY_MODELS := preload("res://scripts/presentation/enemy_models16.gd")
+const INFECTED_SCRIPT := preload("res://scripts/release15/enemy15.gd")
+const TITAN_SCRIPT := preload("res://scripts/release16/titan16.gd")
 const CORE_MESHES := [
 	preload("res://assets/defenses/core/base_1.res"),
 	preload("res://assets/defenses/core/base_2.res"),
@@ -153,6 +156,7 @@ func _ready() -> void:
 	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
 	ClayStyle.prewarm()
 	BossFx18.prepare()
+	ENEMY_MODELS.prepare()
 	airdrops.world = self
 	network = get_node_or_null("/root/Coop")
 	is_client = network!=null and network.mode=="client"
@@ -178,6 +182,7 @@ func _ready() -> void:
 	var music := MusicDirector.new(); music.world = self; add_child(music)
 	player.weapons.sync_hand()
 	refresh_core_model()
+	ENEMY_MODELS.warm_render(self)
 	if network!=null and network.mode=="host": player.display_name = network.nickname
 	if is_client:
 		player.proxy = true
@@ -445,7 +450,7 @@ func next_id() -> int:
 
 func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
 	var enemy := CharacterBody3D.new()
-	enemy.set_script(load("res://scripts/release16/titan16.gd" if kind==20 else "res://scripts/release15/enemy15.gd"))
+	enemy.set_script(TITAN_SCRIPT if kind == 20 else INFECTED_SCRIPT)
 	enemy.enemy_kind = kind
 	enemy.net_id = next_id()
 	if kind==20:
@@ -1517,6 +1522,7 @@ func _notification(what: int) -> void:
 
 func apply_mobile_quality() -> void:
 	MobilePlatform.apply_quality(self)
+	ENEMY_MODELS.warm_render(self)
 
 func open_shop() -> void:
 	if exp16.interact(player) or (is_client and local_mobile_context().get("post16",false)):

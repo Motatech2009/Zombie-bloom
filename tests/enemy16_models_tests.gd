@@ -143,6 +143,15 @@ func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false; load("res://scripts/campaign/campaign_world.gd").next_mode = "endless"
 	var w: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
+	var prepared := preload("res://scripts/presentation/enemy_models16.gd")
+	check(prepared.scenes.size() == 26 and prepared.scenes.values().all(func(scene): return scene is PackedScene),
+		"Survival caches the whole active enemy roster before the first spawn")
+	var runner_path := "res://assets/enemies/tripo16/zombies/runner.tscn"
+	check(ResourceLoader.has_cached(runner_path) and prepared.scenes[runner_path] == prepared.model_scene("runner", false),
+		"the runner is ready before combat and its packed scene is reused")
+	check(prepared.model_scene("parasite", false) == prepared.model_scene("hound", false)
+		and prepared.model_scene("hound", false) != prepared.model_scene("hound", true),
+		"the cache keeps the hound alias and boss variant separate")
 	var rows := []
 	for kind in range(20):
 		if kind!=8: rows.append([kind,0])

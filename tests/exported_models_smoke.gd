@@ -7,7 +7,7 @@ func check(ok: bool,text: String) -> void:
 	if ok: print("PASS: "+text)
 	else: failures += 1; push_error("FAIL: "+text)
 func run() -> void:
-	check(ProjectSettings.get_setting("application/config/version")=="1.7.5","actual exported package reports 1.7.5")
+	check(ProjectSettings.get_setting("application/config/version")=="1.7.6","actual exported package reports 1.7.6")
 	check(FortressData.BUILD_LIMITS == {"turret": 12, "cannon": 5, "raised_turret": 5, "shock": 5, "wire": 30, "spikes": 30},
 		"export contains the RC11 construction limits")
 	check(FortressData.BUILD_LIMIT_UNLOCK_WAVE == 20, "export unlocks the construction limits after horde twenty")
