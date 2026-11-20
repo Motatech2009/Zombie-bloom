@@ -3,6 +3,7 @@ var field_enemy: bool = false
 var is_boss: bool = false
 var encounter_index: int = -1
 var aim_height: float = 1.15
+var health_bar_height := 2.4
 var acid_left: float = 2.5
 var pounce_left: float = 0
 var wings: Array[Node3D] = []
@@ -20,8 +21,22 @@ func _ready() -> void:
 	var shape := CapsuleShape3D.new()
 	shape.radius = .36*factor
 	shape.height = 1.8*factor
-	if spec.id=="hound": shape.height = .9; shape.radius = .32; aim_height = .55
-	if spec.id=="flyer": shape.height = 1; shape.radius = .4; position.y = 2.8; aim_height = .6
+	if is_boss:
+		aim_height = (1.22 if spec.id == "titan16" else 1.15) * factor
+		health_bar_height = (2.5 if spec.id == "titan16" else 1.9) * factor + .42
+	if spec.id=="hound":
+		var hound_scale := factor if is_boss else 1.0
+		shape.height = .9 * hound_scale
+		shape.radius = .32 * hound_scale
+		aim_height = .55 * hound_scale
+		health_bar_height = .95 * hound_scale + .5
+	if spec.id=="flyer":
+		var flyer_scale := factor if is_boss else 1.0
+		shape.height = flyer_scale
+		shape.radius = .4 * flyer_scale
+		position.y = 2.8
+		aim_height = .6 * flyer_scale
+		if is_boss: health_bar_height = .75 * flyer_scale + .45
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
 	collision.position.y = shape.height/2

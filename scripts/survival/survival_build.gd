@@ -7,6 +7,11 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	return super.can_place(pos,check_access)
 
 func place() -> Node3D:
+	if not active: return null
+	if not can_place(location, false):
+		if world.is_client: world.private_notice(world.player.peer_id, reason)
+		else: world.notify(reason)
+		return null
 	if world.is_client:
 		world.send_action("build",{"pos":location,"angle":angle,"piece":selected})
 		return null
@@ -18,7 +23,9 @@ func commit_channel(data: Dictionary) -> Node3D:
 	active = true; location = data.pos; selected = int(data.piece); angle = float(data.angle)
 	var result := super.place()
 	active = previous[0]; location = previous[1]; selected = previous[2]; angle = previous[3]
-	if result!=null: world.built_this_round += 1
+	if result!=null:
+		world.built_this_round += 1
+		world.mark_alloy16(result,world.player)
 	return result
 
 func piece_specs() -> Array: return FortressData.pieces()

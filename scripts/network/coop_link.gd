@@ -1,4 +1,8 @@
 extends Node
+
+const PROTOCOL_VERSION := 32
+const VERSION_MESSAGE := "Versões incompatíveis. Atualize o Zombie Bloom no PC e no Android para jogar juntos."
+
 signal status_changed(message: String)
 var mode: String = "offline"
 var world: Node3D
@@ -75,7 +79,7 @@ func _connected() -> void:
 
 func bind_world(next_world: Node3D) -> void:
 	world = next_world
-	if mode=="client": _join_ready.rpc_id(1,identity,nickname,17,Director15.selected_class,Director15.selected_cosmetic)
+	if mode=="client": _join_ready.rpc_id(1,identity,nickname,PROTOCOL_VERSION,Director15.selected_class,Director15.selected_cosmetic,Meta16.outfit(Director15.selected_class),Account.user_id)
 	elif mode=="host": scene_sent.clear()
 
 func close_session() -> void:
@@ -150,25 +154,48 @@ func command(action: String,data: Dictionary) -> void:
 func blast_event(point: Vector3,radius: float) -> void:
 	if mode=="host": _blast_visual.rpc(point,radius)
 
+func boss_sound_event(cue: int, point: Vector3) -> void:
+	if mode != "host": return
+	var sector: Vector2i = world.coord_at(point)
+	for peer in multiplayer.get_peers():
+		if not world.avatars.has(peer): continue
+		var actor: Node3D = world.avatars[peer]
+		if actor.region_coord == sector and BossSoundBank.in_range(point, actor.global_position):
+			_boss_sound.rpc_id(peer, cue, point, world.peer_revision(peer))
+
+@rpc("authority","call_remote","reliable",0)
+func _boss_sound(cue: int, point: Vector3, revision: int) -> void:
+	if mode == "client" and is_instance_valid(world) and revision == world.last_scene_revision:
+		world.hear_boss_sound(cue, point)
+
 @rpc("any_peer","call_remote","reliable",0)
-func _join_ready(token: String,name_text: String,protocol: int = 17,specialization: String = "engineer",cosmetic: int = 0) -> void:
+func _join_ready(token: String,name_text: String,protocol: int = 0,specialization: String = "engineer",cosmetic: int = 0,outfit: Dictionary = {},account_uid: String = "") -> void:
+	if account_uid.length()>128: return
+	if not Director15.CLASSES.has(specialization) or not Cosmetics16.valid(outfit,specialization): return
 	if mode!="host" or not is_instance_valid(world) or token.length()!=32 or not token.is_valid_hex_number(false): return
 	var id := multiplayer.get_remote_sender_id()
-	if protocol!=17:
-		_rejected.rpc_id(id,"Atualize PC e Android para a mesma versão 1.5."); return
 	if id<=1 or not multiplayer.get_peers().has(id): return
+	if protocol != PROTOCOL_VERSION:
+		_rejected.rpc_id(id, VERSION_MESSAGE)
+		return
 	for actor in world.avatars.values():
 		if actor.profile_id==token: return
 	if world.attach_peer(id,token,name_text):
 		if not world.profiles.has(token): world.v15.apply_class(world.avatars[id],specialization,true)
-		world.avatars[id].cosmetic = clampi(cosmetic,0,10); world.v15.decorate(world.avatars[id])
+		world.avatars[id].set_meta("account_uid16",account_uid)
+		var actor: Node3D = world.avatars[id]
+		var selected: Dictionary = outfit if actor.specialization == specialization else actor.outfit16
+		world.apply_appearance(actor, actor.specialization, clampi(cosmetic,0,10), selected)
 		_receive_scene.rpc_id(id,world.net_scene(id))
 		scene_sent[id] = world.peer_revision(id)
 	else: _rejected.rpc_id(id,"Sala cheia, encerrada ou perfil já ativo.")
 
 @rpc("authority","call_remote","reliable",0)
 func _rejected(message: String) -> void:
-	if is_instance_valid(world): world.finish(false,message)
+	var previous := world
+	close_session()
+	if is_instance_valid(previous): previous.finish(false, message)
+	status_changed.emit(message)
 
 @rpc("any_peer","call_remote","unreliable_ordered",1)
 func _input_frame(data: Dictionary) -> void:
@@ -199,7 +226,11 @@ func _action(action: String,data: Dictionary) -> void:
 
 @rpc("authority","call_remote","reliable",0)
 func _receive_scene(data: Dictionary) -> void:
-	if mode=="client" and is_instance_valid(world): world.apply_net_scene(data)
+	if mode != "client" or not is_instance_valid(world): return
+	if data.get("protocol", 0) != PROTOCOL_VERSION:
+		_rejected(VERSION_MESSAGE)
+		return
+	world.apply_net_scene(data)
 
 @rpc("authority","call_remote","unreliable_ordered",2)
 func _receive_state(packet: PackedByteArray) -> void:

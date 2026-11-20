@@ -45,7 +45,7 @@ static func material(color: Color,kind: String = "clay",metallic: float = 0) -> 
 	mat.albedo_color = color
 	mat.albedo_texture = null if lean else texture(kind)
 	mat.normal_enabled = not lean
-	mat.normal_texture = normals[kind]
+	mat.normal_texture = null if lean else normals[kind]
 	mat.normal_scale = .10
 	mat.roughness = .94 if metallic==0 else .72
 	mat.metallic = metallic

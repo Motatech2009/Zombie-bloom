@@ -1,34 +1,157 @@
 rules_version = '2';
+// Assumed model (native Firestore, existing default database):
+// players/{uid}: public nickname(1..16), optional ranking counters and community play time.
+// players/{uid}/devices/{id}: private nonnegative device ranking counters.
+// accounts16/**: reserved for optional trusted Functions backend; deny clients.
+// community16/{uid}: private Spark wallet. No PII. Required fields below.
+// balance int 0..1e9; owned unique catalog ID list <=22; equipped fixed class/slot map.
+// active_seconds/longest_seconds int 0..315360000; created_at immutable timestamp.
+// updated_at/last_reward_at/reward_day timestamps; reward_count int 0..150 (UTC day).
+// active_match ID <=64; action enum; item_id catalog ID or empty; session_id ID or empty.
+// matches/{id}: mode enum, baseline/wave int0..10000, immutable created_at and baseline,
+// rewarded_at timestamp. sessions/{id}: cumulative seconds int0..31536000.
+// Community rewards are CLIENT-REPORTED, rate limited, not proof of a real victory.
 service cloud.firestore {
   match /databases/{database}/documents {
     function owner(uid) { return request.auth != null && request.auth.uid == uid; }
-    function counter(data, key) {
-      return !(key in data) || (data[key] is int && data[key] >= 0);
+    function validId(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,64}$'); }
+    function counter(d, k) { return !(k in d) || (d[k] is int && d[k]>=0); }
+    function validPlayer(d) {
+      return d.keys().hasOnly(['nickname','kills','hordes','scrap','points','active_seconds'])
+        && d.nickname is string && d.nickname.size()>=1 && d.nickname.size()<=16
+        && counter(d,'kills') && counter(d,'hordes') && counter(d,'scrap') && counter(d,'points')
+        && counter(d,'active_seconds');
     }
+    function publishedTime(uid, d, old) {
+      return !d.diff(old).affectedKeys().hasAny(['active_seconds'])
+        || ('active_seconds' in d && d.active_seconds>=old.get('active_seconds',0)
+            && d.active_seconds==getAfter(walletPath(uid)).data.active_seconds);
+    }
+    function validDevice(d) {
+      return d.keys().hasAll(['kills','hordes','scrap'])
+        && d.keys().hasOnly(['kills','hordes','scrap','points'])
+        && counter(d,'kills') && counter(d,'hordes') && counter(d,'scrap') && counter(d,'points');
+    }
+    match /accounts16/{document=**} { allow read, write: if false; }
     match /players/{uid} {
       allow get: if request.auth != null;
-      allow list: if request.auth != null && request.query.limit != null && request.query.limit <= 25;
-      allow create, update: if owner(uid)
-        && request.resource.data.keys().hasOnly(['nickname', 'kills', 'hordes', 'scrap', 'points'])
-        && request.resource.data.nickname is string
-        && request.resource.data.nickname.size() >= 1
-        && request.resource.data.nickname.size() <= 16
-        && counter(request.resource.data, 'kills')
-        && counter(request.resource.data, 'hordes')
-        && counter(request.resource.data, 'scrap')
-        && counter(request.resource.data, 'points');
+      allow list: if request.auth != null && request.query.limit != null && request.query.limit<=25;
+      allow create: if owner(uid) && validPlayer(request.resource.data) && publishedTime(uid,request.resource.data,{});
+      allow update: if owner(uid) && validPlayer(request.resource.data) && publishedTime(uid,request.resource.data,resource.data);
       allow delete: if false;
       match /devices/{device} {
         allow read: if owner(uid);
-        allow create, update: if owner(uid)
-          && request.resource.data.keys().hasAll(['kills', 'hordes', 'scrap'])
-          && request.resource.data.keys().hasOnly(['kills', 'hordes', 'scrap', 'points'])
-          && counter(request.resource.data, 'kills')
-          && counter(request.resource.data, 'hordes')
-          && counter(request.resource.data, 'scrap')
-        && counter(request.resource.data, 'points');
+        allow create, update: if owner(uid) && validDevice(request.resource.data);
         allow delete: if false;
       }
     }
+    function price(id) { return {"COS-ENG-01":300,"COS-ENG-02":550,"COS-ENG-03":800,"COS-ENG-04":1300,"COS-ENG-05":500,"COS-ENG-06":1400,"COS-BAT-01":300,"COS-BAT-02":550,"COS-BAT-03":850,"COS-BAT-04":1300,"COS-BAT-05":500,"COS-BAT-06":1400,"COS-ATI-01":300,"COS-ATI-02":550,"COS-ATI-03":850,"COS-ATI-04":1300,"COS-ATI-05":500,"COS-ATI-06":1400,"COS-UNI-01":250,"COS-UNI-02":600,"COS-UNI-03":400}.get(id, -1); }
+    function validEquipped(id, owned, allowed) { return id=='' || (id is string && id in owned && id in allowed); }
+    function engineer(d, owned) {
+      return d is map && d.keys().hasAll(['head','outfit','backpack','effect']) && d.keys().hasOnly(['head','outfit','backpack','effect'])
+        && validEquipped(d.head, owned, ["COS-ENG-01","COS-ENG-02","COS-UNI-01","COS-TITAN-01"])
+        && validEquipped(d.outfit, owned, ["COS-ENG-03","COS-ENG-04","COS-UNI-02"])
+        && validEquipped(d.backpack, owned, ["COS-ENG-05","COS-UNI-03"])
+        && validEquipped(d.effect, owned, ["COS-ENG-06"]);
+    }
+    function scout(d, owned) {
+      return d is map && d.keys().hasAll(['head','outfit','backpack','effect']) && d.keys().hasOnly(['head','outfit','backpack','effect'])
+        && validEquipped(d.head, owned, ["COS-BAT-01","COS-BAT-02","COS-UNI-01","COS-TITAN-01"])
+        && validEquipped(d.outfit, owned, ["COS-BAT-03","COS-BAT-04","COS-UNI-02"])
+        && validEquipped(d.backpack, owned, ["COS-BAT-05","COS-UNI-03"])
+        && validEquipped(d.effect, owned, ["COS-BAT-06"]);
+    }
+    function shooter(d, owned) {
+      return d is map && d.keys().hasAll(['head','outfit','backpack','effect']) && d.keys().hasOnly(['head','outfit','backpack','effect'])
+        && validEquipped(d.head, owned, ["COS-ATI-01","COS-ATI-02","COS-UNI-01","COS-TITAN-01"])
+        && validEquipped(d.outfit, owned, ["COS-ATI-03","COS-ATI-04","COS-UNI-02"])
+        && validEquipped(d.backpack, owned, ["COS-ATI-05","COS-UNI-03"])
+        && validEquipped(d.effect, owned, ["COS-ATI-06"]);
+    }
+    function validWallet(d) {
+      return d.keys().hasAll(['balance','owned','equipped','active_seconds','longest_seconds','created_at','updated_at','last_reward_at','reward_day','reward_count','active_match','action','item_id','session_id'])
+        && d.keys().hasOnly(['balance','owned','equipped','active_seconds','longest_seconds','created_at','updated_at','last_reward_at','reward_day','reward_count','active_match','action','item_id','session_id'])
+        && d.balance is int && d.balance>=0 && d.balance<=1000000000
+        && d.owned is list && d.owned.size()<=22 && d.owned.toSet().size()==d.owned.size() && d.owned.hasOnly(["COS-ENG-01","COS-ENG-02","COS-ENG-03","COS-ENG-04","COS-ENG-05","COS-ENG-06","COS-BAT-01","COS-BAT-02","COS-BAT-03","COS-BAT-04","COS-BAT-05","COS-BAT-06","COS-ATI-01","COS-ATI-02","COS-ATI-03","COS-ATI-04","COS-ATI-05","COS-ATI-06","COS-UNI-01","COS-UNI-02","COS-UNI-03","COS-TITAN-01"])
+        && d.equipped is map && d.equipped.keys().hasAll(['engineer','scout','shooter']) && d.equipped.keys().hasOnly(['engineer','scout','shooter'])
+        && engineer(d.equipped.engineer,d.owned) && scout(d.equipped.scout,d.owned) && shooter(d.equipped.shooter,d.owned)
+        && d.active_seconds is int && d.active_seconds>=0 && d.active_seconds<=315360000
+        && d.longest_seconds is int && d.longest_seconds>=0 && d.longest_seconds<=d.active_seconds
+        && d.created_at is timestamp && d.updated_at is timestamp && d.last_reward_at is timestamp && d.reward_day is timestamp
+        && d.reward_count is int && d.reward_count>=0 && d.reward_count<=150
+        && d.active_match is string && (d.active_match=='' || validId(d.active_match))
+        && d.action in ['init','start','horde','titan','purchase','equip','sync']
+        && d.item_id is string && d.item_id.size()<=16
+        && d.session_id is string && (d.session_id=='' || validId(d.session_id));
+    }
+    function validMatch(d) {
+      return d.keys().hasAll(['mode','baseline','wave','created_at','rewarded_at']) && d.keys().hasOnly(['mode','baseline','wave','created_at','rewarded_at'])
+        && d.mode in ['campaign','endless','rescue'] && d.baseline is int && d.baseline>=0 && d.baseline<=10000
+        && d.wave is int && d.wave>=d.baseline && d.wave<=10000
+        && d.created_at is timestamp && d.rewarded_at is timestamp;
+    }
+    function validSession(d) { return d.keys().hasAll(['seconds']) && d.keys().hasOnly(['seconds']) && d.seconds is int && d.seconds>=0 && d.seconds<=31536000; }
+    function walletPath(uid) { return /databases/$(database)/documents/community16/$(uid); }
+    function matchPath(uid,id) { return /databases/$(database)/documents/community16/$(uid)/matches/$(id); }
+    function sessionPath(uid,id) { return /databases/$(database)/documents/community16/$(uid)/sessions/$(id); }
+    function only(d, old, keys) { return d.diff(old).affectedKeys().hasOnly(keys.concat(['updated_at','action','item_id','session_id'])); }
+    function interval(wave,mode) { return mode=='rescue' ? 60 : wave<=2 ? 600 : wave==3 ? 480 : wave==4 ? 360 : wave==5 ? 300 : 180; }
+    function credited(uid,d,old) {
+      let before = get(matchPath(uid,d.active_match)).data;
+      let after = getAfter(matchPath(uid,d.active_match)).data;
+      return only(d,old,['balance','last_reward_at','reward_day','reward_count'])
+        && d.balance==old.balance+100 && d.active_match==old.active_match
+        && after.wave==before.wave+1 && after.rewarded_at==request.time
+        && request.time>=before.rewarded_at+duration.value(interval(after.wave,before.mode),'s')
+        && (before.mode!='rescue' || after.wave<=3)
+        && d.last_reward_at==request.time && request.time>=old.last_reward_at+duration.value(60,'s')
+        && d.reward_day==request.time && d.reward_count==(old.reward_day.date()==request.time.date() ? old.reward_count+1 : 1);
+    }
+    function timed(uid,d,old) {
+      let previous = exists(sessionPath(uid,d.session_id)) ? get(sessionPath(uid,d.session_id)).data.seconds : 0;
+      let next = getAfter(sessionPath(uid,d.session_id)).data.seconds;
+      return validId(d.session_id) && only(d,old,['active_seconds','longest_seconds'])
+        && next>previous && d.active_seconds==old.active_seconds+next-previous
+        && d.active_seconds<=(request.time-old.created_at).seconds()+5
+        && d.longest_seconds==(old.longest_seconds>next ? old.longest_seconds : next);
+    }
+    function changedWallet(uid,d,old) {
+      return d.created_at==old.created_at && d.updated_at==request.time
+        && ((d.action=='purchase' && only(d,old,['balance','owned']) && price(d.item_id)>0
+              && !(d.item_id in old.owned) && d.owned==old.owned.concat([d.item_id]) && d.balance==old.balance-price(d.item_id))
+        || (d.action=='equip' && only(d,old,['equipped']))
+        || (d.action=='start' && only(d,old,['active_match']) && validId(d.active_match) && getAfter(matchPath(uid,d.active_match)).data.mode in ['campaign','endless','rescue'])
+        || (d.action=='horde' && credited(uid,d,old))
+        || (d.action=='titan' && only(d,old,['owned']) && d.item_id=='COS-TITAN-01' && !(d.item_id in old.owned)
+              && d.owned==old.owned.concat([d.item_id]) && get(matchPath(uid,d.active_match)).data.mode in ['campaign','endless']
+              && request.time>=get(matchPath(uid,d.active_match)).data.created_at+duration.value(120,'s'))
+        || (d.action=='sync' && timed(uid,d,old)));
+    }
+    match /community16/{uid} {
+      allow get: if owner(uid);
+      allow list, delete: if false;
+      allow create: if owner(uid) && validWallet(request.resource.data)
+        && request.resource.data=={'balance':0,'owned':[],'equipped':{'engineer':{'head':'','outfit':'','backpack':'','effect':''},'scout':{'head':'','outfit':'','backpack':'','effect':''},'shooter':{'head':'','outfit':'','backpack':'','effect':''}},'active_seconds':0,'longest_seconds':0,'created_at':request.time,'updated_at':request.time,'last_reward_at':timestamp.value(0),'reward_day':timestamp.value(0),'reward_count':0,'active_match':'','action':'init','item_id':'','session_id':''};
+      allow update: if owner(uid) && validWallet(request.resource.data) && changedWallet(uid,request.resource.data,resource.data);
+      match /matches/{id} {
+        allow get: if owner(uid) && exists(walletPath(uid));
+        allow list, delete: if false;
+        allow create: if owner(uid) && validId(id) && validMatch(request.resource.data)
+          && request.resource.data.wave==request.resource.data.baseline && request.resource.data.created_at==request.time && request.resource.data.rewarded_at==request.time
+          && getAfter(walletPath(uid)).data.active_match==id && getAfter(walletPath(uid)).data.action=='start' && getAfter(walletPath(uid)).data.updated_at==request.time;
+        allow update: if owner(uid) && validMatch(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wave','rewarded_at']) && request.resource.data.wave==resource.data.wave+1 && request.resource.data.rewarded_at==request.time
+          && getAfter(walletPath(uid)).data.active_match==id && getAfter(walletPath(uid)).data.action=='horde'
+          && getAfter(walletPath(uid)).data.balance==get(walletPath(uid)).data.balance+100 && getAfter(walletPath(uid)).data.updated_at==request.time;
+      }
+      match /sessions/{id} {
+        allow get: if owner(uid) && exists(walletPath(uid));
+        allow list, delete: if false;
+        allow create, update: if owner(uid) && validId(id) && validSession(request.resource.data)
+          && getAfter(walletPath(uid)).data.action=='sync' && getAfter(walletPath(uid)).data.session_id==id && getAfter(walletPath(uid)).data.updated_at==request.time
+          && getAfter(walletPath(uid)).data.active_seconds>get(walletPath(uid)).data.active_seconds;
+      }
+    }
+    match /{document=**} { allow read, write: if false; }
   }
 }

@@ -18,7 +18,7 @@ func run() -> void:
 	MobilePlatform.force_touch = true
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false); world.set_process(false)
 	await frames()
 	var controls: TouchControls = world.touch_controls
@@ -61,7 +61,7 @@ func run() -> void:
 	check(world.local_input(actor).move==Vector2.ZERO and not world.local_input(actor).fire,"modal panels cannot drive movement or fire underneath")
 	world.hud.close_modal()
 	world.hud.show_build_catalog(); await frames()
-	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==11,"mobile construction catalog exposes all ten defenses in a scrollable item list")
+	check(world.hud.mode=="catalog" and world.hud.browser_buttons.size()==12,"mobile construction catalog exposes all twelve defenses in a scrollable item list")
 	world.hud.close_modal()
 	actor.position = Vector3(0,0,8); actor.set_physics_process(false)
 	world.resources.scrap = 1000; world.stock = {"wood":100,"parts":100}
@@ -146,10 +146,10 @@ func run() -> void:
 	var wide_held: Rect2 = world.hud.held_icon.get_parent().get_parent().get_global_rect()
 	check(controls.size.x>960 and wide_held.end.x>960 and not wide_held.intersects(controls.buttons.fire),"a wider screen expands the visible game and keeps ammo attached to the right edge")
 	root.size = original_size; await frames(4)
-	world.resources.pending = 1; world.upgrades.roll(); world.hud.show_upgrade()
-	check(world.hud.mode=="upgrade","mobile player can review a pending team upgrade")
-	world.resources.pending = 0; world.upgrades.offers.clear(); world.hud._process(0)
-	check(world.hud.mode.is_empty(),"a team upgrade resolved elsewhere closes stale choice panels")
+	world.waves.wave += 1; world.upgrades.award_horde(world.waves.wave); world.upgrades.roll(); world.hud.show_upgrade()
+	check(world.hud.mode=="upgrade","mobile player can review its own pending horde upgrade")
+	world.upgrades.choose(0); world.hud._process(0)
+	check(world.hud.mode.is_empty(),"a confirmed individual upgrade closes its stale choice panel")
 	var stale: Dictionary = world.net_state(1)
 	world.is_client = true; world.last_scene_revision = world.scene_revision
 	world.select_hotbar(8); world.apply_net_state(stale,1)

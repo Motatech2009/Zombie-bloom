@@ -3,6 +3,7 @@ var world: Node3D
 var root: Control
 var modal: Control
 var mode: String = ""
+var scene_transition_pending := false
 var health_text: Label
 var health_bar: ProgressBar
 var core_text: Label
@@ -294,9 +295,22 @@ func show_result() -> void:
 	UI.button(box, "VOLTAR AO MENU", menu)
 
 func restart() -> void:
-	get_tree().paused = false
-	get_tree().reload_current_scene()
+	request_scene_change(true)
 
 func menu() -> void:
-	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/main/MainMenu.tscn")
+	request_scene_change(false)
+
+func request_scene_change(reload_scene: bool) -> void:
+	if scene_transition_pending or not is_inside_tree(): return
+	scene_transition_pending = true
+	# Leave the button/input callback before removing its scene.
+	call_deferred("change_scene",reload_scene)
+
+func change_scene(reload_scene: bool) -> void:
+	var tree := get_tree()
+	if tree==null: return
+	tree.paused = false
+	var result := tree.reload_current_scene() if reload_scene else tree.change_scene_to_file("res://scenes/main/MainMenu.tscn")
+	if result!=OK:
+		scene_transition_pending = false
+		push_error("Não foi possível trocar a cena: "+error_string(result))

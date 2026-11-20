@@ -1,0 +1,31 @@
+ZOMBIE BLOOM 1.6 RC9 — VALIDACAO
+
+Codigo: 49b9eaa2b38d550afe8ecf7f5c13e2e5a573d16f
+CI aprovado: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836
+Job: 134749361512
+
+Os logs raiz registram 3062 verificacoes, todas com zero falhas, incluindo participantes de testes cooperativos e funcoes emuladas. A soma conta verificacoes reportadas, nao casos unicos. Modelos: 245 desktop + 245 toque. Pacote Windows no CI: 79.
+
+Apos download, mais 245 verificacoes executadas usando o executavel como pacote principal pelo Godot 4.6.3; zero falhas. O executavel Windows tambem iniciou e encerrou normalmente apos 300 frames em modo headless. A revisao visual usou o renderizador real do Godot no Windows e as imagens do CI.
+
+Android: versionCode 1609 / 1.6.0-rc.9; assinatura v2/v3 verificada; arm64-v8a + armeabi-v7a; permissao INTERNET presente. Android fisico nao foi testado neste ambiente.
+
+PC: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14421390863
+Android em ZIP: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44289103836/artifacts/14420248631
+Os downloads do GitHub podem exigir login.
+
+Hashes SHA-256:
+ZombieBloom-RC9-Windows.zip (84799566 bytes)
+a556794f6ae8631d13c7c7140354fafd47212cfe056c8ba9e082cd777993d4f1
+
+Windows/ZombieBloom.exe (168802928 bytes)
+4f3592556c7893c8012eff3493660566a2e3d563000c9ea21a3b4fa3ab781667
+
+ZombieBloom-RC9-Android.apk (120854706 bytes)
+5d2e4d1d38fa8d7cf030adbcba38c06a59839adbc4178c39b13cc6936bbd3579
+
+Originais recebidos: bosses.glb e zombies.glb. Kit de bosses: oito componentes. Kit normal: 19 componentes, incluindo o Colosso antigo. O Parasita nao veio separado e usa o novo cao em miniatura. Demais modelos, texturas e habilidades preservados conforme documentacao art_source/tripo16/enemies.
+
+Inclui correcoes: braco direito e elos 3D; taco com ate tres alvos, sem paralisia; ninho com geracao de guardas e dano persistido; vila negociavel pelo toque e visivel para convidados; novos Titas somente fora da regiao central 3x3, com aviso apos entrada. Encontros ja salvos foram preservados.
+
+Economia no Firebase real continua pendente. Nenhum servico de geracao de modelos foi acionado.

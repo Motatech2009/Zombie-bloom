@@ -51,7 +51,7 @@ static func button(parent: Node, text: String, callback: Callable, primary: bool
 	if primary:
 		node.add_theme_stylebox_override("normal", style(LIME, LIME))
 		node.add_theme_color_override("font_color", INK)
-	node.pressed.connect(callback)
+	if callback.is_valid(): node.pressed.connect(callback)
 	parent.add_child(node)
 	return node
 

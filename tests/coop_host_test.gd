@@ -18,7 +18,7 @@ func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").next_mode = "endless"
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate()
 	world.checkpoint_enabled = false
-	root.add_child(world)
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world)
 	current_scene = world
 	world.waves.set_physics_process(false)
 	var deadline := Time.get_ticks_msec()+16000
@@ -80,6 +80,8 @@ func run() -> void:
 	var wire := StaticBody3D.new(); wire.set_script(world.structure_script())
 	wire.world = world; wire.piece_index = 6; wire.tier = 2; wire.position = Vector3(20,0,20)
 	world.base_root.add_child(wire)
+	var turret := StaticBody3D.new(); turret.set_script(world.structure_script()); turret.world = world; turret.piece_index = 1; turret.tier = 3; turret.position = Vector3(18,0,15); turret.rotation.y = .4
+	world.base_root.add_child(turret); turret.set_physics_process(false); turret.apply_aim_pose(Vector2(.7,.13))
 	world.airdrops.left = .01; world.airdrops.tick(.02)
 	world.airdrops.state.coord = [0,-1]
 	await create_timer(5).timeout
@@ -97,7 +99,10 @@ func run() -> void:
 	check(world.stock.wood==100,"three concurrent withdraw/store transactions conserve the shared depot")
 	world.travel_cooldown = 0
 	for actor in world.avatars.values(): actor.position = SectorGenerator.EXITS[0]
+	world.exp16.sectors["0:-1"] = {"kind":"normal","hp":20000.0,"dead":false,"reward":{},"stocks":{},"pos":[15.0,0.0]}
 	check(travel_party(world,0),"the complete party crosses the northern exit")
+	# This fixture verifies exact house deltas; test nest loot multipliers separately.
+	world.v15.event_states["0:-1:"+str(world.descriptor.visit)] = {"type":"convoy","complete":true,"started":false,"left":45.0,"spawn":0.0,"bonus":false,"owner":""}
 	check(world.airdrops.at_sector() and world.descriptor.risk==4 and world.airdrops.crate!=null,"server loads the guarded airdrop into the same procedural party sector")
 	var house: Node3D = world.raid_house(0)
 	check(house!=null and house.guard_total==int(house.data.guards)*8,"house scene and guard objective use the same four-player scaling")

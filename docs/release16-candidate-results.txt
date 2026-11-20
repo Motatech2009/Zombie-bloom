@@ -1,0 +1,82 @@
+Zombie Bloom 1.6.0-rc.1 — evidências locais da candidata
+Data de referência: 17/11/2026 (Brasil). Não é release final.
+Godot 4.6.3; Linux/headless; ENet em processos reais; render OpenGL/Mesa.
+
+Suítes individuais (última execução válida por suíte):
+- account: 31 verificações, 0 falhas.
+- account_world: 9 verificações, 0 falhas.
+- arsenal: 99 verificações, 0 falhas.
+- campaign: 127 verificações, 0 falhas.
+- clay: 35 verificações, 0 falhas.
+- defense: 55 verificações, 0 falhas.
+- fortress: 101 verificações, 0 falhas.
+- frontier_features: 31 verificações, 0 falhas.
+- internet: 31 verificações, 0 falhas.
+- mobile: 49 verificações, 0 falhas.
+- mobile_experience: 30 verificações, 0 falhas.
+- mobile_performance: 26 verificações, 0 falhas.
+- mobile_targeting: 35 verificações, 0 falhas.
+- online_preparation: 95 verificações, 0 falhas.
+- progression: 43 verificações, 0 falhas.
+- rank_combat: 34 verificações, 0 falhas.
+- release15: 35 verificações, 0 falhas.
+- release15_encounters: 27 verificações, 0 falhas.
+- release16_content: 78 verificações, 0 falhas.
+- release16_meta: 13 verificações, 0 falhas.
+- release16_progression: 52 verificações, 0 falhas.
+- release16_ui: 14 verificações, 0 falhas.
+- release16_ui_mobile: 12 verificações, 0 falhas.
+- roll: 33 verificações, 0 falhas.
+- run: 85 verificações, 0 falhas.
+- sectors: 75 verificações, 0 falhas.
+- session: 16 verificações, 0 falhas.
+- survival: 81 verificações, 0 falhas.
+
+Subtotal das suítes individuais: 1352 verificações, sem duplicar reexecuções.
+
+Cooperativo / rede:
+- Evolução individual, 2 jogadores: 20 verificações, 0 falhas, somando host/clientes.
+- Evolução individual, 3 jogadores: 31 verificações, 0 falhas, somando host/clientes.
+- Evolução individual, 4 jogadores + Titã/bolsas/cosméticos: 42 verificações, 0 falhas, somando host/clientes.
+- Resgate completo, 4 jogadores: 31 verificações, 0 falhas, somando host/clientes.
+- Cooperativo legado, 4 jogadores: 113 verificações, 0 falhas, somando host/clientes.
+- Previsão de movimento: 9 verificações, 0 falhas, somando host/clientes.
+- Exploração em setores separados: 20 verificações, 0 falhas, somando host/clientes.
+
+Backend:
+- Node: 6 testes aprovados; reenvio e múltiplos aparelhos, transações, catálogo completo e reconexão.
+- Auth + Firestore emulados com handler HTTP real em TCP: 13 verificações API + 7 cliente Godot, 0 falhas.
+- Operações em demo-zombie-bloom; nenhum jogador de teste criado em produção.
+- Functions Emulator completo não executa localmente: sandbox recusa seu socket Unix (EPERM). A execução integral está configurada no CI.
+
+Visual:
+- 18 telas nativas (9 desktop + 9 mobile); sem erros de script/renderer nos logs.
+- Menu, perfil, elos, loja, login, cartas, posto, Titã e resgate.
+- Prévia da loja revisada com mundo 3D isolado, fundo opaco, câmera ortográfica e personagem ampliado.
+- Cenário original e versão no canto inferior direito preservados.
+
+Limites que impedem lançamento final:
+- Serviço account16Api e regras ainda não publicados: CLI real sem autenticação administrativa.
+- Exportações Windows/APK e Functions Emulator completo: aprovados na revisão bb4264e; downloads e hashes em RELEASE_1_6.md.
+- Testes físicos Windows/Android, coop entre plataformas, FPS real e balanceamento prolongado dependem dos aparelhos do projeto.
+- Defaults criativos continuam configuráveis/propostos. Não há aprovação criativa inferida nem antitrapaça competitivo independente.
+
+Correções de integração verificadas:
+- Moeda observa horda concluída; registro não usa índice de horda em andamento. Créditos anteriores ao primeiro registro online são reconciliados sem falsa confirmação.
+- Posto não pausa relógio no solo; estoque resiste ao retorno após 181 segundos.
+- Vida/loot do Titã persistem e ponto fraco acompanha rotação real do peito.
+- Save de setor aceita posto sem caixas comuns; campanha permanece separada do resgate.
+- Mira vertical do Titã validada com raio real de pistola: coração alcançável, bônus 1,5x exato e braço excluído. Campanha (127), arsenal (99) e mira mobile (35) passaram após a correção.
+- Coleta final do Titã persiste imediatamente; reentrada após expiração não recria o loot. Prêmio especial não é mesclado a pilhas comuns no limite de drops.
+- Testes legados usam cenários comuns explícitos; não dependem do sorteio novo 5%/10%. A suíte 1.6 mantém os testes de probabilidade e encontros reais.
+- Regressões locais após estabilização: 16 suítes aprovadas e progressão repetida oito vezes, sem aviso ObjectDB. O CI continua bloqueando esse aviso.
+- CI final da revisão bb4264e passou por testes, Functions Emulator completo e exportação Windows/APK, incluindo a correção final do loot. Execuções 44063597516 (push) e 44063604788 (PR) concluídas com sucesso.
+- Pendências de partidas abandonadas não impedem os créditos da partida atual e não geram chamadas repetidas para uma partida inativa. Duas verificações adicionais de fila aprovadas.
+
+Retomada e conferência final (17/11/2026):
+- Hashes dos ZIPs Windows/Android recalculados e iguais aos digests registrados no GitHub.
+- Windows exportado executado em perfil temporário: headless e OpenGL/RX 7600 com áudio real, saída 0, sem erros ou ObjectDB.
+- Áudio Dummy em execução gráfica com encerramento forçado produziu aviso de AudioStreamWAV/AudioStreamPlaybackWAV; não reproduzido com áudio real. Não interpretado como teste de memória prolongado.
+- Menu desktop, loja mobile e cartas mobile inspecionados nas prévias do CI. Controle interativo de janelas indisponível; sem playtest manual alegado.
+- Serviço real account16Api: HTTP 404 em sondagem sem mutação; publicação administrativa e fluxo autenticado ainda pendentes.
+- Nenhum merge, lançamento final, troca de links públicos ou gravação de teste em produção efetuado.

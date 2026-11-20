@@ -46,13 +46,14 @@ func layout_controls() -> void:
 	if context.get("build",false): buttons.build = Rect2(14,154,100,58)
 	var contextual: Array[String] = []
 	if not interaction_text.is_empty(): contextual.append("interact")
-	for role in ["upgrade","shop","revive","repair","gate","travel"]:
+	for role in ["upgrade","shop","revive","heal","repair","gate","travel"]:
 		var available: bool = not context.get("upgrade",{}).is_empty() if role=="upgrade" else context.get(role,false)
+		if role=="shop" and context.get("post16",false) and not interaction_text.is_empty(): continue
 		if available: contextual.append(role)
 	for i in range(contextual.size()): buttons[contextual[i]] = Rect2(size.x-140-i*124,158,116,62)
 	if is_instance_valid(world) and is_instance_valid(world.builder) and world.builder.active:
 		buttons.erase("roll"); buttons.erase("interact"); buttons.erase("reload"); buttons.erase("fire")
-		for role in ["upgrade","shop","revive","repair","gate","travel","build"]: buttons.erase(role)
+		for role in ["upgrade","shop","revive","heal","repair","gate","travel","build"]: buttons.erase(role)
 		buttons.merge({"rotate":Rect2(size.x-310,size.y-208,92,64),"place":Rect2(size.x-208,size.y-208,184,72),"cancel":Rect2(size.x-208,size.y-126,184,58)})
 	for index in fingers.keys():
 		if fingers[index] not in ["move","target"] and not buttons.has(fingers[index]): release_finger(index)
@@ -104,7 +105,7 @@ func select_target(point: Vector2) -> void:
 		if hit!=null: free_aim = ((hit-world.player.position)*Vector3(1,0,1)).normalized()
 		return
 	var best := 38.0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy) or world.camera.is_position_behind(MobileTargeting.point(enemy)): continue
 		var target_center: Vector2 = world.camera.unproject_position(MobileTargeting.point(enemy))
 		var feet: Vector2 = world.camera.unproject_position(enemy.global_position)
@@ -155,6 +156,7 @@ func _input(event: InputEvent) -> void:
 		fingers[event.index] = role
 		if role in ["interact","repair","revive"]: fire_held = false; clear_target()
 		if role=="move": drag_stick(role,event.position)
+		elif role=="interact" and context.get("post16",false): reset_fingers(); world.open_shop()
 		elif role in ["interact","repair","revive"]: interact_held = true
 		elif role=="reload": reload_held = true
 		elif role=="fire": start_fire()
@@ -201,6 +203,7 @@ func trigger(role: String) -> void:
 		"map": reset_fingers(); world.hud.show_routes()
 		"shop": reset_fingers(); world.open_shop()
 		"upgrade": reset_fingers(); world.hud.show_structure_upgrade()
+		"heal": fire_held = false; clear_target(); world.send_action("heal",{})
 		"gate": world.send_action("gate",{})
 		"travel": travel_press()
 		"pause": reset_fingers(); world.hud.show_pause()
@@ -242,7 +245,7 @@ func _draw() -> void:
 		for angle in range(4): draw_arc(target_center,27,angle*PI/2+.15,angle*PI/2+1.15,12,color,3,true)
 		var title := "ALVO" if color==UI.LIME else "SEM TIRO"
 		draw_string(ThemeDB.fallback_font,target_center+Vector2(-45,-36),title,HORIZONTAL_ALIGNMENT_CENTER,90,12,color)
-	var names := {"build":"CONSTRUIR","map":"MAPA","inventory":"BOLSA","upgrade":"MELHORAR","shop":"VENDEDOR","gate":"PORTÃO","travel":"VIAJAR","repair":"REPARAR","revive":"REANIMAR","roll":"ROLAR","interact":interaction_text,"reload":"RECARGA","pause":"Ⅱ","rotate":"GIRAR","place":"COLOCAR","cancel":"CANCELAR","fire":"ATIRAR"}
+	var names := {"build":"CONSTRUIR","map":"MAPA","inventory":"BOLSA","upgrade":"MELHORAR","shop":"NEGOCIAR" if context.get("post16",false) else "VENDEDOR","gate":"PORTÃO","travel":"VIAJAR","repair":"REPARAR","revive":"REANIMAR","heal":"CURAR","roll":"ROLAR","interact":interaction_text,"reload":"RECARGA","pause":"Ⅱ","rotate":"GIRAR","place":"COLOCAR","cancel":"CANCELAR","fire":"ATIRAR"}
 	for role in buttons:
 		var rect: Rect2 = buttons[role]
 		var active := fingers.values().has(role)
@@ -255,7 +258,7 @@ func _draw() -> void:
 			elif world.player.bag.hand()=="bat": text = "GOLPEAR"
 			elif fire_held: text = "ATIRANDO" if target_shootable else "SEM ALVO"
 		if role=="roll" and world.player.roll_cooldown>0: text = "ROLAR\n%.1f s" % world.player.roll_cooldown
-		var icons := {"build":"⚒","map":"⌖","inventory":"▣","upgrade":"↑","shop":"$","gate":"↔","travel":"➜","repair":"+","revive":"+","roll":"↻","interact":"↓","reload":"↺"}
+		var icons := {"build":"⚒","map":"⌖","inventory":"▣","upgrade":"↑","shop":"$","gate":"↔","travel":"➜","repair":"+","revive":"+","heal":"+","roll":"↻","interact":"↓","reload":"↺"}
 		if icons.has(role): draw_string(ThemeDB.fallback_font,rect.position+Vector2(0,27),icons[role],HORIZONTAL_ALIGNMENT_CENTER,rect.size.x,25,tint)
 		var rows := text.split("\n")
 		if role=="fire":
@@ -276,8 +279,8 @@ func assist_target() -> void:
 	if ItemBag.WEAPON_IDS.find(world.player.bag.hand())<0 and world.player.bag.hand()!="bat": return
 	var candidates: Array = []
 	var weapon: int = ItemBag.WEAPON_IDS.find(world.player.bag.hand())
-	var range_squared: float = pow(2.6 if world.player.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range),2)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var range_squared: float = pow(2.15 if world.player.bag.hand()=="bat" else float(Arsenal.WEAPONS[weapon].values.range),2)
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy): continue
 		var distance: float = enemy.global_position.distance_squared_to(world.player.global_position)
 		if distance>range_squared or world.camera.is_position_behind(MobileTargeting.point(enemy)): continue

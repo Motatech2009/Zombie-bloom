@@ -27,7 +27,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not is_instance_valid(actor) or actor.health.dead: panel.hide(); return
 	var camera: Camera3D = actor.world.camera
-	var point: Vector3 = actor.global_position+Vector3(0,3.3 if actor.is_boss else 2.4 if actor.spec.id!="hound" else 1.45,0)
+	var point: Vector3 = actor.global_position + Vector3.UP * actor.health_bar_height
 	panel.visible = not camera.is_position_behind(point) and point.distance_to(camera.global_position)<70 and (actor.is_boss or actor.global_position.distance_to(actor.world.player.global_position)<24 or actor.health.current<actor.health.maximum)
 	if not panel.visible: return
 	panel.position = camera.unproject_position(point)

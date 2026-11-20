@@ -50,3 +50,16 @@ Os dois exportadores de modelos desativam o acabamento durante a gravação das 
 ## Android 0.11
 
 Três SVGs em assets/mobile formam o ícone do aplicativo e as camadas adaptativas. Mantêm os 38 ícones de itens anteriores. A interface de toque e os menus são desenhados em código, sem imagens remotas.
+
+
+## Tripo — modelos do criador (RC6)
+
+Canhão, torre Tesla, torreta elevada, quatro níveis do Núcleo e 19 cosméticos foram fornecidos em GLB pelo criador. A preparação offline, os hashes e os limites estão em [art_source/tripo16/README.md](art_source/tripo16/README.md). As malhas/texturas de produção ficam em `assets/defenses/` e `assets/cosmetics/tripo16/`; os originais não são distribuídos no executável.
+
+## Modelos do criador — personagem e objetos RC7
+
+Personagem, quatro carros, comboio com reboque e barraca: Tripo, arquivos enviados pelo criador. Procedência e hashes em art_source/tripo16/actors/sources.json. Recursos de produção em assets/characters/player16 e assets/scenery/tripo16. O personagem recebeu rig e ajustes locais; não havia animações na origem. Bento conserva o modelo procedural. Texturas compartilhadas limitadas a 1K (barraca 2K), com compressão VRAM e mipmaps.
+
+## RC9 — infectados e bosses Tripo
+
+Modelos fornecidos pelo criador, reduzidos e articulados sem geração adicional. Proveniência e reprodução em art_source/tripo16/enemies. Malhas e dois atlases 2K compartilhados em assets/enemies/tripo16. O Parasita adapta a malha do cão enviada; o kit não possui um componente separado para ele.

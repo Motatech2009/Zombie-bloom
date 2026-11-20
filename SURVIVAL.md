@@ -31,7 +31,7 @@ As novidades de armas, infectados e HUD estão detalhadas em [ARSENAL.md](ARSENA
 
 Barras em pixels de tela, com vida atual/máxima, substituem os números 3D pequenos dos inimigos. O chefe tem barra laranja maior e nome. Inimigos próximos ou feridos exibem integridade; os distantes intactos ficam sem indicador para reduzir poluição.
 
-As famílias anteriores permanecem: comum, corredor, bruto, blindado, demolidor, corrosivo, cão, voador e chefe. Novas variantes: **Estourador** (horda 5, explode ao morrer), **Berrador** (horda 7, invoca dois cães) e **Regenerador** (horda 9, cura outros infectados num raio de sete metros). Também aparecem em setores de risco elevado.
+As famílias anteriores permanecem: comum, corredor, bruto, blindado, demolidor, corrosivo, cão, voador e chefe. Novas variantes: **Estourador** (horda 5, acende um pavio de 0,6 s ao se aproximar ou explode ao morrer), **Berrador** (horda 7, invoca dois cães) e **Regenerador** (horda 9, cura outros infectados num raio de sete metros). Também aparecem em setores de risco elevado.
 
 Chefes mantêm cinco arquétipos. A vida base agora é `650 + 110n + 8n²`, multiplicada pela escala da horda e 1,6 e 50% extra por companheiro. A cada oito segundos, após aviso de 1,1 segundo, atacam uma área de seis metros na última posição do alvo. O ataque causa `28 + 2 × horda` de dano; depois o chefe reduz dano recebido em 65% por dois segundos. As primeiras três ativações também invocam um cão. Abaixo de 40% de vida, entram em fúria: +25% velocidade e +30% dano. O aviso da área aparece também para convidados.
 

@@ -15,7 +15,7 @@ func run() -> void:
 	MobilePlatform.force_touch = true
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false); world.set_process(false)
 	var actor: Node3D = world.player; actor.position = Vector3(0,0,10); actor.invulnerable = 3600; actor.set_physics_process(false)
 	world.camera.position = actor.position+world.camera_offset; world.camera.look_at(actor.position)
@@ -32,9 +32,17 @@ func run() -> void:
 	var near: Node3D = world.make_enemy(0,Vector3(4,0,4),false,1); near.set_physics_process(false); near.health.setup(1000)
 	var far: Node3D = world.make_enemy(0,Vector3(-4,0,2),false,2); far.set_physics_process(false); far.health.setup(1000)
 	await frames()
-	check(near.rig.find_children("*","MeshInstance3D",true,false).size()==5,"a humanoid uses five batches while preserving its animated limbs")
-	check(near.rig.get_node("MobileBatch").mesh==far.rig.get_node("MobileBatch").mesh,"equal infected reuse the same baked body mesh")
-	check(near.rig.get_node("ArmR").has_node("MobileBatch") and near.rig.get_node("LegL").has_node("MobileBatch"),"arms and legs remain independently animated after batching")
+	check(near.rig.find_children("*","MeshInstance3D",true,false).size()==1,"a supplied humanoid uses one skinned draw mesh while preserving animated limbs")
+	check(near.rig.get_node("Skeleton3D/Character").mesh==far.rig.get_node("Skeleton3D/Character").mesh,"equal infected reuse the same supplied skinned mesh")
+	near.rig.get_node("ArmR").rotation.x = .3; near.rig.get_node("LegL").rotation.x = .5; near.rig.sync_pose()
+	var sk: Skeleton3D = near.rig.get_node("Skeleton3D")
+	var arm := sk.find_bone("ArmR")
+	var leg := sk.find_bone("LegL")
+	var stride := sk.get_bone_pose_rotation(leg).get_euler().x
+	near.rig.get_node("LegL").rotation.x = -.5; near.rig.sync_pose()
+	check(is_equal_approx(sk.get_bone_pose_rotation(arm).get_euler().x, .3) and
+		stride > .15 and is_equal_approx(sk.get_bone_pose_rotation(leg).get_euler().x, -stride),
+		"arms and legs retain independent poses in the shared skinned mesh")
 	check(world.hud.root.find_children("*","ProgressBar",true,false).size()<20,"infected do not create per-enemy health-bar Controls on mobile")
 	check(controls.buttons.fire.size.x>=110 and not controls.buttons.fire.intersects(controls.buttons.get("interact",Rect2())),"compact fire retains a large hit area without overlapping context controls")
 	touch(controls,1,controls.buttons.fire.get_center())

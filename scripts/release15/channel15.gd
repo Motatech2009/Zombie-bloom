@@ -6,8 +6,9 @@ func start(actor: Node3D,kind: String,target: Node3D,data: Dictionary = {}) -> b
 	if jobs.has(actor.peer_id) or actor.health.dead or actor.roll_left>0: return false
 	var point: Vector3 = data.get("pos",target.global_position if is_instance_valid(target) else actor.position)
 	if actor.global_position.distance_to(point)> (12.0 if kind=="build" else 4.0): return false
-	var level = int(world.upgrades.levels.get("engineering",0))
+	var level = world.upgrades.level_for(actor,"engineering")
 	var duration = 4.0 if kind=="extract" else (1.5+.5*int(data.get("tier",1)))*(1-.4*level/12.0)
+	if kind!="extract": duration = maxf(.7,duration*(1-Catalog16.bonus(actor,"eng_hands")))
 	jobs[actor.peer_id] = {"actor":actor,"kind":kind,"target":target,"point":point,"start":actor.position,"damage":actor.last_damage,"data":data.duplicate(true),"left":duration,"duration":duration}
 	actor.gather_kind = kind; actor.gather_progress = .001; actor.gather_duration = duration
 	return true

@@ -64,7 +64,7 @@ func show_routes() -> void:
 			var key := SectorGenerator.key(coord)
 			var known: bool = world.discovered.has(key)
 			var text := "%d,%d\n?" % [x,y]
-			if known: text = "%d,%d\n%s" % [x,y,"!" if int(world.discovered[key].risk)>=3 else "·"]
+			if known: text = "%d,%d\n%s" % [x,y,"POSTO" if world.discovered[key].get("special16","")=="post" else "TITÃ" if world.discovered[key].get("special16","")=="titan" else "!" if int(world.discovered[key].risk)>=3 else "·"]
 			if coord==Vector2i.ZERO: text = "0,0\nNÚCLEO"
 			if coord==world.sector_coord: text = "%d,%d\nVOCÊ" % [x,y]
 			var chosen := coord

@@ -16,7 +16,7 @@ func run() -> void:
 	MobilePlatform.force_touch = true; GameSettings.mobile_performance = true
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var w: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w; w.waves.set_physics_process(false); w.set_process(false); w.set_physics_process(false)
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w; w.waves.set_physics_process(false); w.set_process(false); w.set_physics_process(false)
 	var a: Node3D = w.player; a.set_physics_process(false); a.position = Vector3(0,0,12); a.invulnerable = 3600
 	w.camera.position = a.position+w.camera_offset; w.camera.look_at(a.position)
 	await frames()
@@ -47,7 +47,8 @@ func run() -> void:
 	var mat := ClayStyle.material(Color("486352"),"brick")
 	check(mat.albedo_texture!=null and mat.normal_enabled and mat.uv1_world_triplanar,"detailed mode restores textures, normals and projection")
 	GameSettings.mobile_performance = true; w.apply_mobile_quality(); await frames()
-	check(e.rig.has_meta("mobile_batch") and ClayStyle.material(Color("486352"),"brick").albedo_texture==null,"light mode switches back to stable opaque clay without stretched UV textures")
+	var enemy_mat: StandardMaterial3D = e.rig.get_node("Skeleton3D/Character").get_surface_override_material(0)
+	check(e.rig.get_meta("imported_enemy16",false) and not enemy_mat.normal_enabled and not enemy_mat.uv1_triplanar and enemy_mat.transparency==BaseMaterial3D.TRANSPARENCY_DISABLED and enemy_mat.albedo_texture!=null and ClayStyle.material(Color("486352"),"brick").albedo_texture==null,"light mode retains the supplied UV atlas while disabling normal maps and triplanar effects")
 	w.hud.show_inventory(); await frames(6)
 	var close: Button
 	for b in w.hud.modal.find_children("*","Button",true,false):

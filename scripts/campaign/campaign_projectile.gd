@@ -11,14 +11,18 @@ var model: Node3D
 var area_id: int = -1
 var region_key: String = ""
 var owner_peer: int = 1
+var show_landing := true
 
 func _ready() -> void:
 	add_to_group("campaign_projectiles")
 	area_id = world.area_index
 	if world.has_method("region_at"): region_key = world.region_at(start)
 	position = start
-	model = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,Color("a8d95e") if kind=="acid" else Color("f2b563"),true)
-	if kind=="acid":
+	var color := Color("f2b563")
+	if kind == "spore": color = Color("bf83d4")
+	elif kind == "acid": color = Color("a8d95e")
+	model = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,color,true)
+	if kind=="acid" and show_landing:
 		var warning := VisualFactory.ring(self,radius,Vector3.ZERO,Color("8bdf57"))
 		warning.set_as_top_level(true)
 		warning.global_position = destination*Vector3(1,0,1)+Vector3(0,.08,0)
@@ -33,7 +37,9 @@ func _physics_process(delta: float) -> void:
 	elapsed += delta
 	var t := minf(1,elapsed/life)
 	position = start.lerp(destination,t)
-	if kind in ["grenade","acid"]: position.y += sin(t*PI)*(3.5 if kind=="grenade" else 1.3)
+	if kind in ["grenade","acid","spore"]:
+		var arc := 3.5 if kind == "grenade" else 2.45 if kind == "spore" else 1.3
+		position.y += sin(t*PI)*arc
 	model.rotation.x += delta*8
 	var hit := {}
 	if kind=="rocket":
@@ -43,7 +49,10 @@ func _physics_process(delta: float) -> void:
 		if not hit.is_empty(): position = hit.position
 		if kind=="acid":
 			var pool: Node3D = world.spawn_acid(position,radius,damage)
-			if pool!=null and get_meta("toxic15",false): pool.life = 6
+			if get_meta("toxic15",false):
+				if pool!=null: pool.life = 6
+				world.boss_sound(BossSoundBank.Cue.ACID_SPLASH,position)
+		elif kind=="spore": SporePatch.plant(world,position,radius,damage)
 		elif world.has_method("explode_from"): world.explode_from(position,radius,damage,owner_peer)
 		else: world.explode(position,radius,damage)
 		queue_free()

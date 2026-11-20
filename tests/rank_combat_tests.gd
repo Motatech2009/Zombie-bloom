@@ -13,7 +13,7 @@ func run() -> void:
 		check(RankProgress.tier(RankProgress.THRESHOLDS[i]-1)==i,"one fewer kill keeps previous rank")
 	check(RankProgress.tier(100000)==10,"rank caps at ten")
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
-	var w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w
+	var w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
 	var player = w.player; player.invulnerable = 0; player.health.setup(500)
 	player.position = Vector3(0,0,12)

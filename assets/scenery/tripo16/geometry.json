@@ -1,0 +1,23 @@
+[
+  {
+    "draw_calls": 4,
+    "id": "carros",
+    "source_bounds": "[P: (-0.490129, 0.000058, -0.454013), S: (0.980272, 0.31775, 0.908012)]",
+    "source_surfaces": 1,
+    "triangles": 7624
+  },
+  {
+    "draw_calls": 1,
+    "id": "COMBOIO",
+    "source_bounds": "[P: (-0.488086, 0.000436, -0.180796), S: (0.97671, 0.383334, 0.362471)]",
+    "source_surfaces": 1,
+    "triangles": 7518
+  },
+  {
+    "draw_calls": 1,
+    "id": "VENDEDOR",
+    "source_bounds": "[P: (-0.5, 0.0, -0.303528), S: (1.0, 0.993591, 0.607056)]",
+    "source_surfaces": 35,
+    "triangles": 12616
+  }
+]

@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/defenses/shock/albedo.jpg" id="1"]
+[ext_resource type="Texture2D" path="res://assets/defenses/shock/normal.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/defenses/shock/rough_metal.jpg" id="3"]
+
+[resource]
+resource_name = "tripo_material_9881052b-4160-4abd-b80c-6c717a23c010"
+metallic = 0.25
+metallic_texture_channel = 2
+roughness = 0.9
+roughness_texture_channel = 1
+normal_enabled = true
+
+albedo_texture = ExtResource("1")
+normal_texture = ExtResource("2")
+roughness_texture = ExtResource("3")
+metallic_texture = ExtResource("3")

@@ -1,0 +1,55 @@
+{
+  "source": "Models supplied by the creator",
+  "inputs": [
+    {
+      "filename": "carros.glb",
+      "bytes": 61768740,
+      "sha256": "9917069e9f69b9c226857ab828bf574844f4564fb7c35596083f84c5a1bbf4c9",
+      "source_triangles": 1951766,
+      "source_skins": 0,
+      "source_animations": 0,
+      "library_file_id": "libfile_1e3cc53646e48191b6fde38e109cff47"
+    },
+    {
+      "filename": "COMBOIO.glb",
+      "bytes": 64453784,
+      "sha256": "ff2d85ab510f9eb6ff1039361eaf80503c1e60852663220b2ac6c0dc99ae1ab4",
+      "source_triangles": 1926440,
+      "source_skins": 0,
+      "source_animations": 0,
+      "library_file_id": "libfile_9b3019b53f30819188fcc7c682d79df0"
+    },
+    {
+      "filename": "personagem.glb",
+      "bytes": 59683604,
+      "sha256": "1167ad3717da35c5a1a04a2f0cd1c20ccd9b282ed01b22ed37cc5ec17e9d351b",
+      "source_triangles": 1921388,
+      "source_skins": 0,
+      "source_animations": 0,
+      "library_file_id": "libfile_b4a59627c2188191893eeeba0abd3071"
+    },
+    {
+      "filename": "VENDEDOR.glb",
+      "bytes": 1261480,
+      "sha256": "8139153eb29c684e553836c52a256a8a9fa82944192e5a1db5161cbe5c638420",
+      "source_triangles": 12616,
+      "source_skins": 0,
+      "source_animations": 0,
+      "library_file_id": "libfile_15ef70360e34819182fdec9e905dfbc8"
+    }
+  ],
+  "production": {
+    "player_triangles": 15010,
+    "car_kit_triangles": 7624,
+    "convoy_triangles": 7518,
+    "stall_triangles": 12616,
+    "player_bones": 15,
+    "rig": "Offline local weighted skeleton; no generated source animations",
+    "textures": {
+      "player": 1024,
+      "car_kit": 1024,
+      "convoy": 1024,
+      "stall": 2048
+    }
+  }
+}

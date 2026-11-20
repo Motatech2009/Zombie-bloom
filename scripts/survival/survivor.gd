@@ -1,6 +1,8 @@
 extends "res://scripts/entities/player.gd"
 var specialization := "engineer"
 var cosmetic := 0
+var outfit16: Dictionary = {}
+var heal_cooldown := 0.0
 var pinned_left := 0.0
 var pin_owner: Node3D
 var combat_left := 0.0
@@ -27,6 +29,7 @@ const ROLL_RECHARGE: float = 5.0
 const ROLL_SPEED: float = 13.0
 var roll_count: int = 0
 var authoritative_roll_count: int = 0
+var rooted_left18 := 0.0
 var roll_left: float = 0
 var roll_cooldown: float = 0
 var roll_direction := Vector3.FORWARD
@@ -46,7 +49,7 @@ static func movement_direction(input: Vector2) -> Vector3:
 	return Vector3(1,0,-1).normalized()*input.x+Vector3(-1,0,-1).normalized()*-input.y
 
 func start_roll(direction: Vector3) -> bool:
-	if proxy or world.is_client or health.dead or world.phase=="ended" or roll_cooldown>0 or not direction.is_finite(): return false
+	if proxy or world.is_client or health.dead or world.phase=="ended" or roll_cooldown>0 or rooted_left18>0 or not direction.is_finite(): return false
 	direction.y = 0
 	if direction.length_squared()>1.01: return false
 	if direction.length_squared()<.01: direction = aim
@@ -55,7 +58,7 @@ func start_roll(direction: Vector3) -> bool:
 	roll_direction = direction.normalized()
 	roll_count += 1
 	roll_left = ROLL_DURATION
-	roll_cooldown = ROLL_RECHARGE
+	roll_cooldown = ROLL_RECHARGE*(1-Catalog16.bonus(self,"scout_escape"))
 	invulnerable = maxf(invulnerable,.20)
 	weapons.reload_left = 0
 	cancel_gather()
@@ -70,7 +73,7 @@ func animate_pose(moving: float) -> void:
 	rig.position = presentation_offset
 	VisualFactory.animate_human(rig,clock*(1.35 if moving>1.1 else 1.0),moving,recoil,true)
 	var gun: Node3D = rig.get_node("Gun")
-	gun.position = Vector3(.34,1.1,-.64+recoil*.12)
+	gun.position = rig.get_meta("weapon_origin16",Vector3(.34,1.1,-.64))+Vector3(0,0,recoil*.12)
 	gun.rotation = Vector3.ZERO
 	if weapons.reload_left>0:
 		var progress := 1-weapons.reload_left/maxf(.01,weapons.reload_total)
@@ -81,7 +84,7 @@ func animate_pose(moving: float) -> void:
 		gun.rotation.x = .5
 	if bag.hand()=="bat":
 		var swing: float = 1-weapons.swing_left/.32
-		gun.position = Vector3(.34,1.1,-.25)
+		gun.position = rig.get_meta("weapon_origin16",Vector3(.34,1.1,-.25))+Vector3(.12,-.05,.03)
 		gun.rotation.y = lerpf(-1.2,1.4,swing) if weapons.swing_left>0 else -.45
 		gun.rotation.z = -.25
 		rig.get_node("ArmR").rotation.x = 1.1
@@ -99,6 +102,7 @@ func animate_pose(moving: float) -> void:
 
 func _ready() -> void:
 	super._ready()
+	collision_mask |= CollisionLayers.BOSS
 	if peer_id!=1:
 		var tag := VisualFactory.health_label(self,2.4)
 		tag.text = display_name
@@ -135,6 +139,7 @@ func _physics_process(delta: float) -> void:
 	if world.combat_paused(): velocity = Vector3.ZERO; net_input.clear(); input_queue.clear(); roll_intents.clear(); return
 	region_travel_left = maxf(0,region_travel_left-delta)
 	roll_cooldown = maxf(0,roll_cooldown-delta)
+	heal_cooldown = maxf(0,heal_cooldown-delta)
 	pinned_left = maxf(0,pinned_left-delta); combat_left = maxf(0,combat_left-delta)
 	if health.dead: return
 	var frame := read_input()
@@ -166,7 +171,7 @@ func _physics_process(delta: float) -> void:
 	var reload_pressed: bool = frame.get("reload",false)
 	if reload_pressed and not previous_reload: weapons.reload()
 	previous_reload = reload_pressed
-	if frame.get("interact",false): world.tick_gather(self,delta)
+	if gather_kind=="heal" or frame.get("interact",false): world.tick_gather(self,delta)
 	elif not world.channel15.jobs.has(peer_id): cancel_gather()
 	rig.visible = true
 
@@ -176,6 +181,7 @@ func cancel_gather() -> void:
 	gather_kind = ""
 
 func die() -> void:
+	rooted_left18 = 0.0
 	downed = true
 	stop_roll()
 	cancel_gather()
@@ -191,11 +197,21 @@ func revive(hp: float = 40) -> void:
 	rig.rotation.z = 0
 	invulnerable = 2
 
+func entangle18(duration: float) -> void:
+	rooted_left18 = maxf(rooted_left18, duration)
+	stop_roll()
+	velocity = Vector3.ZERO
+
 func simulate_motion(frame: Dictionary,delta: float) -> void:
+	if rooted_left18 > 0.0:
+		rooted_left18 = maxf(0, rooted_left18 - delta)
+		velocity = Vector3.DOWN
+		move_and_slide()
+		return
 	var input: Vector2 = frame.get("move",Vector2.ZERO)
 	var direction := movement_direction(input)
 	var speed := (0.55 if slow_left>0 else 1.0)*6.3*speed_multiplier*(1.3 if frame.get("sprint",false) else 1.0)*(1.45 if power_left("speed")>0 else 1.0)
-	if specialization=="scout" and combat_left<=0: speed *= 1.1
+	if specialization=="scout" and combat_left<=0: speed *= 1.1*(1+Catalog16.bonus(self,"scout_silent"))
 	if pinned_left>0: speed = 0
 	if gather_target!=null: speed *= .25
 	var rolling := roll_left>0
@@ -209,3 +225,7 @@ func simulate_motion(frame: Dictionary,delta: float) -> void:
 	if rolling:
 		roll_left = maxf(0,roll_left-delta)
 		if roll_left==0: stop_roll(); velocity = Vector3.ZERO
+
+func take_damage(amount: float) -> void:
+	if world.exp16.safe(global_position): return
+	super.take_damage(amount)

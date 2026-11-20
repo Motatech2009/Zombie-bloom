@@ -3,7 +3,7 @@ var alarm_level: int = 0
 
 func start() -> bool:
 	# Manual Space/UI calls cannot bypass the countdown.
-	if running or world.phase=="ended" or world.horde_left>0 or (world.game_mode=="campaign" and wave>=CampaignData.WAVES.size()): return false
+	if running or world.phase=="ended" or ("truce16" in world and world.truce16.left>0) or world.horde_left>0 or (world.game_mode=="campaign" and wave>=CampaignData.WAVES.size()): return false
 	wave += 1
 	to_spawn = CampaignData.wave_count(wave)
 	spawned = 0
@@ -20,7 +20,8 @@ func start() -> bool:
 func _physics_process(delta: float) -> void:
 	if world.phase=="ended" or (world.has_method("combat_paused") and world.combat_paused()): return
 	if not running:
-		world.horde_left = maxf(0,world.horde_left-delta)
+		var countdown: float = world.truce16.advance(delta) if "truce16" in world else delta
+		world.horde_left = maxf(0,world.horde_left-countdown)
 		var level := 3 if world.horde_left<=10 else 2 if world.horde_left<=30 else 1 if world.horde_left<=60 else 0
 		if level>alarm_level:
 			alarm_level = level

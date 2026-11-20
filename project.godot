@@ -13,13 +13,14 @@ config_version=5
 config/name="Zombie Bloom"
 config/icon="res://assets/mobile/app_icon.svg"
 config/description="Sobrevivência solo e cooperativa: mochila, coleta, construção e cercos progressivos."
-config/version="1.5.0-rc.1"
+config/version="1.7.8"
 run/main_scene="res://scenes/main/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [autoload]
 
 Account="*res://scripts/online/account_service.gd"
+Meta16="*res://scripts/release16/account_meta16.gd"
 
 ScreenMode="*res://scripts/core/screen_mode.gd"
 Coop="*res://scripts/network/coop_link.gd"
@@ -35,6 +36,10 @@ window/handheld/orientation=0
 window/size/viewport_width.mobile=960
 window/size/viewport_height.mobile=540
 window/stretch/mode.mobile="viewport"
+
+[layer_names]
+
+3d_physics/layer_5="Corpo dos chefes"
 
 [rendering]
 

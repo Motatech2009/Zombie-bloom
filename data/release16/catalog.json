@@ -1,0 +1,313 @@
+{
+  "proposal": true,
+  "currency": {
+    "id": "BRT",
+    "name": "Brotos",
+    "horde_reward": 100
+  },
+  "cosmetics": [
+    {
+      "id": "COS-ENG-01",
+      "class_id": "engineer",
+      "title": "Capacete Remendado",
+      "slot": "head",
+      "price": 300,
+      "description": "capacete amarelo arredondado, duas soldas, arranhões",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-ENG-02",
+      "class_id": "engineer",
+      "title": "Máscara de Soldador",
+      "slot": "head",
+      "price": 550,
+      "description": "máscara cinza articulada com visor verde fosco",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-ENG-03",
+      "class_id": "engineer",
+      "title": "Macacão da Oficina",
+      "slot": "outfit",
+      "price": 800,
+      "description": "macacão marrom com bolso quadrado e graxa",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-ENG-04",
+      "class_id": "engineer",
+      "title": "Mestre das Engrenagens",
+      "slot": "outfit",
+      "price": 1300,
+      "description": "uniforme escuro com ombreiras de sucata moldada",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-ENG-05",
+      "class_id": "engineer",
+      "title": "Caixa de Ferramentas",
+      "slot": "backpack",
+      "price": 500,
+      "description": "caixa pequena presa às costas, alças grossas de argila",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-ENG-06",
+      "class_id": "engineer",
+      "title": "Faíscas de Bancada",
+      "slot": "effect",
+      "price": 1400,
+      "description": "partículas discretas amarelas que surgem em repouso, limite mobile",
+      "palette": "c5a267"
+    },
+    {
+      "id": "COS-BAT-01",
+      "class_id": "scout",
+      "title": "Capuz do Explorador",
+      "slot": "head",
+      "price": 300,
+      "description": "capuz verde-musgo, silhueta abaulada",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-BAT-02",
+      "class_id": "scout",
+      "title": "Óculos de Reconhecimento",
+      "slot": "head",
+      "price": 550,
+      "description": "óculos grossos em couro/argila, lentes âmbar",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-BAT-03",
+      "class_id": "scout",
+      "title": "Poncho do Andarilho",
+      "slot": "outfit",
+      "price": 850,
+      "description": "capa curta marrom com bainha irregular",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-BAT-04",
+      "class_id": "scout",
+      "title": "Explorador do Ermo",
+      "slot": "outfit",
+      "price": 1300,
+      "description": "jaqueta terrosa com tecido remendado e tornozeleiras",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-BAT-05",
+      "class_id": "scout",
+      "title": "Cantil do Deserto",
+      "slot": "backpack",
+      "price": 500,
+      "description": "alforge compacto com cantil pendurado",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-BAT-06",
+      "class_id": "scout",
+      "title": "Poeira do Caminho",
+      "slot": "effect",
+      "price": 1400,
+      "description": "pequenas partículas de poeira em movimentos fortes, não oculta inimigos",
+      "palette": "728a50"
+    },
+    {
+      "id": "COS-ATI-01",
+      "class_id": "shooter",
+      "title": "Lenço da Resistência",
+      "slot": "head",
+      "price": 300,
+      "description": "lenço vinho/amarelado atrás do pescoço, sem cobrir mira",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-ATI-02",
+      "class_id": "shooter",
+      "title": "Capacete de Patrulha",
+      "slot": "head",
+      "price": 550,
+      "description": "capacete militar verde, fita irregular e fivela",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-ATI-03",
+      "class_id": "shooter",
+      "title": "Uniforme de Vigia",
+      "slot": "outfit",
+      "price": 850,
+      "description": "colete de tecido e bolsos planos, sem arma nova",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-ATI-04",
+      "class_id": "shooter",
+      "title": "Veterano da Última Linha",
+      "slot": "outfit",
+      "price": 1300,
+      "description": "jaqueta reforçada com insígnia de argila",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-ATI-05",
+      "class_id": "shooter",
+      "title": "Rádio de Campanha",
+      "slot": "backpack",
+      "price": 500,
+      "description": "rádio antigo e antena curta montados nas costas",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-ATI-06",
+      "class_id": "shooter",
+      "title": "Brilho de Pólvora",
+      "slot": "effect",
+      "price": 1400,
+      "description": "partículas discretas após recarga, sem alterar disparo real",
+      "palette": "a65f65"
+    },
+    {
+      "id": "COS-UNI-01",
+      "class_id": "all",
+      "title": "Gorro do Refúgio",
+      "slot": "head",
+      "price": 250,
+      "description": "gorro bege com costura frontal",
+      "palette": "b5a98c"
+    },
+    {
+      "id": "COS-UNI-02",
+      "class_id": "all",
+      "title": "Avental do Sobrevivente",
+      "slot": "outfit",
+      "price": 600,
+      "description": "roupa simples de trabalho remendada",
+      "palette": "b5a98c"
+    },
+    {
+      "id": "COS-UNI-03",
+      "class_id": "all",
+      "title": "Medalha do Núcleo",
+      "slot": "backpack",
+      "price": 400,
+      "description": "pingente discreto com emblema do Núcleo nas costas",
+      "palette": "b5a98c"
+    },
+    {
+      "id": "COS-TITAN-01",
+      "class_id": "all",
+      "title": "Coroa do Enraizado",
+      "slot": "head",
+      "price": 0,
+      "unlock": "titan16",
+      "description": "Troféu exclusivo por participar da derrota do Titã Enraizado. Raízes de argila e fragmento verde; somente aparência.",
+      "palette": "8fc34c"
+    }
+  ],
+  "talents": [
+    {
+      "id": "eng_economy",
+      "title": "Oficina Econômica",
+      "class_id": "engineer",
+      "step": 5,
+      "effect": "-%d%% sucata em reparos",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "eng_hands",
+      "title": "Mãos de Oficina",
+      "class_id": "engineer",
+      "step": 6,
+      "effect": "-%d%% duração de obras/reparos",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "eng_alloy",
+      "title": "Liga Reforçada",
+      "class_id": "engineer",
+      "step": 4,
+      "effect": "+%d%% vida das próprias estruturas",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "scout_silent",
+      "title": "Passos Silenciosos",
+      "class_id": "scout",
+      "step": 3,
+      "effect": "+%d%% velocidade fora de combate",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "scout_loot",
+      "title": "Olhar de Saque",
+      "class_id": "scout",
+      "step": 6,
+      "effect": "+%d%% velocidade de coleta",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "scout_escape",
+      "title": "Passo de Fuga",
+      "class_id": "scout",
+      "step": 5,
+      "effect": "-%d%% recarga do rolamento",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "shot_aim",
+      "title": "Mira Treinada",
+      "class_id": "shooter",
+      "step": 2,
+      "effect": "+%d pontos percentuais de crítico",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "shot_rate",
+      "title": "Ritmo de Combate",
+      "class_id": "shooter",
+      "step": 3,
+      "effect": "+%d%% cadência de armas",
+      "tag": "TALENTO DE CLASSE"
+    },
+    {
+      "id": "shot_reload",
+      "title": "Recarga de Veterano",
+      "class_id": "shooter",
+      "step": 4,
+      "effect": "-%d%% duração de recarga",
+      "tag": "TALENTO DE CLASSE"
+    }
+  ],
+  "bag": {
+    "upgrade_scrap": 120,
+    "upgrade_parts": 8,
+    "loot_chance": 0.08
+  },
+  "encounters": {
+    "boss_percent": 5,
+    "post_percent": 10,
+    "titan_hp": 20000,
+    "titan_slam_damage": 30,
+    "titan_root_damage": 12,
+    "titan_scrap_min": 800,
+    "titan_scrap_max": 1200,
+    "titan_parts_min": 30,
+    "titan_parts_max": 45
+  },
+  "afk_seconds": 300,
+  "post": {
+    "medkit_scrap": 45,
+    "light_scrap": 40,
+    "light_amount": 30,
+    "stock_per_horde": 2,
+    "wood_exchange": 20,
+    "parts_exchange": 1
+  },
+  "truce": {
+    "drop_chance": 0.3,
+    "seconds": 600,
+    "extra_population": 0.2
+  }
+}

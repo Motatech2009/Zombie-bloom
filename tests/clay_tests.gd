@@ -36,7 +36,7 @@ func run() -> void:
 	check(layout.blocks.all(func(block): return not layout.houses.any(func(h): return absf(block.pos.x-h.pos.x)<block.size.x/2+8 and absf(block.pos.z-h.pos.z)<block.size.z/2+9)),"generation removes solid props overlapping houses")
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var world: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false); world.set_process(false)
 	world.player.invulnerable = 1000
 	world.player.position = SectorGenerator.EXITS[0]; world.travel_cooldown = 0

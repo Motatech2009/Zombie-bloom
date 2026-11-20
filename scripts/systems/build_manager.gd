@@ -37,7 +37,7 @@ func _physics_process(_delta: float) -> void:
 	marker.scale = Vector3(radius / 1.05, 1, radius / 1.05)
 	marker.material_override = VisualFactory.material(Color("a4e886") if valid else Color("e47b68"), false)
 
-func can_place(pos: Vector3) -> bool:
+func can_place(pos: Vector3, _check_access: bool = true) -> bool:
 	var spec: Resource = Catalog.BUILDINGS[selected]
 	if world.phase != "prep":
 		reason = "Construa entre as hordas."

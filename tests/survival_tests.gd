@@ -44,7 +44,7 @@ func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	world = load("res://scenes/survival/SurvivalWorld.tscn").instantiate()
 	world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	await frames()
 	world.waves.set_physics_process(false)
 	world.set_process(false)
@@ -150,6 +150,7 @@ func run() -> void:
 	world.waves.running = true; world.waves.wave = 1; world.waves.to_spawn = 0
 	world.waves.complete()
 	check(world.built_this_round==0 and world.phase=="prep","surviving a wave renews the team construction budget")
+	check(world.upgrades.defer_for(actor,world.upgrades.current(actor).id),"defer individual reward before independent enemy behavior checks")
 	world.waves.wave = 30
 	check(world.build_quota()==12,"construction allowance grows but caps at twelve per preparation")
 	world.waves.wave = 0

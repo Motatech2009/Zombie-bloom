@@ -10,7 +10,7 @@ func run() -> void:
 	var link: Node = root.get_node("Coop"); link.host_session(24585)
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var w: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w; w.waves.set_physics_process(false); w.set_process(false)
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w; w.waves.set_physics_process(false); w.set_process(false)
 	var deadline := Time.get_ticks_msec()+14000
 	while (w.party_count()<3 or w.avatars.keys().any(func(id): return id!=1 and int(link.scene_confirmed.get(id,-1))!=w.peer_revision(id))) and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout
 	check(w.party_count()==3,"two real remote guests finish their initial scene handshake")

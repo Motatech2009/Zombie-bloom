@@ -32,7 +32,7 @@ var field_queue: Array[int] = []
 var caches: Array[Node3D] = []
 
 func _ready() -> void:
-	game_mode = next_mode if next_mode in ["campaign","endless"] else "campaign"
+	game_mode = next_mode if next_mode in ["campaign","endless","rescue"] else "campaign"
 	Controls.setup()
 	GameSettings.load_settings()
 	sunlight = VisualFactory.lighting(self)
@@ -97,12 +97,10 @@ func create_vendor() -> void:
 	base_arena.mark_solid(vendor_pos,Vector2(4,4))
 	stand.collision_layer = 1
 	VisualFactory.collider(stand,Vector3(2.6,1.4,1.6),Vector3(0,.7,0))
-	VisualFactory.box(stand,Vector3(2.6,1,1.6),Vector3(0,.5,0),Color("596b62"))
-	VisualFactory.box(stand,Vector3(3,.16,2),Vector3(0,2.6,0),Color("b6aa70"))
-	for x in [-1.3,1.3]: VisualFactory.box(stand,Vector3(.12,2.5,.12),Vector3(x,1.25,0),Color("384c51"))
+	stand.add_child(preload("res://assets/scenery/tripo16/vendedor/stall.tscn").instantiate())
 	var person := Node3D.new()
 	stand.add_child(person)
-	person.position = Vector3(0,0,-1.6)
+	person.position = Vector3(0,0,-.45)
 	person.rotation.y = PI
 	vendor_rig = VisualFactory.human(person,Color("a5966b"),false)
 	var tag := VisualFactory.health_label(stand,3.5)
@@ -376,7 +374,7 @@ func return_to_base() -> bool:
 
 func save_checkpoint(show_notice: bool = true) -> bool:
 	if not checkpoint_enabled: return false
-	if area_index!=-1 or phase!="prep" or resources.pending>0:
+	if area_index!=-1 or phase!="prep" or (resources.pending>0 and not upgrades is IndividualProgression16):
 		if show_notice: notify("Salve no refúgio entre hordas, após escolher as melhorias de XP.")
 		return false
 	var data := snapshot()
@@ -423,7 +421,7 @@ func valid_snapshot(data: Variant) -> bool:
 	if not bounded(data.max_hp,100,1000000) or not bounded(data.hp,1,data.max_hp) or not bounded(data.core_hp,1,600+250*(data.core_tier-1)) or not bounded(data.speed,.1,1000): return false
 	if not point_valid(data.position) or not data.stock is Dictionary or not data.upgrades is Dictionary: return false
 	for key in data.upgrades:
-		if key not in ["damage","rate","capacity","reload","speed","health","gather","engineering","efficiency","cargo"] or not bounded(data.upgrades[key],0,10000): return false
+		if key not in ["damage","rate","capacity","reload","speed","health","gather","engineering","efficiency","cargo"]+Catalog16.talent_ids() or not bounded(data.upgrades[key],0,10000): return false
 	for key in ["wood","parts"]:
 		if not data.stock.has(key) or not bounded(data.stock[key],0,10000000): return false
 	if not data.owned is Array or data.owned.size()!=5 or data.owned[0]!=true or not data.ammo is Array or data.ammo.size()!=5 or not bounded(data.slot,0,4): return false
@@ -526,7 +524,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	if not hud.mode.is_empty(): hud.close_modal()
 
 func _exit_tree() -> void:
-	if not base_root.is_inside_tree(): base_root.free()
+	if is_instance_valid(base_root) and base_root.get_parent()==null: base_root.free()
 
 func migrate_snapshot(data: Variant) -> Variant:
 	if not data is Dictionary or data.get("format")!=1: return data
@@ -541,12 +539,12 @@ func migrate_snapshot(data: Variant) -> Variant:
 	return converted
 
 func clear_hazards() -> void:
-	for group in ["campaign_projectiles","acid_pools"]:
+	for group in ["campaign_projectiles","acid_pools","boss_fx18"]:
 		for node in get_tree().get_nodes_in_group(group):
 			node.get_parent().remove_child(node)
 			node.queue_free()
 
-func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float) -> Node3D:
+func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float,show_landing := true) -> Node3D:
 	if get_tree().get_nodes_in_group("campaign_projectiles").size()>=32: return null
 	var shot := Node3D.new()
 	shot.set_script(load("res://scripts/campaign/campaign_projectile.gd"))
@@ -557,6 +555,7 @@ func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: floa
 	shot.damage = power
 	shot.radius = radius
 	shot.life = travel_time
+	shot.show_landing = show_landing
 	add_child(shot)
 	return shot
 
@@ -605,12 +604,12 @@ func air_aim(origin: Vector3,direction: Vector3,range_limit: float) -> Vector3:
 	var nearest: Node3D
 	var distance := range_limit
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.spec.id not in ["hound","flyer"]: continue
+		if enemy.spec.id not in ["hound","flyer","titan16"]: continue
 		var offset: Vector3 = enemy.global_position-origin
 		offset.y = 0
 		var forward := offset.dot(direction)
 		if forward<=0 or forward>=distance: continue
-		if (offset-direction*forward).length()>.85: continue
+		if (offset-direction*forward).length()>(.4 if enemy.spec.id=="titan16" else .85): continue
 		nearest = enemy
 		distance = forward
 	if nearest==null: return direction

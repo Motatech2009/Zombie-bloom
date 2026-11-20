@@ -9,6 +9,7 @@ var browser_detail: VBoxContainer
 var browser_status: Label
 var browser_title: Label
 var browser_price: Label
+var browser_capacity: Label
 var browser_buy: Button
 var browser_tab: int = 0
 var browser_selection: int = -1
@@ -52,6 +53,9 @@ func create_bottom() -> void:
 	weapon_text.clip_text = true; weapon_text.custom_minimum_size.x = 150
 	ammo_text.add_theme_font_size_override("font_size",18); power_text.hide()
 	belt = hotbar[0].get_parent()
+	var desktop_belt_frame := belt.get_parent()
+	belt.reparent(root,false)
+	desktop_belt_frame.hide()
 	place_panel(belt,Control.PRESET_BOTTOM_RIGHT,Rect2(-392,-66,346,56))
 	belt.add_theme_constant_override("separation",4)
 	for button in hotbar:
@@ -67,6 +71,7 @@ func create_bottom() -> void:
 	location_text.add_theme_font_size_override("font_size",11); location_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hints.hide(); quota_text.hide()
 	status_text.position = Vector2(14,128)
+	heal_status.position = Vector2(14,150)
 	place_panel(build_text,Control.PRESET_CENTER_TOP,Rect2(-290,115,580,30)); build_text.add_theme_font_size_override("font_size",12)
 	place_panel(notice_text,Control.PRESET_CENTER_TOP,Rect2(-320,148,640,38)); notice_text.add_theme_font_size_override("font_size",12)
 	gather_bar.offset_top = 40; gather_bar.offset_bottom = 47
@@ -127,14 +132,14 @@ func open_modal(next_mode: String,width: float = 800) -> VBoxContainer:
 	place_panel(close,Control.PRESET_TOP_RIGHT,Rect2(-140,10,116,48))
 	var close_style := compact_style(); close_style.content_margin_top = 2; close_style.content_margin_bottom = 2
 	close.add_theme_stylebox_override("normal",close_style); close.add_theme_font_size_override("font_size",17)
-	var heading := UI.label(modal,{"inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
+	var heading := UI.label(modal,{"story17":"DIÁRIO DA CAMPANHA","post16":"POSTO DO FAROL","upgrade":"SUA EVOLUÇÃO","inventory":"MOCHILA","depot":"DEPÓSITO","catalog":"CONSTRUÇÃO","routes":"MAPA","settings":"CONFIGURAÇÕES","pause":"PAUSA","wardrobe":"MEUS COSMÉTICOS","shop":"BENTO / VENDEDOR","structure":"MELHORAR CONSTRUÇÃO"}.get(next_mode,"REFÚGIO"),22,UI.LIME)
 	heading.position = Vector2(26,21)
 	call_deferred("adapt_modal",box)
 	return box
 
-func adapt_modal(node: Node) -> void:
+func adapt_modal(node: Variant) -> void:
 	if not is_instance_valid(node): return
-	if node==overlay_box and node.get_child_count()>0 and node.get_child(0) is Label: node.get_child(0).hide()
+	if node==overlay_box and mode!="wardrobe" and node.get_child_count()>0 and node.get_child(0) is Label: node.get_child(0).hide()
 	if node is Label and not node.get_parent() is ItemSlot:
 		node.text = node.text.replace("Clique","Toque").replace("clique","toque").replace("G reforça:","Melhorias:").replace("F abre","PORTÃO abre").replace("pressione E","toque em COLETAR").replace("F5 salva; F9 restaura. Ambos apenas no refúgio, na preparação.","Salve e restaure junto ao Núcleo, durante a preparação.")
 		node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -147,8 +152,11 @@ func adapt_modal(node: Node) -> void:
 	for child in node.get_children(): adapt_modal(child)
 
 func show_inventory() -> void:
+	inventory_selected = -1
 	var box := open_modal("inventory",880)
 	UI.label(box,"BOLSA / BARRA RÁPIDA",24,UI.LIME)
+	add_decoy16_button(box)
+	if world.player.bag.count("field_bag")>0 and world.player.bag.bag_level==0: UI.button(box,"EQUIPAR BOLSA DE CAMPO · +3 ESPAÇOS",func(): world.send_action("equip_bag",{}); close_modal())
 	UI.label(box,"Toque dois espaços para trocar. Os espaços 1–9 ficam na barra rápida.",15,UI.MUTED)
 	inventory_status = UI.label(box,"",14,UI.MUTED); inventory_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var grid := GridContainer.new(); grid.columns = 6; grid.add_theme_constant_override("h_separation",6); grid.add_theme_constant_override("v_separation",6)
@@ -252,7 +260,9 @@ func select_browser_item(index: int) -> void:
 	ItemIcons.image(top,entry.id,Vector2(54,54))
 	browser_title = UI.label(top,entry.title.to_upper(),20,UI.LIME); browser_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; browser_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var description := UI.label(browser_detail,entry.description,14,UI.MUTED); description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if mode=="catalog": UI.label(browser_detail,"Integridade inicial: %d · até N3" % entry.health,14)
+	if mode=="catalog":
+		UI.label(browser_detail,"Integridade inicial: %d · até N3" % entry.health,14)
+		browser_capacity = UI.label(browser_detail, "", 14, UI.MUTED)
 	elif entry.index>=0:
 		var spec: Resource = Arsenal.WEAPONS[entry.index]
 		UI.label(browser_detail,"Dano: %s · alcance: %s" % [spec.values.damage,spec.values.range],14)
@@ -272,7 +282,11 @@ func refresh_browser() -> void:
 	var entry: Dictionary = browser_entries[browser_selection]
 	var reason := ""
 	if mode=="catalog":
-		if world.built_this_round>=world.build_quota(): reason = "COTA DESTA HORDA ESGOTADA"
+		var usage: Vector2i = world.builder.piece_usage(entry.id)
+		browser_capacity.visible = usage.y > 0
+		browser_capacity.text = "%d/%d na base · até vencer a horda %d" % [usage.x, usage.y, FortressData.BUILD_LIMIT_UNLOCK_WAVE]
+		if usage.y > 0 and usage.x >= usage.y: reason = "LIMITE DESTE TIPO ATINGIDO"
+		elif world.built_this_round>=world.build_quota(): reason = "COTA DESTA HORDA ESGOTADA"
 	else:
 		var copy := ItemBag.new(); copy.restore(world.player.bag.dump())
 		if entry.index>=0 and copy.count(entry.id)>0: reason = "VOCÊ JÁ TEM ESTA ARMA"

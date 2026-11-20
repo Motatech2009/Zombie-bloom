@@ -13,6 +13,8 @@ const ROOTS := [38,37,41,36]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Dedicated/headless processes have no listener. Manual synthesis remains testable.
+	set_process(DisplayServer.get_name()!="headless")
 	for i in range(10):
 		var voice := AudioStreamPlayer.new(); add_child(voice); voices.append(voice)
 
@@ -31,6 +33,7 @@ func note(midi: int,duration: float,kind: String,gain: float) -> void:
 			bytes.encode_s16(i*2,int(clampf(value*envelope,-1,1)*21000))
 		var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS; stream.mix_rate = 16000; stream.data = bytes
 		cache[key] = stream
+	if DisplayServer.get_name()=="headless": return
 	var voice := voices[next_voice]; next_voice = (next_voice+1)%voices.size()
 	voice.stream = cache[key]; voice.set_meta("gain",gain); voice.volume_db = linear_to_db(maxf(.0001,GameSettings.music_volume*gain)); voice.play()
 

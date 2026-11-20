@@ -1,0 +1,28 @@
+Zombie Bloom 1.6.0-rc.6 — modelos Tripo — 17/11/2026
+
+Código: 4daa7e8551debe782f57e925c738794b78ee35af
+CI aprovado: https://github.com/Motatech2009/Zombie-bloom/actions/runs/44201339183
+Job: 134455916500
+
+13 modelos de construção (canhão/Tesla/elevada N1–N3, Núcleo N1–N4) e 19 cosméticos físicos integrados. Defesas usam atlas 1024²; cosméticos usam um atlas 2048² com margens, mipmaps e compressão VRAM desktop/Android. Cosméticos preservam saúde, colisão, inventário e capacidade.
+
+Validação completa:
+- 1.856 verificações Godot individuais em 37 execuções, incluindo 34 verificações dentro do PCK Windows exportado.
+- Modelos/combate: 110; cosméticos desktop/toque: 87/87.
+- Cooperativo ENet 2/3/4 jogadores: 26/41/56; resgate com quatro: 31.
+- Cooperativo legado: 116; movimento: 9; exploração separada: 20.
+- Firestore/Spark: 37 verificações REST e 17 de integração Godot; Auth/ranking legado: 15.
+- Serviço opcional: 7 testes Node; emuladores Functions completos: 22 verificações REST e 7 Godot.
+- Revisão visual de menu, perfil, loja, troféu, defesas e cosméticos em desktop/toque; importação limpa sem erros.
+- APK1606 / versão 1.6.0-rc.6; arm64-v8a e armeabi-v7a; assinatura v2/v3 verificada.
+
+Pacotes baixados e hashes SHA-256 recalculados:
+Windows ZIP: 1a2f4f6d97eafbb3b023be13e4771b0d88492fb026a2d6f49fadb35d02f6b162
+https://github.com/Motatech2009/Zombie-bloom/actions/runs/44201339183/artifacts/14381577763
+Android ZIP: f27defdaaff962d94442bc9cf386a6ff9dac3ab6e25fe4e3760b8a088b2508ac
+https://github.com/Motatech2009/Zombie-bloom/actions/runs/44201339183/artifacts/14381572506
+APK extraído: 78c85e48e726ad011a84fcba66c2b650c9d5f0a0c1f6a718fa160b5480f8bdc3
+
+O executável Windows baixado iniciou nativamente em modo headless, carregou o menu e encerrou com código 0 após 300 frames, sem erros registrados. Isso não equivale a uma partida gráfica prolongada.
+
+Android físico e partida Windows–Android permanecem sem teste. Firebase real não foi publicado nesta etapa. PR candidata separada, sem merge ou alteração dos downloads públicos. Os pacotes correspondem ao código 4daa7e8; este relatório e a atualização final de documentação não alteram o jogo.

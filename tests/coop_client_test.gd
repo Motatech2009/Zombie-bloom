@@ -132,6 +132,7 @@ func run() -> void:
 	check(world.player.weapons.hand_weapon==8 and world.player.weapons.ammo[8]<2,"new gun selection, visible model and finite ammunition replicate after remote fire")
 	check(world.client_enemies.values().any(func(enemy): return enemy.enemy_kind==13) and not world.client_hazards.is_empty(),"new infected model and its blue warning replicate to clients")
 	check(world.client_structures.values().any(func(piece): return piece.piece_index==6 and piece.tier==2 and piece.model.get_node("Visual").get_meta("tier")==2),"new razor-wire type and reinforced material/model replicate to the guest")
+	check(world.client_structures.values().any(func(piece): return piece.piece_index==1 and piece.tier==3 and piece.model.get_node("Visual").has_node("Head/Pitch/Gun") and piece.aim_pose().is_equal_approx(Vector2(.7,.13))),"imported N3 turret and both aiming axes replicate over real ENet")
 	check(world.airdrops.serial==1 and world.airdrops.coord()==Vector2i(0,-1),"supply timer and remote coordinates replicate to the guest")
 	deadline = Time.get_ticks_msec()+15000
 	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
@@ -150,7 +151,7 @@ func run() -> void:
 	check(world.sector_coord==Vector2i.ZERO and world.core.health.current==600,"return scene revision preserves the shared core state")
 	deadline = Time.get_ticks_msec()+7000
 	while (world.sector_coord==Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout
-	check(world.sector_coord==Vector2i(0,-1) and world.descriptor.seed==sector_seed and world.sector_remaining(Vector2i(0,-1))>150,"guests receive the same generation and its shared three-minute countdown")
+	check(world.sector_coord==Vector2i(0,-1) and world.descriptor.seed==sector_seed and world.sector_remaining(Vector2i(0,-1))==-1,"guests receive the same occupied generation with its reset suspended")
 	check(world.client_loot.values().any(func(pile): return pile.get_meta("contents",{})=={"rifle_ammo":7,"parts":2}) and world.raid_house(0).dead==[0],"partial cache contents and house deaths survive a real network scene reload")
 	deadline = Time.get_ticks_msec()+7000
 	while (world.sector_coord!=Vector2i.ZERO or not world.client_scene_ready) and Time.get_ticks_msec()<deadline: await create_timer(.1).timeout

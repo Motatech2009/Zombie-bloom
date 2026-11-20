@@ -1,0 +1,25 @@
+Zombie Bloom 1.6.0-rc.5 — 17/11/2026
+
+1538 verificações Godot individuais (33 execuções: suítes existentes + balanceamento + UI/transição touch), 0 falhas após atualização das expectativas 44→70 PV e horda 18→23. Campaign reexecutada em perfil isolado para não competir pelo save com outras suítes.
+
+Firestore Spark: 37 verificações REST em Auth/Firestore emulados Standard; 17 verificações Godot REST completas. Nenhuma Functions necessária para a economia padrão.
+Compra sem saldo, preço falsificado, escrita arbitrária, campos extras/tipos inválidos, documento incompleto, acesso entre contas, replay, concorrência, órfãos, teto diário, horas repetidas e troféu foram conferidos.
+
+Cooperativo ENet real: 2 jogadores 26; 3 jogadores 41; 4 jogadores 56 verificações, 0 falhas. Protocolo 21. Android físico não testado.
+
+Balanceamento: comum 70 PV, corredor 48 PV, demais não-bosses da sobrevivência ×1,25; hordas ×1,25 arredondadas para cima; simultâneos 36. Bosses/Titã sem aumento adicional de PV.
+
+Firebase real: não publicado, CLI sem autenticação; regras prontas para publicação manual. Edição real não confirmada administrativamente; mesmo banco nativo/default existente mantido. Nenhum dado de teste em produção.
+
+Economia comunitária: regras validam contabilidade, não comprovam combate/atividade real. Sem migração automática de saldo do serviço opcional accounts16.
+
+Resgate ENet quatro jogadores: 31 verificações, sem falhas. Auth/ranking legado: 15; serviço opcional Node: 7 testes, todos aprovados.
+
+CI integral: execução 44155874484 concluída com sucesso na revisão de código f6d90c7514dac9217e3b8c5be3a242bfaab2851d.
+Windows ZIP: 49.648.245 bytes, SHA256 b3aaeaadfb0626284fa09b1f465aecc4ad9ce6b4fd95639ca178cdf7279658a4.
+Android ZIP: 69.240.076 bytes, SHA256 d4e823e2e19083ccceb092f701390c76e4180e43c131171f66eeaf02dfd67b00.
+Hashes recalculados após download; executável e APK RC5/protocolo21 gerados. Android assinatura/manifesto conferidos no CI, sem teste físico alegado.
+
+Pacote Windows: combate conferido diretamente no PCK exportado, 10 verificações sem falhas. Abertura gráfica RX7600/WASAPI encerrou com código0. A primeira saída automática aos180frames registrou AudioStreamWAV/AudioStreamPlaybackWAV no encerramento; repetição aos300frames encerrou sem aviso. Não interpretado como vazamento de objetos do combate nem como teste prolongado de memória.
+
+Sem merge, lançamento final ou alteração de links públicos. Regras Firebase reais continuam pendentes de publicação manual.

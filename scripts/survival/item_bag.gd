@@ -1,13 +1,16 @@
 class_name ItemBag
 extends RefCounted
 const SIZE := 18
-const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells","bat","beacon"]
-const TITLES = {"beacon":"Sinalizador de extração","bat":"Taco de beisebol","pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
-const SHORT = {"beacon":"EXTR","bat":"TACO","pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
+const IDS = ["pistol","shotgun","rifle","smg","launcher","scrap","wood","parts","light","shell","rifle_ammo","rocket","grenade","medkit","revolver","sniper","lmg","tesla","heavy","cells","bat","beacon","field_bag","decoy16"]
+const TITLES = {"decoy16":"Isca de Desvio","field_bag":"Bolsa de Campo","beacon":"Sinalizador de extração","bat":"Taco de beisebol","pistol":"Pistola","shotgun":"Espingarda","rifle":"Rifle","smg":"Submetralhadora","launcher":"Lança-foguetes","scrap":"Sucata","wood":"Madeira","parts":"Componentes","light":"Munição leve","shell":"Cartuchos","rifle_ammo":"Munição de rifle","rocket":"Foguetes","grenade":"Granadas","medkit":"Kit médico","revolver":"Revólver","sniper":"Rifle de precisão","lmg":"Metralhadora","tesla":"Arco Tesla","heavy":"Munição pesada","cells":"Células de energia"}
+const SHORT = {"decoy16":"ISCA","field_bag":"BOLSA","beacon":"EXTR","bat":"TACO","pistol":"PST","shotgun":"ESC","rifle":"RFL","smg":"SMG","launcher":"FOG","scrap":"SUC","wood":"MAD","parts":"CMP","light":"9mm","shell":"12g","rifle_ammo":"5.56","rocket":"Fgt","grenade":"GRA","medkit":"MED","revolver":"REV","sniper":"SNP","lmg":"LMG","tesla":"ARC","heavy":".357","cells":"CEL"}
 const WEAPON_IDS = ["pistol","shotgun","rifle","smg","launcher","revolver","sniper","lmg","tesla"]
 const AMMO_IDS = ["light","shell","rifle_ammo","light","rocket","heavy","rifle_ammo","rifle_ammo","cells"]
 var cargo_level := 0
 var capacity_slots := 18
+var base_slots := 18
+var bag_level := 0
+var medical := false
 var slots: Array = []
 var selected: int = 0
 
@@ -15,7 +18,7 @@ func _init() -> void:
 	for i in range(SIZE): slots.append({"id":"","qty":0})
 
 static func stack(id: String) -> int:
-	if id in WEAPON_IDS or id=="bat": return 1
+	if id in WEAPON_IDS or id in ["bat","field_bag","decoy16"]: return 1
 	match id:
 		"wood": return 20
 		"parts": return 12
@@ -30,11 +33,32 @@ static func stack(id: String) -> int:
 	return 0
 
 func stack_limit(id: String) -> int:
-	return ceili(stack(id)*(1+cargo_level/12.0)) if id in ["scrap","wood","parts","light","shell","rifle_ammo","heavy","cells","rocket"] else stack(id)
+	return limit_for(id,cargo_level,medical)
+
+static func limit_for(id: String,cargo: int,medical_bag: bool) -> int:
+	if id == "medkit" and medical_bag: return 6
+	return ceili(stack(id)*(1+cargo/12.0)) if id in ["scrap","wood","parts","light","shell","rifle_ammo","heavy","cells","rocket"] else stack(id)
 
 func resize_bag(size: int) -> void:
-	capacity_slots = clampi(size,18,20)
-	while slots.size()<capacity_slots: slots.append({"id":"","qty":0})
+	var old := base_slots
+	base_slots = 20 if size==20 else 18
+	if not equip_level(bag_level): base_slots = old
+
+func equip_level(level: int) -> bool:
+	if level<0 or level>2: return false
+	var target := base_slots+3*level
+	for i in range(target,slots.size()):
+		if int(slots[i].qty)>0: return false
+	bag_level = level; capacity_slots = target
+	slots.resize(target)
+	for i in range(slots.size()):
+		if slots[i]==null: slots[i] = {"id":"","qty":0}
+	return true
+
+func equip_field_bag() -> bool:
+	if bag_level!=0 or count("field_bag")==0: return false
+	if not equip_level(1): return false
+	remove("field_bag",1); return true
 
 func count(id: String) -> int:
 	var result := 0
@@ -88,10 +112,16 @@ func free_slots() -> int:
 	return slots.filter(func(s): return s.qty==0).size()
 
 func dump() -> Dictionary:
-	return {"slots":slots.duplicate(true),"selected":selected,"cargo":cargo_level}
+	var data := {"slots":slots.duplicate(true),"selected":selected,"cargo":cargo_level,"base_slots":base_slots,"bag_level":bag_level}
+	if medical: data.medical = true
+	return data
 
 static func valid(data: Variant) -> bool:
-	if not data is Dictionary or not data.get("slots") is Array or data.slots.size() not in [18,20]: return false
+	if not data is Dictionary or not data.get("slots") is Array or data.slots.size() not in [18,20,21,23,24,26]: return false
+	if not data.get("medical",false) is bool or not SectorMemory.number(data.get("cargo",0),0,12,true): return false
+	var base = data.get("base_slots",data.slots.size())
+	var level = data.get("bag_level",0)
+	if not SectorMemory.number(base,18,20,true) or int(base) not in [18,20] or not SectorMemory.number(level,0,2,true) or data.slots.size()!=int(base)+3*int(level): return false
 	var select = data.get("selected")
 	if not (select is int or select is float) or select<0 or select>8 or int(select)!=select: return false
 	var weapons := {}
@@ -101,9 +131,8 @@ static func valid(data: Variant) -> bool:
 		if not (qty is int or qty is float) or not is_finite(float(qty)) or int(qty)!=qty or qty<0: return false
 		if qty==0:
 			if slot.id!="": return false
-		elif slot.id not in IDS or qty>ceili(stack(slot.id)*(1+int(data.get("cargo",0))/12.0 if slot.id in ["scrap","wood","parts","light","shell","rifle_ammo","heavy","cells","rocket"] else 1)):
+		elif slot.id not in IDS or qty>limit_for(slot.id,int(data.get("cargo",0)),data.get("medical",false)):
 			return false
-		if not SectorMemory.number(data.get("cargo",0),0,12,true): return false
 		if slot.id in WEAPON_IDS:
 			if weapons.has(slot.id): return false
 			weapons[slot.id] = true
@@ -115,4 +144,6 @@ func restore(data: Dictionary) -> bool:
 	for slot in slots: slot.qty = int(slot.qty)
 	selected = int(data.selected)
 	cargo_level = int(data.get("cargo",0)); capacity_slots = slots.size()
+	base_slots = int(data.get("base_slots",slots.size())); bag_level = int(data.get("bag_level",0))
+	medical = data.get("medical",false)
 	return true

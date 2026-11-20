@@ -6,8 +6,8 @@ const WEAPONS = [preload("res://resources/weapons/pistol.tres"),preload("res://r
 const PRICES = [0,110,220,175,320]
 
 static func wave_count(number: int) -> int:
-	if number<=WAVES.size(): return WAVES[maxi(0,number-1)]
-	return 240+(number-20)*16
+	if number<=WAVES.size(): return ceili(WAVES[maxi(0,number-1)]*1.25)
+	return ceili((240+(number-20)*16)*1.25)
 
 static func health_scale(number: int) -> float:
 	var step := maxi(0,number-1)

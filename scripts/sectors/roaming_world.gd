@@ -85,6 +85,8 @@ func _process(delta: float) -> void:
 	core.label.visible = area_index==-1 and player.position.distance_to(core.position)<4
 	vendor_tag.visible = area_index==-1 and player.position.distance_to(vendor_pos)<7
 	for boss in get_tree().get_nodes_in_group("boss_enemies"):
+		if boss.label.has_meta("suppressed"):
+			continue
 		boss.label.visible = boss.global_position.distance_to(player.position)<35
 		boss.label.text = "CHEFE · %s · %d" % [boss.spec.title,ceili(boss.health.current)]
 	shop_clock += delta
@@ -118,13 +120,13 @@ func travel(direction: int) -> bool:
 	return step_sector(direction)
 
 func step_sector(direction: int) -> bool:
-	if direction<0 or direction>=4 or phase=="ended" or travel_cooldown>0 or resources.pending>0: return false
+	if direction<0 or direction>=4 or phase=="ended" or travel_cooldown>0 or (call("combat_paused") if has_method("combat_paused") else resources.pending>0): return false
 	if local_player().distance_to(SectorGenerator.EXITS[direction])>=3.7:
 		notify("Vá até a saída "+SectorGenerator.NAMES[direction]+" e pressione E. M mostra o caminho.")
 		return false
 	var next: Vector2i = sector_coord+SectorGenerator.DIRECTIONS[direction]
 	if absi(next.x)>4096 or absi(next.y)>4096: notify("Limite da região cartografada."); return false
-	if waves.running and SectorGenerator.distance(next)>=SectorGenerator.distance(sector_coord):
+	if waves.running and game_mode!="rescue" and SectorGenerator.distance(next)>=SectorGenerator.distance(sector_coord):
 		notify("Horda no Núcleo. Siga uma saída que aproxime você de (0,0).")
 		return false
 	builder.set_active(false)
@@ -152,7 +154,7 @@ func step_sector(direction: int) -> bool:
 		var key := SectorGenerator.key(next)
 		var visits: int = int(discovered.get(key,{"visits":0}).visits)+1
 		descriptor = sector_descriptor(next,visits)
-		discovered[key] = {"visits":visits,"risk":descriptor.risk}
+		discovered[key] = {"visits":visits,"risk":descriptor.risk,"special16":descriptor.get("special16","normal")}
 		if discovered.size()>8192:
 			for old_key in discovered.keys():
 				if old_key!="0:0" and old_key!=key:
@@ -338,7 +340,7 @@ func region_active(key: String) -> bool:
 	return key=="0:0" or (area_index!=-1 and key==SectorGenerator.key(sector_coord))
 
 func clear_region_hazards(key: String) -> void:
-	for group in ["campaign_projectiles","acid_pools"]:
+	for group in ["campaign_projectiles","acid_pools","boss_fx18"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if node.region_key==key: node.get_parent().remove_child(node); node.queue_free()
 

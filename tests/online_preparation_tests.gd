@@ -11,7 +11,7 @@ func run() -> void:
 	var campaign = load("res://scripts/campaign/campaign_world.gd")
 	campaign.resume_requested = false
 	var w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false
-	root.add_child(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
+	root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w; w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false)
 	check(w.horde_left==600,"new game prepares first wave for 600s")
 	for mode in ["campaign","endless"]:
 		w.game_mode = mode
@@ -28,6 +28,8 @@ func run() -> void:
 			saved.erase("preparation_policy"); saved.horde_left = 599
 			w.apply_snapshot(saved)
 			check(w.horde_left==mini(599,expected),"legacy fixed timer clamps to upcoming wave budget")
+	# This suite continues with isolated combat checks after the horde tests.
+	if not w.upgrades.current(w.player).is_empty(): w.upgrades.defer_for(w.player,w.upgrades.current(w.player).id)
 	w.waves.wave = 0
 	w.player.position = Vector3(0,0,12)
 	var loot = w.spawn_loot(w.player.position,{"scrap":5})

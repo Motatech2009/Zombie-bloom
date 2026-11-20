@@ -11,7 +11,7 @@ func run() -> void:
 	check(link.host_session(24581)==OK,"motion fixture opens a real ENet host")
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	var w: Node3D = load("res://scenes/survival/SurvivalWorld.tscn").instantiate()
-	w.checkpoint_enabled = false; root.add_child(w); current_scene = w
+	w.checkpoint_enabled = false; root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.waves.set_physics_process(false); w.horde_left = 3600
 	var deadline := Time.get_ticks_msec()+12000
 	while w.party_count()<2 and Time.get_ticks_msec()<deadline: await create_timer(.02).timeout

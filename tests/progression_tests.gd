@@ -22,12 +22,13 @@ func enemy(kind: int,pos: Vector3,index: int) -> Node3D:
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	world = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); world.checkpoint_enabled = false
-	root.add_child(world); current_scene = world
+	root.add_child(world); preload("res://tests/legacy_sector_fixture16.gd").normal(world); current_scene = world
 	world.waves.set_physics_process(false); world.set_process(false); world.player.set_physics_process(false)
 	world.player.invulnerable = 100000; world.world_rng.seed = 8417; world.elapsed = 0
 	check(step(0),"first expedition enters the northern sector")
 	await frames()
-	check(world.descriptor.count>=2 and world.sector_deadline==180,"a new generation receives an exact three-minute lifetime")
+	var sector := Vector2i(0,-1)
+	check(world.descriptor.count>=2 and world.sector_remaining(sector)==-1,"a new occupied sector has no countdown")
 	var initial_seed: int = world.descriptor.seed
 	var actor: Node3D = world.player
 	var cache: Node3D = world.caches[0]
@@ -45,8 +46,11 @@ func run() -> void:
 	world.spawn_loot(world.field_root.to_global(Vector3(12,0,15)),{"cells":8},0,"",0,false)
 	check(world.field_defeated==[1],"a real field death records the exact encounter index")
 	var bag: Dictionary = actor.bag.dump()
+	world.elapsed = 500
+	check(world.sector_remaining(sector)==-1 and world.sector_memory.is_empty(),"staying in a sector beyond five minutes never starts its reset")
 	check(step(2),"leaving the area returns to the persistent core")
 	await frames()
+	check(world.sector_remaining(sector)==300,"leaving the sector starts an exact five-minute countdown")
 	var data: Dictionary = JSON.parse_string(JSON.stringify(world.snapshot()))
 	check(world.valid_snapshot(data),"cached geometry, partial loot, houses and enemies survive JSON checkpoint validation")
 	var old: Dictionary = data.duplicate(true); old.erase("sector_memory")
@@ -55,10 +59,10 @@ func run() -> void:
 	check(not world.valid_snapshot(bad),"unknown cached item types reject a checkpoint without mutating the live game")
 	bad = data.duplicate(true); bad.sector_memory["0:-1"].expires = 999999
 	check(not world.valid_snapshot(bad),"an invalid regeneration deadline is rejected")
-	world.elapsed = 60; world.waves.wave = 4
+	world.elapsed = 560; world.waves.wave = 4
 	check(step(0),"the same area can be re-entered before its timer expires")
 	await frames()
-	check(world.descriptor.seed==initial_seed and world.sector_deadline==180,"quick revisits neither reroll the map nor extend its generation timer")
+	check(world.descriptor.seed==initial_seed and world.sector_remaining(sector)==-1,"quick revisits preserve the map and cancel its empty-sector timer")
 	check(world.caches[0].get_meta("contents")==remaining and actor.bag.dump()==bag,"re-entry preserves partially harvested loot without copying it into the bag")
 	house = world.raid_house(0)
 	check(house.dead==[0] and house.activated and house.contents==house_contents,"house deaths and partially emptied supplies are restored exactly")
@@ -69,14 +73,14 @@ func run() -> void:
 	check(world.field_defeated==[1] and not 1 in world.field_queue and not 0 in world.field_queue,"defeated and already materialized enemies cannot be queued twice")
 	check(get_nodes_in_group("survival_loot").filter(func(p): return p.get_parent()==world.field_root and p.contents=={"cells":8}).size()==1,"a dropped pile is restored once with its original contents")
 	check(step(2),"party leaves the preserved area again")
-	world.elapsed = 179.99; check(step(0) and world.descriptor.seed==initial_seed,"the old layout remains active immediately before the deadline")
+	world.elapsed = 859.99; check(step(0) and world.descriptor.seed==initial_seed,"the old layout remains active immediately before the deadline")
 	check(step(2),"party can leave at the cooldown boundary")
-	world.elapsed = 180.01; check(step(0),"the area can be entered after its regeneration deadline")
+	world.elapsed = 1160.01; check(step(0),"the area can be entered after its regeneration deadline")
 	await frames()
-	check(world.descriptor.seed!=initial_seed and world.field_defeated.is_empty() and world.sector_deadline>360,"only the next entry after three minutes regenerates layout, enemies and loot")
+	check(world.descriptor.seed!=initial_seed and world.field_defeated.is_empty() and world.sector_remaining(sector)==-1,"only the next entry after five consecutive empty minutes regenerates layout, enemies and loot")
 	check(world.raid_house(0).dead.is_empty() and not world.caches[0].get_meta("contents")==remaining,"a fresh generation has fresh houses and cache contents")
 	check(step(2),"return to base permits checkpoint restoration")
-	world.apply_snapshot(data); world.elapsed = 60
+	world.apply_snapshot(data); world.elapsed = 560
 	check(step(0) and world.descriptor.seed==initial_seed and world.caches[0].get_meta("contents")==remaining,"save/load cannot bypass the cooldown or restore already taken supplies")
 	check(step(2),"loot and boss tests return to base")
 	for e in get_nodes_in_group("enemies"): e.queue_free()

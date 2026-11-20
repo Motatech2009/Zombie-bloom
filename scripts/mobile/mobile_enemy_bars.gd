@@ -18,7 +18,7 @@ func _process(delta: float) -> void:
 		if not MobileTargeting.alive(enemy): continue
 		var distance: float = enemy.position.distance_squared_to(world.player.position)
 		if enemy!=selected and not enemy.is_boss and (distance>324 or enemy.health.current>=enemy.health.maximum): continue
-		var point: Vector3 = enemy.global_position+Vector3(0,3.3 if enemy.is_boss else 2.4 if enemy.spec.id!="hound" else 1.45,0)
+		var point: Vector3 = enemy.global_position + Vector3.UP * enemy.health_bar_height
 		if world.camera.is_position_behind(point): continue
 		var screen: Vector2 = world.camera.unproject_position(point)
 		if not Rect2(Vector2.ZERO,size).has_point(screen): continue

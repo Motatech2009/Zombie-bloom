@@ -21,14 +21,14 @@ func reset() -> void:
 	world.player.presentation_offset = Vector3.ZERO
 
 func roll(direction: Vector3) -> bool:
-	if not ready or world.player.health.dead or world.player.roll_cooldown>0 or pending_roll!=null: return false
+	if not ready or world.player.health.dead or world.player.roll_cooldown>0 or world.player.rooted_left18>0 or pending_roll!=null: return false
 	pending_roll = direction.normalized()
 	return true
 
 func begin_roll(actor: Node3D,direction: Vector3) -> void:
-	if actor.roll_cooldown>0: return
+	if actor.roll_cooldown>0 or actor.rooted_left18>0: return
 	actor.pinned_left = 0; actor.pin_owner = null
-	actor.roll_direction = direction.normalized(); actor.roll_left = actor.ROLL_DURATION; actor.roll_cooldown = actor.ROLL_RECHARGE
+	actor.roll_direction = direction.normalized(); actor.roll_left = actor.ROLL_DURATION; actor.roll_cooldown = actor.ROLL_RECHARGE*(1-Catalog16.bonus(actor,"scout_escape"))
 
 func simulate(frame: Dictionary) -> void:
 	var actor: Node3D = world.player
@@ -70,6 +70,7 @@ func reconcile(state: Dictionary) -> void:
 	var ack: int = state.get("ack",0)
 	history = history.filter(func(frame): return int(frame.seq)>ack)
 	visual_shots = visual_shots.filter(func(shot): return int(shot.seq)>ack)
+	actor.rooted_left18 = float(state.get("root18",0.0))
 	actor.position = state.p; actor.velocity = state.get("velocity",Vector3.ZERO)
 	actor.roll_left = float(state.get("roll",0)); actor.roll_cooldown = float(state.get("roll_cd",0)); actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
 	ready = true

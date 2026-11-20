@@ -16,7 +16,7 @@ func build(piece: int,pos: Vector3) -> Node3D:
 func run() -> void:
 	load("res://scripts/campaign/campaign_world.gd").resume_requested = false
 	Director15.selected_mutators = []; Director15.selected_class = "engineer"
-	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); current_scene = w
+	w = load("res://scenes/survival/SurvivalWorld.tscn").instantiate(); w.checkpoint_enabled = false; root.add_child(w); preload("res://tests/legacy_sector_fixture16.gd").normal(w); current_scene = w
 	w.set_process(false); w.waves.set_physics_process(false); w.player.set_physics_process(false); w.resources.scrap = 10000; w.stock = {"wood":10000,"parts":10000}
 	await physics_frame; await process_frame
 	check(w.player.specialization=="engineer","new player receives selected class")
@@ -69,9 +69,8 @@ func run() -> void:
 	for i in range(1,8): boss_ids.append(SectorGenerator.boss_spec(i).id)
 	check(boss_ids.has("potter") and boss_ids.has("hive") and boss_ids.size()==7,"seven bosses have distinct behavior IDs")
 	check(InfectedRoster.extra_spec(17).id=="parasite" and InfectedRoster.extra_spec(19).id=="bridge","new infected are registered")
-	var wall = w.v15.temporary_wall(Vector3(30,0,10))
-	check(wall!=null and wall.collision_layer==8,"Oleiro creates physical cover blocking turret rays")
-	w.v15.tick(9); check(wall.is_queued_for_deletion(),"temporary wall expires")
+	w.v15.apply_visuals([{"id":9999,"kind":"wall","p":Vector3(30,0,10)}])
+	check(not w.v15.client_visuals.has(9999),"an obsolete wall packet cannot leave solid cover on a client")
 	var saved: Dictionary = w.snapshot()
 	check(w.valid_snapshot(saved),"new progression and world state pass save validation")
 	var before: float = w.v15.day.clock; w.v15.day.clock = 25; w.apply_snapshot(saved)

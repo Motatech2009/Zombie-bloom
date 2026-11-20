@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/zombies/albedo_texture.jpg" id="albedo"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tripo16/zombies/normal_texture.png" id="normal"]
+
+[resource]
+resource_name = "tripo_mat_4cfba950-90b6-4992-b8b7-7b022439e560"
+metallic_specular = 0.22
+metallic_texture_channel = 2
+roughness = 0.94
+roughness_texture_channel = 1
+normal_enabled = true
+normal_scale = 0.45
+
+albedo_texture = ExtResource("albedo")
+normal_texture = ExtResource("normal")

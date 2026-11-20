@@ -44,7 +44,7 @@ func _process(delta: float) -> void:
 
 func reload() -> bool:
 	if actor.roll_left>0 or hand_weapon<0 or reload_left>0 or ammo[slot]>=capacity() or actor.bag.count(ItemBag.AMMO_IDS[slot])<=0: return false
-	reload_total = maxf(.3,float(spec().values.reload)*reload_multiplier*pow(.92,tuning[slot]))
+	reload_total = maxf(float(spec().values.reload)*.5,float(spec().values.reload)*reload_multiplier*pow(.92,tuning[slot]))
 	reload_left = reload_total
 	return true
 
@@ -56,12 +56,12 @@ func capacity(index: int = -1) -> int:
 	return 1 if chosen==4 else maxi(1,ceili(float(Arsenal.WEAPONS[chosen].values.capacity)*capacity_multiplier*(1+.1*tuning[chosen])))
 
 func shoot(direction: Vector3) -> bool:
-	if world.combat_paused(): return false
+	if world.combat_paused() or world.exp16.safe(actor.global_position): return false
 	if actor.bag.hand()=="bat": return swing(direction)
 	if world.is_client or actor.roll_left>0 or hand_weapon<0 or actor.gather_target!=null or actor.health.dead: return false
 	world.shot_owner = actor.peer_id
 	world.damage_origin15 = actor.global_position
-	world.critical15 = world.world_rng.randf()<.1
+	world.critical15 = world.world_rng.randf()<.1+Catalog16.bonus(actor,"shot_aim")
 	actor.combat_left = 6
 	var ammo_before: int = ammo[slot]
 	var original_damage := damage_multiplier
@@ -77,7 +77,7 @@ func shoot(direction: Vector3) -> bool:
 		var end := origin+aim*float(spec().values.range)
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,[actor.get_rid()]))
 		world.shot_visual(origin,hit.position if not hit.is_empty() else end,spec().color,false)
-	if result and world.world_rng.randf()<.25*int(world.upgrades.levels.get("efficiency",0))/12.0: ammo[slot] = ammo_before
+	if result and world.world_rng.randf()<.25*world.upgrades.level_for(actor,"efficiency")/12.0: ammo[slot] = ammo_before
 	damage_multiplier = original_damage; rate_multiplier = original_rate
 	world.shot_owner = 0; world.critical15 = false; world.damage_origin15 = Vector3.INF
 	return result
@@ -98,10 +98,12 @@ func special_shot(direction: Vector3) -> bool:
 		var hit := actor.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1|4|8,excludes))
 		if hit.is_empty(): break
 		end = hit.position if not hit.collider.is_in_group("enemies") else origin+aim*float(spec().values.range)
+		if hit.collider.is_in_group("enemy_nests"):
+			hit.collider.take_damage(damage*pow(.8,step)); end = hit.position; break
 		if not hit.collider.is_in_group("enemies"): break
 		var victim: Node3D = hit.collider
 		victims.append(victim)
-		victim.take_damage(damage*pow(.8,step))
+		world.hit_enemy16(victim,hit.position,damage*pow(.8,step))
 		excludes.append(victim.get_rid())
 		previous = hit.position
 	if slot==8 and not victims.is_empty(): end = previous
@@ -145,22 +147,21 @@ func rebuild_model() -> void:
 	ClayStyle.apply_tree(model)
 
 func swing(direction: Vector3) -> bool:
-	if world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
-	cooldown = .65; swing_left = .32; actor.cancel_gather()
+	if world.exp16.safe(actor.global_position) or world.is_client or actor.roll_left>0 or cooldown>0 or actor.health.dead or world.combat_paused(): return false
+	cooldown = .90; swing_left = .32; actor.cancel_gather()
 	var origin: Vector3 = actor.global_position+Vector3(0,1.15,0)
 	var victims: Array = []
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
 		if not MobileTargeting.alive(enemy): continue
 		var offset: Vector3 = MobileTargeting.point(enemy)-origin
-		if offset.length()>2.6 or offset.normalized().dot(direction.normalized())<.3: continue
+		if offset.length()>2.15 or offset.normalized().dot(direction.normalized())<.45: continue
 		var ray := PhysicsRayQueryParameters3D.create(origin,MobileTargeting.point(enemy),1|8,[actor.get_rid()])
 		if not actor.get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): continue
 		victims.append(enemy)
 	victims.sort_custom(func(a,b): return a.global_position.distance_squared_to(origin)<b.global_position.distance_squared_to(origin))
 	world.shot_owner = actor.peer_id
 	for enemy in victims.slice(0,3):
-		enemy.take_damage(32*damage_multiplier)
-		enemy.stun_left = maxf(enemy.stun_left,.12 if enemy.is_boss else .2)
+		enemy.take_damage(18*damage_multiplier)
 		world.effects.burst(MobileTargeting.point(enemy),Color("d6b077"),3)
 	world.shot_owner = actor.peer_id
 	world.shot_visual(origin,origin+direction.normalized()*2,Color("d6b077"))

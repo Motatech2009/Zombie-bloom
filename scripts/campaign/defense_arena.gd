@@ -32,14 +32,12 @@ func ground() -> void:
 	VisualFactory.ring(self,4.6,Vector3(0,.09,0),Color("8c9e64"))
 
 func props() -> void:
+	var car_index := 0
 	for pos in [Vector3(-11,0,-9),Vector3(10,0,9),Vector3(14,0,-12),Vector3(-13,0,12)]:
-		var car := StaticBody3D.new()
-		add_child(car)
-		car.position = pos
-		VisualFactory.box(car,Vector3(2.4,.8,4.5),Vector3(0,.7,0),Color("627176"))
-		VisualFactory.box(car,Vector3(2.1,.65,2),Vector3(0,1.4,.2),Color("344b54"))
-		for side in [-1,1]:
-			for z in [-1.4,1.4]: VisualFactory.box(car,Vector3(.35,.6,.7),Vector3(side*1.15,.3,z),Color("1d2c31"))
+		car_index += 1
+		var car := StaticBody3D.new(); car.name = "BaseCar"+str(car_index)
+		add_child(car); car.position = pos
+		car.add_child(load("res://assets/scenery/tripo16/carros/car_"+str(car_index)+".tscn").instantiate())
 		VisualFactory.collider(car,Vector3(2.7,1.7,4.8),Vector3(0,.85,0))
 		mark_solid(pos,Vector2(4,6))
 	for x in [-36,36]:

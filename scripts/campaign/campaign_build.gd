@@ -51,18 +51,36 @@ func _physics_process(delta: float) -> void:
 		valid = can_place(location,false)
 	ghost.material_override = good_material if valid else bad_material
 
+func piece_usage(id: String) -> Vector2i:
+	var completed_hordes := int(world.waves.wave) - int(world.waves.running)
+	if completed_hordes >= FortressData.BUILD_LIMIT_UNLOCK_WAVE:
+		return Vector2i.ZERO
+	var limit := int(FortressData.BUILD_LIMITS.get(id, 0))
+	if limit == 0:
+		return Vector2i.ZERO
+	var count := 0
+	for structure in get_tree().get_nodes_in_group("campaign_structure"):
+		if structure.get_parent() == world.base_root and not structure.is_queued_for_deletion() and structure.spec.id == id:
+			count += 1
+	return Vector2i(count, limit)
+
 func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	reason = ""
+	var piece: Dictionary = piece_specs()[selected]
+	var usage := piece_usage(piece.id)
 	if world.phase != "prep" or world.area_index != -1: reason = "Construa no refúgio entre hordas."
 	elif absf(pos.x)>46 or absf(pos.z)>46: reason = "Fora do terreno da base."
 	elif pos.distance_to(world.player.global_position)>12: reason = "Aproxime-se: alcance de 12 m."
 	elif get_tree().get_nodes_in_group("campaign_structure").size()>=120: reason = "Limite de 120 estruturas."
-	elif not world.can_pay(piece_specs()[selected].cost): reason = "Materiais insuficientes."
+	elif usage.y > 0 and usage.x >= usage.y:
+		reason = "Limite de %s (%d/%d). Libera após vencer a horda %d." % [
+			piece.title, usage.x, usage.y, FortressData.BUILD_LIMIT_UNLOCK_WAVE]
+	elif not world.can_pay(piece.cost): reason = "Materiais insuficientes."
 	elif pos.distance_to(world.vendor_pos)<3.5: reason = "Mantenha o vendedor livre."
 	for exit in world.exit_positions():
 		if pos.distance_to(exit)<3.5: reason = "Mantenha as saídas livres."
 	if not reason.is_empty(): return false
-	var size: Vector3 = piece_specs()[selected].size
+	var size: Vector3 = piece.size
 	var query := PhysicsShapeQueryParameters3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(size.x-.05,maxf(.3,size.y-.25),size.z-.05)
@@ -79,7 +97,8 @@ func can_place(pos: Vector3,check_access: bool = true) -> bool:
 	if check_access and not preserves_access(pos,size):
 		reason = "Deixe passagem ao Núcleo ou use um portão."
 		return false
-	reason = "%s · %s" % [piece_specs()[selected].title,CampaignData.cost_text(piece_specs()[selected].cost)]
+	reason = "%s · %s" % [piece.title, CampaignData.cost_text(piece.cost)]
+	if usage.y > 0: reason += " · %d/%d na base" % [usage.x, usage.y]
 	return true
 
 func footprint_overlaps(a: Vector3,sa: Vector3,ra: float,b: Vector3,sb: Vector3,rb: float) -> bool:

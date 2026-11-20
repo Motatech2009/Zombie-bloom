@@ -1,6 +1,6 @@
 class_name VisualFactory
 extends RefCounted
-## All geometry is original and generated locally. No external assets required.
+## Procedural scenery and the user-supplied, locally rigged clay survivor.
 static var materials: Dictionary = {}
 static var clay_enabled: bool = true
 
@@ -48,12 +48,19 @@ static func collider(parent: CollisionObject3D, size: Vector3, pos: Vector3) -> 
 	return node
 
 static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
+	if armed:
+		var player: Node3D = preload("res://assets/characters/player16/player.tscn").instantiate()
+		parent.add_child(player)
+		var gun: MeshInstance3D = player.get_node("Gun")
+		gun.mesh = null
+		gun.add_child(preload("res://assets/models/weapon_pistol.tscn").instantiate())
+		return player
 	var rig := Node3D.new()
 	parent.add_child(rig)
-	box(rig, Vector3(.65, .75, .38), Vector3(0, 1.05, 0), color)
+	var torso := box(rig, Vector3(.65, .75, .38), Vector3(0, 1.05, 0), color); torso.name = "Body16"
 	box(rig, Vector3(.68, .18, .42), Vector3(0, .69, 0), Color("27353c"))
 	box(rig, Vector3(.41, .43, .4), Vector3(0, 1.65, 0), Color("c9b58b") if armed else color.lightened(.22))
-	box(rig, Vector3(.43, .14, .43), Vector3(0, 1.87, 0), Color("263e42"))
+	var hat := box(rig, Vector3(.43, .14, .43), Vector3(0, 1.87, 0), Color("263e42")); hat.name = "DefaultHat16"
 	box(rig, Vector3(.28, .075, .025), Vector3(0, 1.68, -.21), Color("bfe96e") if armed else Color("ef725c"), true)
 	for side in [-1, 1]:
 		var leg := Node3D.new()
@@ -73,7 +80,7 @@ static func human(parent: Node3D, color: Color, armed: bool) -> Node3D:
 		var gun := box(rig, Vector3(.16, .16, .9), Vector3(.34, 1.1, -.64), Color("17272d"))
 		gun.name = "Gun"
 		box(rig, Vector3(.14, .07, .18), Vector3(.34, 1.2, -.56), Color("c8df73"))
-		box(rig, Vector3(.42, .5, .22), Vector3(0, 1.08, .27), Color("8b8252"))
+		var pack := box(rig, Vector3(.42, .5, .22), Vector3(0, 1.08, .27), Color("8b8252")); pack.name = "DefaultPack16"
 	return rig
 
 static func animate_human(rig: Node3D, clock: float, moving: float, recoil: float, armed: bool) -> void:
