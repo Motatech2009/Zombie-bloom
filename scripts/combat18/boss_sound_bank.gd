@@ -9,7 +9,7 @@ enum Cue {
 	LEAP, LAND, HOWL,
 	MOLD, CLAY, BIND,
 	BROOD, FLOCK,
-	SLAM, STAKES, VINES, MELEE_MISS,
+	SLAM, STAKES, VINES, MELEE_MISS, BURSTER,
 }
 
 const RANGE := 36.0
@@ -21,7 +21,7 @@ const LEVEL_DB := [
 	-14.0, -12.0, -13.0,
 	-12.0, -14.0, -17.0,
 	-13.0, -16.0,
-	-10.0, -12.0, -14.0, -21.0,
+	-10.0, -12.0, -14.0, -21.0, -13.0,
 ]
 
 @export var clips: Array[AudioStreamWAV]

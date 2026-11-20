@@ -7,6 +7,8 @@ const COLORS := {
 	"quakes": Color("e49f72"), "stakes": Color("ae7451"), "vines": Color("639b43"),
 	"howl": Color("f2cb82"), "howl_wave": Color("e8d4a0"), "brood": Color("ae9a71"), "claw": Color("f5ab88"),
 	"clay": Color("d38c69"), "square": Color("df9979"), "mold": Color("a77c60"), "clay_cage": Color("ba8767"),
+	"burst_warning": Color("ffc080"), "rupture": Color("ff923f"), "rupture_wave": Color("ffc270"),
+	"spore_warning": Color("d699ef"), "mushrooms": Color("bd72d3"),
 }
 
 var world: Node3D
@@ -24,6 +26,7 @@ var lifetime := 0.0
 static var warning_meshes: Dictionary
 static var warning_materials: Dictionary
 static var fragment_mesh: Mesh
+static var fungus_mesh: SphereMesh
 static var solid_material: StandardMaterial3D
 static var light_material: StandardMaterial3D
 
@@ -31,6 +34,12 @@ static func prepare() -> void:
 	if fragment_mesh != null: return
 	fragment_mesh = ClayStyle.rounded_box(Vector3.ONE)
 	fragment_mesh.get_rid()
+	fungus_mesh = SphereMesh.new()
+	fungus_mesh.radius = .5
+	fungus_mesh.height = 1.0
+	fungus_mesh.radial_segments = 10
+	fungus_mesh.rings = 4
+	fungus_mesh.get_rid()
 	solid_material = fragment_material(false)
 	light_material = fragment_material(true)
 	warning_meshes = {
@@ -39,7 +48,7 @@ static func prepare() -> void:
 		"square": build_warning("square"),
 		"ring": build_warning("ring"),
 	}
-	for id in ["area", "acid", "thorn", "snare", "line", "square"]:
+	for id in ["area", "acid", "thorn", "snare", "line", "square", "burst_warning", "spore_warning"]:
 		var material := StandardMaterial3D.new()
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -113,7 +122,7 @@ static func spawn(owner_world: Node3D, kind: String, point: Vector3, heading: Ve
 	var row := {
 		"id": owner_world.next_id(), "fx18": kind, "p": point, "dir": heading,
 		"s": size, "w": width, "life": duration,
-		"warning": kind in ["line", "square", "area", "acid", "thorn", "snare"],
+		"warning": kind in ["line", "square", "area", "acid", "thorn", "snare", "burst_warning", "spore_warning"],
 	}
 	var node := from_state(owner_world, row)
 	owner_world.effects.add_child(node)
@@ -141,14 +150,15 @@ func _ready() -> void:
 	if data.warning:
 		create_warning()
 	else:
+		if kind == "mushrooms": create_warning("spore_warning")
 		create_fragments()
 		update_visual()
 
-func create_warning() -> void:
+func create_warning(material_id := "") -> void:
 	var shape := kind if kind in ["line", "square"] else "circle"
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = warning_meshes[shape]
-	mesh.material_override = warning_materials[kind]
+	mesh.material_override = warning_materials[kind if material_id.is_empty() else material_id]
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mesh.scale = Vector3(width if shape == "line" else extent, 1, extent)
 	mesh.position.y = .07
@@ -156,22 +166,23 @@ func create_warning() -> void:
 
 func create_fragments() -> void:
 	var count := 8 if MobilePlatform.lightweight() else 12
-	var ring := kind in ["howl", "howl_wave"]
+	var ring := kind in ["howl", "howl_wave", "rupture_wave"]
 	match kind:
 		"wind", "clay": count = 7 if MobilePlatform.lightweight() else 13
 		"mold": count = 4
 		"claw": count = 3
-		"howl", "howl_wave": count = 2
+		"howl", "howl_wave", "rupture_wave": count = 2
+		"mushrooms": count = 10 if MobilePlatform.lightweight() else 14
 	var node := MultiMeshInstance3D.new()
 	fragments = MultiMesh.new()
 	fragments.transform_format = MultiMesh.TRANSFORM_3D
 	fragments.use_colors = true
-	fragments.mesh = warning_meshes.ring if ring else fragment_mesh
+	fragments.mesh = warning_meshes.ring if ring else fungus_mesh if kind == "mushrooms" else fragment_mesh
 	fragments.instance_count = count
 	var bounds := extent * 1.25 + 1.0
 	fragments.custom_aabb = AABB(Vector3(-bounds,-.2,-bounds), Vector3(bounds*2,3,bounds*2))
 	node.multimesh = fragments
-	node.material_override = light_material if ring or kind in ["wind","clay","claw"] else solid_material
+	node.material_override = light_material if ring or kind in ["wind","clay","claw","rupture"] else solid_material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fragment_offsets.resize(count)
 	fragment_bases.resize(count)
@@ -194,10 +205,30 @@ func create_fragments() -> void:
 				dimensions = Vector3(.095,.085,extent*.94)
 				origin = Vector3((i-1)*.33,.68,-extent*.55)
 				rotation.z = -.25
-			"howl", "howl_wave":
-				origin.y = .25 + .38*i
+			"howl", "howl_wave", "rupture_wave":
+				origin.y = .10 + .14*i if kind == "rupture_wave" else .25 + .38*i
 				dimensions = Vector3(extent,1,extent)
 				if i == 1: tone = color.lightened(.28)
+			"rupture":
+				var angle := i * 2.39996
+				origin = Vector3(cos(angle),0,sin(angle)) * extent * (.48+.11*float(i%5))
+				dimensions = Vector3(.30,.32,.48)
+				rotation = Vector3(i*.25,angle,.4)
+				tone = color.lerp(Color("fff1a3"),float(i%4)*.22)
+			"mushrooms":
+				if i < 6:
+					var group := floori(i*.5)
+					var angle := group*TAU/3.0 + .6
+					var size := 1.0 - group*.15
+					var cap := i%2 == 1
+					origin = Vector3(cos(angle)*.74,(.57 if cap else .27)*size,sin(angle)*.74)
+					dimensions = (Vector3(.83,.44,.83) if cap else Vector3(.22,.59,.22))*size
+					if not cap: tone = Color("e8d4df")
+				else:
+					var angle := i*2.39996
+					origin = Vector3(cos(angle)*extent*.56,.41+.32*(i%3),sin(angle)*extent*.56)
+					dimensions = Vector3(.58,.45,.58)
+					tone = Color("bfa8d0").darkened(.06*(i%3))
 			_:
 				var angle := i * 2.39996
 				var radius := extent * (.4 + float(i % 5) * .13)
@@ -229,6 +260,25 @@ func update_visual() -> void:
 			"howl", "howl_wave":
 				var reach := maxf(.06,progress*1.17 - i*.16)
 				frame = frame.scaled_local(Vector3(reach,1,reach))
+			"rupture_wave":
+				var reach := maxf(.02,smoothstep(0.0,.72,progress)-i*.14)
+				frame = frame.scaled_local(Vector3(reach,1,reach))
+			"rupture":
+				var out := smoothstep(0.0,.89,progress)
+				origin *= .04+.96*out
+				origin.y = .13+sin(PI*progress)*(.55+.18*(i%4))
+				frame = frame.rotated(Vector3.RIGHT,progress*(3.3+i*.16))
+				frame = frame.scaled_local(Vector3.ONE*maxf(.001,fade))
+			"mushrooms":
+				var grown := smoothstep(0.0,width,elapsed)*fade
+				if i < 6:
+					origin.y *= grown
+					frame = frame.scaled_local(Vector3.ONE*maxf(.001,grown))
+				else:
+					var haze := smoothstep(width,width+.30,elapsed)*fade
+					origin = origin.rotated(Vector3.UP,elapsed*(.18+.05*(i%3)))
+					origin.y += .28*sin(elapsed*2.2+i)
+					frame = frame.scaled_local(Vector3.ONE*maxf(.001,haze))
 			"claw":
 				frame = frame.scaled_local(Vector3.ONE*maxf(.001,1.0-smoothstep(.25,1.0,progress)))
 			_:

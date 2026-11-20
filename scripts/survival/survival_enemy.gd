@@ -22,6 +22,10 @@ var melee_target: Node3D
 var ranged_left := 2.0
 var stuck_left := 0.0
 var last_ground := Vector3.ZERO
+const BURST_RADIUS := 3.2
+const BURST_FUSE := .60
+const BURST_TRIGGER := 2.2
+var burster_fuse := 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -33,6 +37,7 @@ func _ready() -> void:
 	configure_bars()
 	if MobilePlatform.lightweight() and not rig.get_meta("imported_enemy16",false): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
 	if is_boss:
+		collision_layer |= CollisionLayers.BOSS
 		health.setup(health.maximum*1.6*(1+.5*(world.party_count()-1)))
 		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
 	else: health.setup(health.maximum*(1.0 if spec.id in ["walker","runner"] else 1.25)*(1+.04*maxi(0,world.waves.wave-1)))
@@ -61,7 +66,14 @@ func _physics_process(delta: float) -> void:
 	shield_left = maxf(0,shield_left-delta)
 	snare_left = maxf(0,snare_left-delta)
 	stun_left = maxf(0,stun_left-delta)
+	if burster_fuse > 0.0:
+		burster_fuse -= delta
+		if burster_fuse <= 0.0: health.take_damage(health.current)
+		return
 	if stun_left>0: velocity = Vector3.ZERO; return
+	if enemy_kind == 9 and burster_near_survivor():
+		arm_burster()
+		return
 	if is_boss and not enraged and health.current<health.maximum*.4:
 		enraged = true
 		spec.values.speed *= 1.25
@@ -165,7 +177,12 @@ func take_damage(amount: float) -> void:
 
 func die() -> void:
 	if is_instance_valid(warning): warning.queue_free()
-	if enemy_kind==9: world.hostile_blast(global_position,3.2,22+world.waves.wave)
+	if enemy_kind == 9 and not proxy and world.phase != "ended":
+		var point := Vector3(global_position.x, 0.0, global_position.z)
+		BossFx18.spawn(world, "rupture", point, Vector3.ZERO, BURST_RADIUS, 0.0, .56)
+		BossFx18.spawn(world, "rupture_wave", point, Vector3.ZERO, BURST_RADIUS, 0.0, .36)
+		world.boss_sound(BossSoundBank.Cue.BURSTER, point)
+		world.hostile_blast(point, BURST_RADIUS, 22+world.waves.wave, false)
 	super.die()
 
 func _exit_tree() -> void:
@@ -211,8 +228,17 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 		elif distance<=21 and line_of_sight():
 			speed = 0
 			if ranged_left<=0 and spec.id!="mortar":
-				world.projectile("acid",global_position+Vector3(0,1.4,0),target.global_position, float(spec.values.damage),2.0,1.2)
-				ranged_left = 3.5; recoil = .7
+				if spec.id == "lobber":
+					var point := Vector3(target.global_position.x, 0.0, target.global_position.z)
+					var shot: Node3D = world.projectile("spore",global_position+Vector3.UP*1.4,point,
+						float(spec.values.damage)*.24,SporePatch.RADIUS,1.25)
+					if shot != null:
+						BossFx18.spawn(world,"spore_warning",point,Vector3.ZERO,SporePatch.RADIUS,0.0,1.25)
+					ranged_left = 4.6
+				else:
+					world.projectile("acid",global_position+Vector3(0,1.4,0),target.global_position, float(spec.values.damage),2.0,1.2)
+					ranged_left = 3.5
+				recoil = .7
 		# No contact damage for ranged-only infected.
 	if melee_left>0:
 		melee_left = maxf(0,melee_left-delta); speed = 0
@@ -232,6 +258,9 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies"): victim = body; break
 		if spec.id=="flyer" and distance<1.5 and line_of_sight(): victim = target
 		if victim!=null:
+			if enemy_kind == 9:
+				arm_burster()
+				return
 			melee_target = victim; melee_left = .45 if is_boss or spec.id=="cleaver" else .28
 			attack_left = float(spec.values.interval)+melee_left
 	var travel := get_real_velocity() * Vector3(1,0,1)
@@ -250,6 +279,22 @@ func normal_step(delta: float, update_pose: bool = true) -> void:
 		else: animate_ground(clock * speed / 2, 1.0 if speed > 0 else 0.0)
 		animate_melee()
 	recoil = maxf(0,recoil-delta*3)
+
+func burster_near_survivor() -> bool:
+	for actor in world.avatars.values():
+		var offset: Vector3 = actor.global_position - global_position
+		if actor.health.dead or offset.length_squared() > BURST_TRIGGER * BURST_TRIGGER: continue
+		if world.exp16.safe(actor.global_position): continue
+		var ray := PhysicsRayQueryParameters3D.create(global_position+Vector3.UP*.85,
+			actor.global_position+Vector3.UP*.85, 1|8, [get_rid()])
+		if get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): return true
+	return false
+
+func arm_burster() -> void:
+	burster_fuse = BURST_FUSE
+	velocity = Vector3.ZERO
+	var point := Vector3(global_position.x,0.0,global_position.z)
+	warning = BossFx18.spawn(world,"burst_warning",point,Vector3.ZERO,BURST_RADIUS,0.0,BURST_FUSE)
 
 func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
 	moving = clampf(moving, 0.0, 1.0)

@@ -101,6 +101,7 @@ func animate_pose(moving: float) -> void:
 
 func _ready() -> void:
 	super._ready()
+	collision_mask |= CollisionLayers.BOSS
 	if peer_id!=1:
 		var tag := VisualFactory.health_label(self,2.4)
 		tag.text = display_name

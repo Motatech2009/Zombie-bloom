@@ -50,3 +50,13 @@ O APK principal usa o código 1703. Todos os jogadores da mesma sessão cooperat
 As raízes do Titã Enraizado prendem por 2,3 segundos, a mesma duração da argila do Oleiro. O efeito no chão acompanha a duração do aprisionamento.
 
 Os oito chefes têm efeitos nos ataques com volume ajustado pela distância, incluindo investidas, aterrissagens, invocações e impactos. O cooperativo envia esses sons somente para jogadores próximos e no mesmo setor. O APK principal usa o código 1704 e o cooperativo exige que todos estejam na 1.7.4.
+
+## 1.7.5
+
+O corpo dos chefes terrestres interrompe a aproximação do sobrevivente a pé ou em rolamento. A Tempestade Alada conserva o espaço sob ela enquanto voa alto.
+
+O Estourador acende um pavio de 0,6 segundo ao se aproximar de um sobrevivente ou tocar um obstáculo que possa atacar. Ao detonar ou morrer, ele explode uma vez, com som, onda de choque e dano em 3,2 metros.
+
+O Lançador de Esporos arremessa sementes que germinam em 0,9 segundo. Os cogumelos duram sete segundos e liberam uma nuvem que causa dano leve e reduz a velocidade dos sobreviventes em 45%. A lentidão dura até 1,25 segundo depois de sair. O Corrosivo continua lançando ácido.
+
+O APK principal usa o código 1705 e o cooperativo exige a 1.7.5 para todos os participantes.

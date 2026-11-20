@@ -495,11 +495,12 @@ func hear_boss_sound(cue: int, point: Vector3) -> void:
 	if phase != "ended" and point.is_finite() and coord_at(point) == coord_at(player.global_position):
 		audio.play_boss(cue, point, player.global_position)
 
-func hostile_blast(point: Vector3,radius: float,damage: float) -> void:
+func hostile_blast(point: Vector3,radius: float,damage: float, show_burst := true) -> void:
 	if is_client: return
 	damage *= v15.day.damage_factor()
-	effects.burst(point,Color("e79a65"),12)
-	if network!=null and network.mode=="host": network.blast_event(point,radius)
+	if show_burst:
+		effects.burst(point,Color("e79a65"),12)
+		if network!=null and network.mode=="host": network.blast_event(point,radius)
 	for body in get_tree().get_nodes_in_group("damageable"):
 		if body.is_in_group("enemies") or body.health.dead: continue
 		var offset: Vector3 = body.global_position-point
@@ -1177,6 +1178,7 @@ func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
 			if regions.enabled() and coord_at(node.global_position)!=sector_coord: continue
 			if not node.has_meta("uid"): node.set_meta("uid",next_id())
 			var visual := {"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius}
+			if group=="campaign_projectiles" and node.kind=="spore": visual.spore = true
 			if group=="campaign_projectiles" and node.kind=="defense_shell":
 				visual.shell16 = true; visual.direction16 = (node.destination-node.start).normalized()
 			hazards.append(visual)
@@ -1401,6 +1403,8 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 				add_child(visual)
 				client_hazards[id] = visual
 			elif state.get("shell16",false): client_hazards[id] = VisualFactory.box(self,Vector3(.38,.38,.84),Vector3.ZERO,Color("e1af64"),true)
+			elif state.get("spore",false):
+				client_hazards[id] = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,Color("bf83d4"),true)
 			elif state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
 			else: client_hazards[id] = VisualFactory.cylinder(self,state.radius if state.pool else .15,.04 if state.pool else .25,Vector3.ZERO,Color("9dc45f") if state.pool else Color("e1af64"))
 		client_hazards[id].position = state.p

@@ -75,7 +75,7 @@ func run() -> void:
 			and peak > 20000 and peak < 32767 and pcm.decode_s16(0) == 0 and pcm.decode_s16(pcm.size()-2) == 0,
 			"prebaked boss clip has an audible, click-free waveform below the clipping limit")
 		fingerprints[hash(pcm)] = true
-	check(fingerprints.size() == BossSoundBank.Cue.size(),"all 25 boss sound clips are distinct")
+	check(fingerprints.size() == BossSoundBank.Cue.size(),"all hostile attack sound clips are distinct")
 	check(BossSoundBank.in_range(Vector3(0,4,3),Vector3.ZERO)
 		and not BossSoundBank.in_range(Vector3(0,0,38),Vector3.ZERO), "boss sound audibility uses horizontal field distance")
 	world.queue_free()
