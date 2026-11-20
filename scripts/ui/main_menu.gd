@@ -332,8 +332,13 @@ func show_rankings() -> void:
 	var bar := UI.meter(info); bar.min_value = RankProgress.THRESHOLDS[maxi(0,RankProgress.tier(kills)-1)] if RankProgress.tier(kills)>0 else 0; bar.max_value = RankProgress.next_goal(kills); bar.value = kills
 	menu_button(content,"MINHA CONTA / ENTRAR",show_account)
 	UI.label(content,"SEU ELO CRESCE COM ABATES · A POSIÇÃO COMPARA JOGADORES REAIS",11,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var metric := OptionButton.new(); metric.add_item("Zumbis mortos"); metric.add_item("Hordas vencidas"); metric.add_item("Sucata coletada"); metric.add_item("Pontos de desafios"); metric.custom_minimum_size.y = 44; content.add_child(metric)
-	var consult := menu_button(content,"CONSULTAR CLASSIFICAÇÃO",func(): Account.fetch_ranking(["kills","hordes","scrap","points"][metric.selected]),true)
+	var metric := OptionButton.new()
+	var metrics := ["kills", "hordes", "scrap", "points", "active_seconds"]
+	for title in ["Zumbis mortos", "Hordas vencidas", "Sucata coletada", "Pontos de desafios", "Tempo jogado"]:
+		metric.add_item(title)
+	metric.custom_minimum_size.y = 44
+	content.add_child(metric)
+	var consult := menu_button(content,"CONSULTAR CLASSIFICAÇÃO",func(): Account.fetch_ranking(metrics[metric.selected]),true)
 	var status_label := UI.label(content,Account.status,13,UI.MUTED); status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var results := UI.vbox(content,8)
 	UI.label(results,"Consulte para ver jogadores reais. Nenhum perfil fictício é adicionado.",14,UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -354,7 +359,11 @@ func show_rankings() -> void:
 			var player_info := UI.vbox(line,2); player_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			UI.label(player_info,str(row.nickname),17).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.label(player_info,RankProgress.TITLES[emblem.level],12,UI.MUTED)
-			UI.label(line,str(row.score),19,UI.LIME)
+			var seconds := int(row.get("active_seconds", -1))
+			var played := PlayClock16.display(seconds) if seconds >= 0 else "Sem registro"
+			UI.label(player_info, "Tempo jogado · " + played, 12, UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			if row.get("metric") != "active_seconds":
+				UI.label(line,str(row.score),19,UI.LIME)
 	Account.changed.connect(refresh)
 	status_label.tree_exiting.connect(func(): Account.changed.disconnect(refresh))
 

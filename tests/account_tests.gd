@@ -45,9 +45,16 @@ func run() -> void:
 	account.token_deadline = 0
 	account.replies = [{"ok":true,"data":{"id_token":"renewed","refresh_token":"next","expires_in":"3600"}}]
 	check(await account.ensure_token() and account.token=="renewed","long sessions renew Firebase ID tokens")
-	account.replies = [{"ok":true,"data":[{"document":{"fields":{"nickname":{"stringValue":"Player"},"kills":{"integerValue":"30"}}}}]}]
+	account.replies = [{"ok":true,"data":{}}]
+	await account.publish_playtime(7205)
+	check(account.local_summary.active_seconds==7205 and account.payloads[-1].writes[0].updateMask.fieldPaths==["active_seconds"],"publication writes only the confirmed playtime field")
+	requests = account.paths.size()
+	await account.publish_playtime(7205)
+	check(account.paths.size()==requests,"unchanged playtime does not write again")
+	account.replies = [{"ok":true,"data":[{"document":{"fields":{"nickname":{"stringValue":"Player"},"kills":{"integerValue":"30"},"active_seconds":{"integerValue":"3660"}}}},{"document":{"fields":{"nickname":{"stringValue":"Legacy"},"kills":{"integerValue":"20"}}}}]}]
 	await account.fetch_ranking("kills")
-	check(account.rows.size()==1 and account.rows[0].score==30,"top ranking parses Firestore query documents")
+	check(account.rows.size()==2 and account.rows[0].score==30,"top ranking parses Firestore query documents")
+	check(account.rows[0].active_seconds==3660 and account.rows[1].active_seconds==-1,"ranking distinguishes synced hours from a legacy profile")
 	requests = account.paths.size(); await account.fetch_ranking("kills")
 	check(account.paths.size()==requests,"reopening a recent ranking uses the cache")
 	await account.fetch_ranking("arbitrary")
@@ -56,6 +63,10 @@ func run() -> void:
 	check(account.paths.size()==requests,"ranking refresh throttle avoids repeated reads")
 	account.rank_request_at = -60000; account.replies = [{"ok":false,"data":{}}]; await account.fetch_ranking("scrap")
 	check(account.rows.is_empty(),"failed query clears stale category results")
+	account.rank_request_at = -60000
+	account.replies = [{"ok":true,"data":[{"document":{"fields":{"active_seconds":{"integerValue":"3660"}}}}]}]
+	await account.fetch_ranking("active_seconds")
+	check(account.rows[0].score==3660 and account.payloads[-1].structuredQuery.orderBy[0].field.fieldPath=="active_seconds","playtime category queries by descending cumulative seconds")
 	account.replies = [{"ok":true,"data":{}}]; await account.recover("a@b.c")
 	check(account.paths[-1].contains("accounts:sendOobCode") and account.payloads[-1].requestType=="PASSWORD_RESET","recovery sends Firebase password-reset link")
 	await account.logout()

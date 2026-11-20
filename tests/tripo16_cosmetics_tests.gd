@@ -39,7 +39,12 @@ func run() -> void:
 	w.player.outfit16 = outfit; w.v15.decorate(w.player)
 	check(w.player.health.maximum==before.hp and w.player.bag.capacity_slots==before.bag and w.player.bag.slots==before.items and w.player.weapons.hand_weapon==before.gun,"wearing the real kit preserves health, inventory, capacity and weapon")
 	var state: Dictionary = w.net_state(1,true); check(state.players[0].outfit16==outfit,"network snapshot includes the equipped cosmetic IDs")
+	var guest: Dictionary = state.players[0].duplicate(true)
+	guest.id = 2
+	state.players.append(guest)
 	w.is_client = true; w.client_scene_ready = true; w.last_scene_revision = int(state.rev); w.apply_net_state(state,1)
-	check(w.player.rig.get_node("Atelier16").get_child_count()==3 and w.player.rig.get_node("Atelier16/COS-ENG-05").get_meta("cosmetic_id")=="COS-ENG-05","client reconstructs the imported outfit from replicated IDs")
+	var remote_rig: Node3D = w.avatars[2].rig
+	check(remote_rig.get_node("Atelier16").get_child_count()==3 and remote_rig.get_node("Atelier16/COS-ENG-05").get_meta("cosmetic_id")=="COS-ENG-05","client reconstructs another player's imported outfit from replicated IDs")
+	check(w.player.outfit16.is_empty(), "an older host snapshot cannot overwrite the local wardrobe")
 	w.queue_free(); await create_timer(.4).timeout
 	print("COSMETIC MODELS RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

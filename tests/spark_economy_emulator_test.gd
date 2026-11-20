@@ -47,6 +47,9 @@ func run() -> void:
 	check(reply.ok and int(reply.profile.active_seconds)==120,"active time sync works without Functions")
 	reply = await service.request("sync",{"sessions":{"1234_session":120}})
 	check(reply.ok and int(reply.profile.active_seconds)==120,"same session watermark is idempotent")
+	await a.publish_playtime(int(reply.profile.active_seconds))
+	await a.fetch_ranking("active_seconds")
+	check(a.rows.any(func(row): return row.nickname == a.nickname and row.active_seconds == 120), "Godot publishes confirmed hours and reads them in the real ranking")
 	reply = await service.request("titan",{"match_id":"0123_test-run","encounter_id":"fixture"})
 	check(reply.ok and "COS-TITAN-01" in reply.profile.owned,"Titan trophy remains unlockable on Spark")
 	a.user_id = "different-user"

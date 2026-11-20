@@ -69,6 +69,17 @@ async function seed(p,d){const r=await call(admin,'/'+p,'PATCH',{fields:enc(d).m
  check((await commit(a,[write(p,{...r.value,action:'sync',session_id:'abc',active_seconds:120,longest_seconds:120},r.doc,['updated_at']),write(p+'/sessions/abc',{seconds:120},null)])).status===200,'session hours synchronize atomically');
  check((await call(b,'/'+p+'/sessions/abc')).status===403,'private session documents cannot leak');
  check((await commit(a,[write(p+'/sessions/orphan',{seconds:1},null)])).status===403,'orphan time counter denied');
+ const player='players/'+a.localId;
+ check((await commit(a,[write(player,{nickname:'Player',kills:3},null)])).status===200,'older client can still create its ranking profile');
+ let ranking=await get(a,player);
+ check((await commit(a,[write(player,{...ranking.value,active_seconds:121},ranking.doc)])).status===403,'published time must match the synchronized total');
+ check((await commit(a,[write(player,{...ranking.value,active_seconds:120},ranking.doc)])).status===200,'owner publishes synchronized time');
+ ranking=await get(a,player);
+ check((await commit(a,[write(player,{...ranking.value,kills:4},ranking.doc)])).status===200,'score updates preserve published playtime');
+ ranking=await get(a,player);
+ check((await commit(a,[write(player,{nickname:'Player',kills:4},ranking.doc)])).status===403,'publishing profile cannot erase the synchronized total');
+ const byTime=await call(b,':runQuery','POST',{structuredQuery:{from:[{collectionId:'players'}],orderBy:[{field:{fieldPath:'active_seconds'},direction:'DESCENDING'}],limit:25}});
+ check(byTime.status===200&&byTime.data.some(x=>x.document?.name===PREFIX+player&&x.document.fields.active_seconds.integerValue==='120'),'ranking exposes synchronized seconds to signed-in readers');
  r=await get(a,p);check((await commit(a,[write(p,{...r.value,action:'titan',item_id:'COS-TITAN-01',owned:[...r.value.owned,'COS-TITAN-01']},r.doc,['updated_at'])])).status===200,'eligible Titan entitlement grants without currency');
  r=await get(a,p);check(r.value.owned.includes('COS-TITAN-01')&&r.value.balance>=0,'Titan trophy persists independently of purchases');
  console.log('SPARK ECONOMY RESULT: '+checks+' checks, 0 failures');

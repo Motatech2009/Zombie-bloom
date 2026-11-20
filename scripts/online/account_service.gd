@@ -4,6 +4,7 @@ signal changed
 const FLUSH_SECONDS := 120.0
 const RANK_CACHE_SECONDS := 60
 const PAGE_SIZE := 25
+const RANK_LABELS := {"kills":"abates","hordes":"hordas vencidas","scrap":"sucata coletada","points":"pontos de desafio","active_seconds":"tempo jogado"}
 var project_id := ""
 var api_key := ""
 var token := ""
@@ -258,8 +259,22 @@ func sync_failed() -> void:
 	status = "Resultados guardados no aparelho. Nova tentativa quando a conexão permitir."
 	flush_clock = retry_seconds; retry_seconds = minf(120,retry_seconds*2); busy = false; changed.emit()
 
+func publish_playtime(seconds: int) -> void:
+	if not signed_in() or seconds <= int(local_summary.get("active_seconds", -1)): return
+	var owner := user_id
+	if not await ensure_token() or user_id != owner: return
+	var write := {
+		"update": {"name": player_name(), "fields": {"active_seconds": {"integerValue": str(seconds)}}},
+		"updateMask": {"fieldPaths": ["active_seconds"]},
+		"currentDocument": {"exists": true}
+	}
+	var reply := await request_json(documents_url()+":commit", HTTPClient.METHOD_POST, {"writes": [write]})
+	if reply.ok and user_id == owner:
+		local_summary.active_seconds = maxi(seconds, int(local_summary.get("active_seconds", 0)))
+		save_session()
+
 func fetch_ranking(metric: String,_mode: String = "all",_offset: int = 0) -> void:
-	if metric not in ProgressLedger.METRICS or busy: return
+	if not RANK_LABELS.has(metric) or busy: return
 	rows.clear()
 	if not configured(): changed.emit(); return
 	if not signed_in(): status = "Entre na conta para consultar o ranking."; changed.emit(); return
@@ -274,8 +289,8 @@ func fetch_ranking(metric: String,_mode: String = "all",_offset: int = 0) -> voi
 		for entry in reply.data:
 			if not entry is Dictionary or not entry.has("document"): continue
 			var values := decode_fields(entry.document.get("fields",{}))
-			rows.append({"position":rows.size()+1,"nickname":values.get("nickname","Sobrevivente"),"score":values.get(metric,0),"kills":values.get("kills",0)})
-		rank_cache[metric] = {"at":now,"rows":rows.duplicate(true)}; status = "Top 25 · "+{"kills":"abates","hordes":"hordas vencidas","scrap":"sucata coletada","points":"pontos de desafio"}[metric]
+			rows.append({"position":rows.size()+1,"nickname":values.get("nickname","Sobrevivente"),"score":values.get(metric,0),"kills":values.get("kills",0),"active_seconds":values.get("active_seconds",-1),"metric":metric})
+		rank_cache[metric] = {"at":now,"rows":rows.duplicate(true)}; status = "Top 25 · "+RANK_LABELS[metric]
 	else: status = "Ranking indisponível. Tente novamente mais tarde."
 	busy = false; changed.emit()
 

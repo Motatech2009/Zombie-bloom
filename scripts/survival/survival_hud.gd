@@ -390,9 +390,12 @@ func confirm_dismantle() -> void:
 func show_pause() -> void:
 	if not world.connected_game():
 		super.show_pause()
-		if mode == "pause" and world.game_mode == "campaign":
-			var journal := UI.button(overlay_box, "DIÁRIO DA CAMPANHA", show_story17)
-			overlay_box.move_child(journal, overlay_box.get_child_count() - 2)
+		if mode == "pause":
+			var actions := UI.hbox(overlay_box, 8)
+			overlay_box.move_child(actions, overlay_box.get_child_count() - 3)
+			UI.button(actions, "COSMÉTICOS", show_wardrobe)
+			if world.game_mode == "campaign":
+				UI.button(actions, "DIÁRIO DA CAMPANHA", show_story17)
 		return
 	if not mode.is_empty() or world.phase=="ended": return
 	var box := open_modal("pause",640)
@@ -404,10 +407,20 @@ func show_pause() -> void:
 		save.disabled = world.area_index!=-1 or world.phase!="prep"
 	UI.button(box,"CONEXÃO / AMIGOS",func(): close_modal(); show_connection())
 	UI.button(box,"ESTATÍSTICAS DO SAVE",func(): close_modal(); show_run_records())
+	var actions := UI.hbox(box, 8)
+	UI.button(actions, "COSMÉTICOS", show_wardrobe)
 	if world.game_mode == "campaign":
-		UI.button(box, "DIÁRIO DA CAMPANHA", show_story17)
+		UI.button(actions, "DIÁRIO DA CAMPANHA", show_story17)
 	UI.button(box,"CONFIGURAÇÕES",show_settings)
 	UI.button(box,"ENCERRAR SALA" if not world.is_client else "SAIR DA SALA",menu)
+
+func show_wardrobe() -> void:
+	var mobile := MobilePlatform.enabled()
+	var box := open_modal("wardrobe", 510 if mobile else 600)
+	Menu16.wardrobe(box, world.player.specialization, 0 if mobile else 328)
+	var actions := UI.hbox(box, 8)
+	UI.button(actions, "VOLTAR", func(): close_modal(); show_pause())
+	UI.button(actions, "CONTINUAR", close_modal, true)
 
 func show_build_catalog() -> void:
 	if not mode.is_empty() or world.phase!="prep" or world.area_index!=-1: return

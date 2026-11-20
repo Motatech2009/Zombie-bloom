@@ -51,6 +51,7 @@ var field_defeated: Array[int] = []
 var remote_sector_times: Dictionary = {}
 var restoring_boss_stage: int = 0
 var client_scene_ready: bool = false
+var outfit_retry_at := 0
 var remote_interaction_hint: String = ""
 var remote_mobile_context: Dictionary = {}
 var prediction := ClientPrediction.new()
@@ -172,6 +173,7 @@ func _ready() -> void:
 	upgrades.state(player); upgrades.refresh_local()
 	player.set_meta("account_uid16",Account.user_id)
 	Meta16.world = self; Meta16.bound_run = ""
+	Meta16.changed.connect(refresh_local_outfit)
 	if Meta16.local_economy: Meta16.observe_progress()
 	var range_view := DefenseRange16.new(); range_view.world = self; add_child(range_view)
 	if MobilePlatform.enabled():
@@ -309,7 +311,33 @@ func send_action(action: String,data: Dictionary) -> void:
 		network.command(action,data)
 	else: perform_action(1,action,data)
 
+func apply_appearance(actor: Node3D, class_id: String, rank: int, outfit: Dictionary) -> void:
+	if actor.specialization == class_id and actor.cosmetic == rank and actor.outfit16 == outfit and actor.rig.has_node("Atelier16"):
+		return
+	actor.specialization = class_id
+	actor.cosmetic = rank
+	actor.outfit16 = outfit.duplicate()
+	v15.decorate(actor)
+
+func refresh_local_outfit() -> void:
+	if not is_instance_valid(player) or (is_client and not client_scene_ready): return
+	var outfit := Meta16.outfit(player.specialization)
+	if player.outfit16 == outfit: return
+	apply_appearance(player, player.specialization, player.cosmetic, outfit)
+	if is_client: send_local_outfit(outfit)
+
+func send_local_outfit(outfit: Dictionary) -> void:
+	outfit_retry_at = Time.get_ticks_msec() + 500
+	send_action("outfit16", {"outfit": outfit})
+
 func perform_action(peer: int,action: String,data: Dictionary) -> bool:
+	if action == "outfit16":
+		if is_client or not avatars.has(peer) or phase == "ended": return false
+		var actor: Node3D = avatars[peer]
+		var outfit = data.get("outfit")
+		if not Cosmetics16.valid(outfit, actor.specialization): return false
+		apply_appearance(actor, actor.specialization, actor.cosmetic, outfit)
+		return true
 	if combat_paused() and action not in ["choice","defer_choice"]: return false
 	if regions.enabled() and avatars.has(peer):
 		if action=="travel": return regions.travel(avatars[peer],int(data.get("direction",-1)))
@@ -865,8 +893,10 @@ func valid_profile(data: Variant) -> bool:
 func restore_profile(actor: Node3D,data: Dictionary) -> void:
 	actor.set_meta("titan_victory16",str(data.get("titan_victory16","")))
 	actor.set_meta("titan_owner16",str(data.get("titan_owner16","")))
-	actor.specialization = str(data.get("class","engineer")); actor.cosmetic = int(data.get("cosmetic",0)); actor.outfit16 = data.get("outfit16",{}).duplicate()
-	v15.decorate(actor)
+	var class_id := str(data.get("class", "engineer"))
+	var outfit: Dictionary = data.get("outfit16", {})
+	if actor == player: outfit = Meta16.outfit(class_id)
+	apply_appearance(actor, class_id, int(data.get("cosmetic", 0)), outfit)
 	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
 	actor.bag.restore(data.bag)
 	actor.weapons.ammo.assign(data.ammo)
@@ -1007,9 +1037,6 @@ func apply_snapshot(data: Dictionary) -> void:
 	if data.has("systems15"): v15.restore(data.systems15)
 	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
 	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
-	if Meta16.local_economy and (Meta16.wallet.data.equipped.has(player.specialization) or Meta16.trophy_equipped.has(player.specialization)):
-		player.outfit16 = Meta16.outfit(player.specialization)
-		v15.decorate(player)
 	records.restore(data.get("records",{}))
 	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
 	account_baseline = true
@@ -1273,9 +1300,15 @@ func apply_net_state(data: Dictionary,own_id: int) -> void:
 			avatars[id] = actor
 		var actor: Node3D = avatars[id]
 		actor.region_coord = state.get("region",sector_coord)
-		actor.specialization = str(state.get("class","engineer")); actor.pinned_left = float(state.get("pin",0)); actor.combat_left = float(state.get("combat",0))
-		if actor.cosmetic!=int(state.get("cosmetic",0)) or actor.outfit16!=state.get("outfit16",{}):
-			actor.cosmetic = int(state.cosmetic); actor.outfit16 = state.get("outfit16",{}).duplicate(); v15.decorate(actor)
+		var class_id := str(state.get("class", "engineer"))
+		var outfit: Dictionary = state.get("outfit16", {})
+		if id == own_id:
+			var equipped := Meta16.outfit(class_id)
+			if outfit != equipped and Time.get_ticks_msec() >= outfit_retry_at:
+				send_local_outfit(equipped)
+			outfit = equipped
+		apply_appearance(actor, class_id, int(state.get("cosmetic", 0)), outfit)
+		actor.pinned_left = float(state.get("pin",0)); actor.combat_left = float(state.get("combat",0))
 		actor.weapons.swing_left = maxf(actor.weapons.swing_left,float(state.get("swing",0)))
 		actor.target_position = state.p
 		if actor!=player or not prediction.enabled():

@@ -1,6 +1,6 @@
 rules_version = '2';
 // Assumed model (native Firestore, existing default database):
-// players/{uid}: public nickname(1..16), optional nonnegative ranking counters.
+// players/{uid}: public nickname(1..16), optional ranking counters and community play time.
 // players/{uid}/devices/{id}: private nonnegative device ranking counters.
 // accounts16/**: reserved for optional trusted Functions backend; deny clients.
 // community16/{uid}: private Spark wallet. No PII. Required fields below.
@@ -17,9 +17,15 @@ service cloud.firestore {
     function validId(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,64}$'); }
     function counter(d, k) { return !(k in d) || (d[k] is int && d[k]>=0); }
     function validPlayer(d) {
-      return d.keys().hasOnly(['nickname','kills','hordes','scrap','points'])
+      return d.keys().hasOnly(['nickname','kills','hordes','scrap','points','active_seconds'])
         && d.nickname is string && d.nickname.size()>=1 && d.nickname.size()<=16
-        && counter(d,'kills') && counter(d,'hordes') && counter(d,'scrap') && counter(d,'points');
+        && counter(d,'kills') && counter(d,'hordes') && counter(d,'scrap') && counter(d,'points')
+        && counter(d,'active_seconds');
+    }
+    function publishedTime(uid, d, old) {
+      return !d.diff(old).affectedKeys().hasAny(['active_seconds'])
+        || ('active_seconds' in d && d.active_seconds>=old.get('active_seconds',0)
+            && d.active_seconds==getAfter(walletPath(uid)).data.active_seconds);
     }
     function validDevice(d) {
       return d.keys().hasAll(['kills','hordes','scrap'])
@@ -30,7 +36,8 @@ service cloud.firestore {
     match /players/{uid} {
       allow get: if request.auth != null;
       allow list: if request.auth != null && request.query.limit != null && request.query.limit<=25;
-      allow create, update: if owner(uid) && validPlayer(request.resource.data);
+      allow create: if owner(uid) && validPlayer(request.resource.data) && publishedTime(uid,request.resource.data,{});
+      allow update: if owner(uid) && validPlayer(request.resource.data) && publishedTime(uid,request.resource.data,resource.data);
       allow delete: if false;
       match /devices/{device} {
         allow read: if owner(uid);

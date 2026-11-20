@@ -56,6 +56,48 @@ static func ranks(menu: Node,tab: String = "ranking") -> void:
 		UI.label(card,"%d abates" % RankProgress.THRESHOLDS[i-1],13,UI.MUTED)
 		if tab=="rewards": UI.label(card,("Cabeça" if i<=3 else "Mochila visual" if i<=7 else "Aura")+" · Origem: Elo",11,UI.MUTED)
 		UI.label(card,"ATUAL" if level==i else "CONQUISTADO" if level>i else "PRÓXIMO" if level+1==i else "BLOQUEADO",11,UI.LIME if level>=i else UI.MUTED)
+
+static func equipment_button(parent: Node, item: Dictionary, class_id: String, preview: Node3D = null) -> void:
+	var service := meta()
+	var button := UI.button(parent, "", Callable())
+	var refresh := func():
+		var equipped: bool = service.outfit(class_id).get(item.slot, "") == item.id
+		button.text = "RETIRAR · EQUIPADO" if equipped else "EQUIPAR"
+		button.disabled = not service.shop_ready()
+	button.pressed.connect(func():
+		var equipped: bool = service.outfit(class_id).get(item.slot, "") == item.id
+		button.disabled = true
+		await service.equip(class_id, item.slot, "" if equipped else item.id)
+		if is_instance_valid(button):
+			refresh.call()
+			if is_instance_valid(preview): Cosmetics16.decorate(preview, service.outfit(class_id))
+	)
+	refresh.call()
+	service.changed.connect(refresh)
+	button.tree_exiting.connect(func(): service.changed.disconnect(refresh))
+
+static func wardrobe(box: VBoxContainer, class_id: String, height: float) -> void:
+	var title := {"engineer": "Engenheiro", "scout": "Batedor", "shooter": "Atirador"}
+	UI.label(box, ("MEUS COSMÉTICOS · " if height > 0 else "Classe · ") + title[class_id], 23, UI.LIME)
+	var container: Control = box
+	if height > 0:
+		var scroll := ScrollContainer.new()
+		scroll.custom_minimum_size.y = height
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		box.add_child(scroll)
+		container = scroll
+	var list := UI.vbox(container, 6)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var slots := {"head": "Cabeça", "outfit": "Roupa", "backpack": "Mochila visual", "effect": "Efeito"}
+	for item in Catalog16.data().cosmetics:
+		if item.class_id not in ["all", class_id] or not meta().has_cosmetic(item.id): continue
+		var card := UI.vbox(UI.panel(list), 3)
+		UI.label(card, item.title, 17).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.label(card, slots[item.slot], 12, UI.MUTED)
+		equipment_button(card, item, class_id)
+	if list.get_child_count() == 0:
+		UI.label(list, "Você ainda não tem cosméticos para esta classe. Visite o Ateliê no menu principal.", 15, UI.MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
 static func shop(menu: Node,filter_class: String = "engineer") -> void:
 	menu.clear_content(); menu.menu_button(menu.content,"‹ VOLTAR",menu.show_main)
 	UI.label(menu.content,"ATELIÊ DOS SOBREVIVENTES",23,UI.LIME)
@@ -74,7 +116,8 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 	VisualFactory.cylinder(model_root,1.0,.12,Vector3(0,-.08,0),Color("263e42"))
 	var actor := Node3D.new(); actor.name = "Preview"; model_root.add_child(actor)
 	var rig := VisualFactory.human(actor,Color("849b6b"),true)
-	Cosmetics16.decorate(rig,meta().outfit(Director15.selected_class))
+	var preview_class := filter_class if filter_class in filters.slice(0, 3) else str(Director15.selected_class)
+	Cosmetics16.decorate(rig,meta().outfit(preview_class))
 	var camera := Camera3D.new(); viewport.add_child(camera); camera.projection = Camera3D.PROJECTION_ORTHOGONAL; camera.size = 2.7; camera.position = Vector3(3,2.1,-4); camera.look_at(Vector3(0,1,0)); camera.current = true
 	menu.menu_button(menu.content,"GIRAR PRÉVIA",func(): actor.rotation.y += PI/4)
 	for item in Catalog16.data().cosmetics:
@@ -87,8 +130,7 @@ static func shop(menu: Node,filter_class: String = "engineer") -> void:
 		menu.menu_button(card,"PRÉVIA",func(): Cosmetics16.decorate(rig,{item.slot:id}))
 		if owned:
 			var cls: String = Director15.selected_class if item.class_id=="all" else item.class_id
-			menu.menu_button(card,"EQUIPAR",func(): await meta().equip(cls,item.slot,id); shop(menu,filter_class))
-			menu.menu_button(card,"RETIRAR",func(): await meta().equip(cls,item.slot,""); shop(menu,filter_class))
+			equipment_button(card, item, cls, rig)
 		elif item.get("unlock","")=="titan16":
 			UI.label(card,"EXCLUSIVO · participe da derrota do Titã",13,UI.LIME).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		else:

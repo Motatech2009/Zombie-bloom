@@ -44,5 +44,27 @@ func run() -> void:
 	check(resume.size()==1,"base panel exposes deferred choices")
 	resume[0].pressed.emit()
 	check(w.hud.mode=="upgrade","deferred choice can be reopened deliberately")
+	w.hud.close_modal()
+	var meta: Node = root.get_node("Meta16")
+	meta.wallet.path = "user://wardrobe-ui-test.json"
+	meta.wallet.data.balance = 300
+	await meta.purchase("COS-ENG-01")
+	var old_profile: Dictionary = w.actor_profile(w.player)
+	w.hud.show_pause()
+	await process_frame
+	var wardrobe: Array = w.hud.modal.find_children("*", "Button", true, false).filter(func(b): return b.text == "COSMÉTICOS")
+	check(wardrobe.size() == 1, "pause exposes purchased cosmetics")
+	wardrobe[0].pressed.emit()
+	await process_frame
+	var equipment: Array = w.hud.modal.find_children("*", "Button", true, false).filter(func(b): return b.text == "EQUIPAR")
+	check(w.hud.mode == "wardrobe" and equipment.size() == 1, "wardrobe lists the purchased item for the active class")
+	check(w.hud.modal.find_children("*", "ScrollContainer", true, false).size() == 1, "wardrobe uses a single scrolling surface")
+	equipment[0].pressed.emit()
+	check(w.player.outfit16.get("head") == "COS-ENG-01" and w.player.rig.get_node("Atelier16").get_child_count() == 1, "equipping updates the live 3D character")
+	w.restore_profile(w.player, old_profile)
+	check(w.player.outfit16.get("head") == "COS-ENG-01", "loading an older profile preserves current cosmetics")
+	equipment[0].pressed.emit()
+	check(w.player.outfit16.is_empty() and w.player.rig.get_node("Atelier16").get_child_count() == 0, "removing the cosmetic restores the live appearance")
+	DirAccess.remove_absolute(meta.wallet.path)
 	w.hud.close_modal(); w.queue_free(); await create_timer(.35).timeout
 	print("RELEASE16 UI RESULT: %d checks, %d failures" % [checks,failures]); quit(1 if failures else 0)

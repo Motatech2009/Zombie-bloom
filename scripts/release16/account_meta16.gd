@@ -73,6 +73,7 @@ func release_world(previous: Node3D) -> void:
 	world = null; activity = false
 	clock.step(Time.get_ticks_msec(),false)
 	persist()
+	if not sessions.is_empty(): sync_left = minf(sync_left, 2.0)
 func _input(event: InputEvent) -> void:
 	if not has_live_world(): return
 	if event is InputEventKey or event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventJoypadButton: activity = true
@@ -85,11 +86,14 @@ func _process(delta: float) -> void:
 	if has_live_world(): observe_progress()
 	var eligible: bool = has_live_world() and world.phase!="ended" and not get_tree().paused and not world.combat_paused() and (not world.is_client or world.client_scene_ready)
 	if eligible and world.network!=null and world.network.mode not in ["offline","host","client"]: eligible = false
+	if eligible and world.hud.mode in ["pause","wardrobe","settings","connection"]: eligible = false
 	if eligible:
 		var frame: Dictionary = world.local_input(world.player)
 		activity = activity or frame.get("move",Vector2.ZERO).length_squared()>.01 or bool(frame.get("fire",false)) or bool(frame.get("interact",false))
+	var previous_seconds := int(clock.session)
 	if clock.step(Time.get_ticks_msec(),eligible,activity)>0:
-		sessions[session_id] = int(clock.session); dirty = true
+		if int(clock.session) > previous_seconds: sessions[session_id] = int(clock.session)
+		dirty = true
 	activity = false; disk_left -= delta; sync_left -= delta
 	if dirty and disk_left<=0: persist(); disk_left = 5
 	if sync_left<=0 and not busy: sync()
@@ -119,13 +123,23 @@ func sync() -> void:
 	if busy or not available() or uid.is_empty(): return
 	var needs_registration: bool = not local_economy and has_live_world() and not registered.has(world.account_run_id)
 	var wallet_pending := not local_economy and (not pending.is_empty() or not titan_pending.is_empty() or trophy_sync_pending())
-	if sessions.is_empty() and profile_loaded and not needs_registration and not wallet_pending: return
+	var should_publish := backend == "firestore" and int(confirmed.get("active_seconds",0)) > int(Account.local_summary.get("active_seconds",-1))
+	if sessions.is_empty() and profile_loaded and not needs_registration and not wallet_pending:
+		if should_publish:
+			busy = true
+			await Account.publish_playtime(int(confirmed.get("active_seconds",0)))
+			busy = false
+		return
 	busy = true; var owner := uid
-	var reply := await request("sync",{"sessions":session_batch()}) if not sessions.is_empty() else await request("profile")
+	var submitted := session_batch()
+	var reply := await request("sync",{"sessions":submitted}) if not submitted.is_empty() else await request("profile")
 	if owner!=uid: busy = false; return
 	if reply.ok:
 		confirmed = reply.profile; profile_loaded = true
-		for id in reply.get("ack_sessions",[]): sessions.erase(id)
+		for id in reply.get("ack_sessions",[]):
+			if submitted.has(id) and int(sessions.get(id,0)) <= int(submitted[id]): sessions.erase(id)
+		if backend == "firestore": await Account.publish_playtime(int(confirmed.get("active_seconds",0)))
+		if owner!=uid: busy = false; return
 	if local_economy:
 		busy = false; persist(); changed.emit()
 		return

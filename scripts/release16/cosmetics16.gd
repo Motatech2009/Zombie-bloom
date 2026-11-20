@@ -60,9 +60,9 @@ static func decorate(rig: Node3D,outfit: Dictionary,actor: Node3D = null) -> voi
 				elif item.class_id=="shooter": VisualFactory.box(root,Vector3(.04,.6,.04),Vector3(.18,1.6,.38),Color("484f43"))
 				elif item.class_id=="scout": VisualFactory.cylinder(root,.16,.3,Vector3(.3,.93,.36),Color("aa9a72"))
 			"effect":
-				if MobilePlatform.lightweight() or MobilePlatform.enabled(): continue
 				var fx := Node3D.new(); fx.set_script(load("res://scripts/release16/cosmetic_effect16.gd")); fx.actor = actor; fx.class_id = item.class_id; root.add_child(fx)
-				for i in range(3): VisualFactory.box(fx,Vector3(.045,.07,.04),Vector3(cos(i*2.1)*.55,.4+i*.3,sin(i*2.1)*.55),color)
+				var count := 2 if MobilePlatform.lightweight() else 3
+				for i in range(count): VisualFactory.box(fx,Vector3(.045,.07,.04),Vector3(cos(i*2.1)*.55,.4+i*.3,sin(i*2.1)*.55),color)
 
 static func titan_crown(root: Node3D) -> void:
 	VisualFactory.cylinder(root,.37,.10,Vector3(0,1.93,0),Color("65533d"))

@@ -1,6 +1,6 @@
 extends Node
 
-const PROTOCOL_VERSION := 30
+const PROTOCOL_VERSION := 31
 const VERSION_MESSAGE := "Versões incompatíveis. Atualize o Zombie Bloom no PC e no Android para jogar juntos."
 
 signal status_changed(message: String)
@@ -183,7 +183,9 @@ func _join_ready(token: String,name_text: String,protocol: int = 0,specializatio
 	if world.attach_peer(id,token,name_text):
 		if not world.profiles.has(token): world.v15.apply_class(world.avatars[id],specialization,true)
 		world.avatars[id].set_meta("account_uid16",account_uid)
-		world.avatars[id].outfit16 = outfit.duplicate(); world.avatars[id].cosmetic = clampi(cosmetic,0,10); world.v15.decorate(world.avatars[id])
+		var actor: Node3D = world.avatars[id]
+		var selected: Dictionary = outfit if actor.specialization == specialization else actor.outfit16
+		world.apply_appearance(actor, actor.specialization, clampi(cosmetic,0,10), selected)
 		_receive_scene.rpc_id(id,world.net_scene(id))
 		scene_sent[id] = world.peer_revision(id)
 	else: _rejected.rpc_id(id,"Sala cheia, encerrada ou perfil já ativo.")

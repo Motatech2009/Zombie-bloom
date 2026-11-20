@@ -53,7 +53,7 @@ func host(link: Node) -> void:
 	var coords: Dictionary = {}
 	for actor in w.avatars.values():
 		actor.invulnerable = 3600
-		actor.bag.equip_level(2); actor.outfit16 = {"head":"COS-ENG-01"}; w.v15.decorate(actor)
+		actor.bag.equip_level(2)
 		actor.position = SectorGenerator.EXITS[direction]
 		check(w.perform_action(actor.peer_id,"travel",{"direction":direction}),"participant travels to its own sector before rewards")
 		coords[actor.region_coord] = true
@@ -84,10 +84,18 @@ func host(link: Node) -> void:
 		visitor.set_meta("titan_victory16","b".repeat(64)); visitor.set_meta("titan_owner16","")
 	deadline = Time.get_ticks_msec()+5000
 	while w.truce16.left<=0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
+	if visitor!=null:
+		check(visitor.outfit16.get("head")=="COS-UNI-01", "host accepts the guest's live wardrobe change in a different sector")
+		check(not w.perform_action(visitor.peer_id,"outfit16",{"outfit":{"head":"COS-ATI-02"}}), "host rejects a cosmetic incompatible with the guest's class")
 	check(w.truce16.left>590 and w.truce16.pending and visitor.bag.count("decoy16")==0,"remote participant activates exactly one team diversion")
 	await create_timer(3).timeout
 	for a in w.avatars.values(): check(total(w.upgrades.levels_for(a))==1,"late replay changes no level for "+a.display_name)
 func client(link: Node) -> void:
+	var meta: Node = root.get_node("Meta16")
+	meta.wallet.data.balance = 550
+	await meta.purchase("COS-ENG-01")
+	await meta.purchase("COS-UNI-01")
+	await meta.equip("engineer", "head", "COS-ENG-01")
 	link.identity = tag.repeat(32)
 	check(link.join_session("127.0.0.1",24578,"Client "+tag)==OK,"guest connects")
 	var deadline := Time.get_ticks_msec()+12000
@@ -102,6 +110,7 @@ func client(link: Node) -> void:
 	while w.resources.pending==0 and Time.get_ticks_msec()<deadline: await create_timer(.05).timeout
 	check(w.resources.pending==1 and w.upgrades.offers.size()==3,"recipient sees exactly its own three cards")
 	check(w.player.bag.slots.size()==24 and w.player.outfit16.get("head","")=="COS-ENG-01","functional bag and equipped clay cosmetic replicate independently")
+	if tag == "1": await meta.equip("engineer", "head", "COS-UNI-01")
 	check(w.client_enemies.values().any(func(e): return e.spec.id=="titan16" and e.health.maximum==20000 and e.rig.get_meta("imported_enemy16",false) and e.rig.get_node("Skeleton3D/Character").skin!=null),"Titan has the supplied skinned remote model and fixed replicated health")
 	var choice: Dictionary = w.upgrades.current(w.player)
 	check(str(choice.get("id","")).ends_with(link.identity),"reward is bound to stable identity, not peer slot")

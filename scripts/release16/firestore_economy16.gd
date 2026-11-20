@@ -136,8 +136,10 @@ func request(action: String,data: Dictionary = {}) -> Dictionary:
 	return failure("A conta foi atualizada em outro aparelho. Tente novamente.")
 func sync_sessions(remote: Dictionary,sessions: Dictionary) -> Dictionary:
 	var ack: Array = []; var latest := remote
+	var processed := 0
 	for id in sessions:
-		if ack.size()>=16: break
+		if processed >= 16: break
+		processed += 1
 		if not valid_id(str(id)): continue
 		var suffix := "/sessions/"+str(id); var previous := await read_doc(suffix)
 		if not previous.ok and int(previous.get("code",0))!=404: return failure("Tempo de jogo pendente.")
@@ -149,12 +151,13 @@ func sync_sessions(remote: Dictionary,sessions: Dictionary) -> Dictionary:
 		var epoch := Time.get_unix_time_from_datetime_string(str(wallet.created_at.timestampValue))
 		var capacity := maxi(0,int(Time.get_unix_time_from_system()-epoch)-int(wallet.active_seconds))
 		var accepted := mini(requested,before+capacity)
-		if accepted<=before: ack.append(id); continue
+		if accepted<=before: continue
 		wallet.action = "sync"; wallet.item_id = ""; wallet.session_id = str(id)
 		wallet.active_seconds = int(wallet.active_seconds)+accepted-before
 		wallet.longest_seconds = maxi(int(wallet.longest_seconds),accepted)
 		var result := await commit([write_doc("",wallet,latest,["updated_at"]),write_doc(suffix,{"seconds":accepted},previous)])
 		if not result.ok: return failure("Tempo de jogo pendente; nova tentativa após reconectar.")
-		ack.append(id); latest = await read_doc()
+		if accepted == requested: ack.append(id)
+		latest = await read_doc()
 		if not latest.ok: return failure("Perfil pendente.")
 	return {"ok":true,"profile":profile(latest.value),"ack_sessions":ack}
