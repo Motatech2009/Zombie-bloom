@@ -11,7 +11,7 @@ func run() -> void:
 	check(FortressData.BUILD_LIMITS == {"turret": 12, "cannon": 5, "raised_turret": 5, "shock": 5, "wire": 30, "spikes": 30},
 		"export contains the RC11 construction limits")
 	check(FortressData.BUILD_LIMIT_UNLOCK_WAVE == 20, "export unlocks the construction limits after horde twenty")
-	check(root.get_node("Coop").PROTOCOL_VERSION == 30, "export uses the 1.7 cooperative protocol")
+	check(root.get_node("Coop").PROTOCOL_VERSION == 31, "export uses the live wardrobe cooperative protocol")
 	check(root.get_node("Meta16").local_economy, "export enables the local Brotos wallet")
 	for id in ["cannon","shock","raised_turret","core"]:
 		for tier in range(1,5 if id=="core" else 4):
