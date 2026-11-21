@@ -1,0 +1,41 @@
+extends "res://scripts/campaign/campaign_build.gd"
+
+func can_place(pos: Vector3,check_access: bool = true) -> bool:
+	if world.built_this_round>=world.build_quota():
+		reason = "Limite desta preparação: %d/%d peças. Vença a horda para renovar." % [world.built_this_round,world.build_quota()]
+		return false
+	return super.can_place(pos,check_access)
+
+func place() -> Node3D:
+	if not active: return null
+	if not can_place(location, false):
+		if world.is_client: world.private_notice(world.player.peer_id, reason)
+		else: world.notify(reason)
+		return null
+	if world.is_client:
+		world.send_action("build",{"pos":location,"angle":angle,"piece":selected})
+		return null
+	if world.channel15.start(world.player,"build",null,{"pos":location,"piece":selected,"angle":angle}): world.notify("Construindo · permaneça próximo até concluir.")
+	return null
+
+func commit_channel(data: Dictionary) -> Node3D:
+	var previous := [active,location,selected,angle]
+	active = true; location = data.pos; selected = int(data.piece); angle = float(data.angle)
+	var result := super.place()
+	active = previous[0]; location = previous[1]; selected = previous[2]; angle = previous[3]
+	if result!=null:
+		world.built_this_round += 1
+		world.mark_alloy16(result,world.player)
+	return result
+
+func piece_specs() -> Array: return FortressData.pieces()
+func structure_script() -> Script: return load("res://scripts/fortress/fortress_structure.gd")
+
+func preview_point() -> Vector3:
+	if MobilePlatform.enabled() and is_instance_valid(world.touch_controls): return world.touch_controls.build_target
+	return super.preview_point()
+
+func set_active(value: bool) -> void:
+	if not value and world.channel15.jobs.has(world.player.peer_id) and world.channel15.jobs[world.player.peer_id].kind=="build": world.channel15.cancel(world.player.peer_id)
+	super.set_active(value)
+	if active and MobilePlatform.enabled(): world.notify("Toque no chão para posicionar. Use GIRAR, COLOCAR ou CANCELAR.")

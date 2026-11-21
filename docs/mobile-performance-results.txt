@@ -1,0 +1,29 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: mobile defaults to reduced 3D resolution while keeping the 960x540 UI
+PASS: lightweight mode disables realtime shadows
+PASS: changing next-session quality cannot split the running world's rendering profile
+PASS: mobile clay avoids normal-map and triplanar texture samples
+PASS: a humanoid uses five batches while preserving its animated limbs
+PASS: equal infected reuse the same baked body mesh
+PASS: arms and legs remain independently animated after batching
+PASS: infected do not create per-enemy health-bar Controls on mobile
+PASS: the large fire button has a separate collection hit area
+PASS: holding fire assists toward the nearest visible reachable zombie
+PASS: movement and assisted fire use independent fingers
+PASS: assisted fire produces an authoritative damaging shot with normal ammo cost
+PASS: repeated input polling and weapon cooldown do not repeat cover raycasts
+PASS: while held, fire acquires another live target after a kill
+PASS: releasing fire stops attack while keeping movement
+PASS: holding fire without a live target cannot waste ammunition
+PASS: a held fire button can acquire an enemy that arrives later
+PASS: dragging a firing finger away cancels it instead of sticking
+PASS: one batched canvas bounds visible health indicators in a dense crowd
+PASS: one hundred effect bursts reuse the bounded pool without adding nodes
+PASS: expired effect slots return to the same fixed pool
+PASS: the same button uses one selected medkit instead of holding item use
+PASS: holding the grenade button launches only once per press
+PASS: the consumable command cannot fire a gun or bypass normal shooting
+PASS: removing an infected also removes its authoritative target index
+PASS: mobile HUD exposes a readable on-device FPS counter
+MOBILE PERFORMANCE RESULT: 26 checks, 0 failures

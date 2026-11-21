@@ -1,0 +1,272 @@
+{
+  "atlas_size": 2048,
+  "items": [
+    {
+      "id": "COS-ENG-01",
+      "position": [
+        0.0,
+        1.82,
+        0.0
+      ],
+      "target_size": [
+        0.6,
+        0.52,
+        0.56
+      ],
+      "triangles": 524
+    },
+    {
+      "id": "COS-ENG-02",
+      "position": [
+        0.0,
+        1.78,
+        0.0
+      ],
+      "target_size": [
+        0.59,
+        0.64,
+        0.57
+      ],
+      "triangles": 682
+    },
+    {
+      "id": "COS-ENG-03",
+      "position": [
+        0.0,
+        1.08,
+        0.0
+      ],
+      "target_size": [
+        0.78,
+        0.82,
+        0.62
+      ],
+      "triangles": 800
+    },
+    {
+      "id": "COS-ENG-04",
+      "position": [
+        0.0,
+        1.09,
+        0.0
+      ],
+      "target_size": [
+        0.94,
+        0.85,
+        0.62
+      ],
+      "triangles": 846
+    },
+    {
+      "id": "COS-ENG-05",
+      "position": [
+        0.0,
+        1.1,
+        0.12
+      ],
+      "target_size": [
+        0.64,
+        0.78,
+        0.72
+      ],
+      "triangles": 666
+    },
+    {
+      "id": "COS-BAT-01",
+      "position": [
+        0.0,
+        1.73,
+        0.025
+      ],
+      "target_size": [
+        0.7,
+        0.71,
+        0.74
+      ],
+      "triangles": 676
+    },
+    {
+      "id": "COS-BAT-02",
+      "position": [
+        0.0,
+        1.71,
+        -0.025
+      ],
+      "target_size": [
+        0.56,
+        0.22,
+        0.51
+      ],
+      "triangles": 410
+    },
+    {
+      "id": "COS-BAT-03",
+      "position": [
+        0.0,
+        1.16,
+        0.025
+      ],
+      "target_size": [
+        0.98,
+        0.73,
+        0.68
+      ],
+      "triangles": 624
+    },
+    {
+      "id": "COS-BAT-04",
+      "position": [
+        0.0,
+        1.02,
+        0.0
+      ],
+      "target_size": [
+        0.82,
+        0.96,
+        0.62
+      ],
+      "triangles": 776
+    },
+    {
+      "id": "COS-BAT-05",
+      "position": [
+        0.0,
+        1.1,
+        0.12
+      ],
+      "target_size": [
+        0.64,
+        0.78,
+        0.72
+      ],
+      "triangles": 870
+    },
+    {
+      "id": "COS-ATI-01",
+      "position": [
+        0.0,
+        1.48,
+        0.0
+      ],
+      "target_size": [
+        0.6,
+        0.27,
+        0.53
+      ],
+      "triangles": 370
+    },
+    {
+      "id": "COS-ATI-02",
+      "position": [
+        0.0,
+        1.82,
+        0.0
+      ],
+      "target_size": [
+        0.6,
+        0.52,
+        0.56
+      ],
+      "triangles": 588
+    },
+    {
+      "id": "COS-ATI-03",
+      "position": [
+        0.0,
+        1.08,
+        0.0
+      ],
+      "target_size": [
+        0.78,
+        0.82,
+        0.62
+      ],
+      "triangles": 766
+    },
+    {
+      "id": "COS-ATI-04",
+      "position": [
+        0.0,
+        1.09,
+        0.0
+      ],
+      "target_size": [
+        0.94,
+        0.85,
+        0.62
+      ],
+      "triangles": 880
+    },
+    {
+      "id": "COS-ATI-05",
+      "position": [
+        0.0,
+        1.15,
+        0.12
+      ],
+      "target_size": [
+        0.64,
+        1.02,
+        0.7
+      ],
+      "triangles": 716
+    },
+    {
+      "id": "COS-UNI-01",
+      "position": [
+        0.0,
+        1.9,
+        0.0
+      ],
+      "target_size": [
+        0.59,
+        0.36,
+        0.55
+      ],
+      "triangles": 624
+    },
+    {
+      "id": "COS-UNI-02",
+      "position": [
+        0.0,
+        1.05,
+        -0.03
+      ],
+      "target_size": [
+        0.76,
+        0.86,
+        0.62
+      ],
+      "triangles": 658
+    },
+    {
+      "id": "COS-UNI-03",
+      "position": [
+        0.0,
+        1.07,
+        0.13
+      ],
+      "target_size": [
+        0.56,
+        0.69,
+        0.62
+      ],
+      "triangles": 581
+    },
+    {
+      "id": "COS-TITAN-01",
+      "position": [
+        0.0,
+        1.9,
+        0.0
+      ],
+      "target_size": [
+        0.69,
+        0.31,
+        0.64
+      ],
+      "triangles": 724
+    }
+  ],
+  "source_triangles": 12781
+}

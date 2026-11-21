@@ -1,0 +1,46 @@
+Zombie Bloom 1.0-dev — local validation, Godot 4.6.3
+Firebase project: not configured. Firebase emulator test: prepared for CI, not yet executed locally.
+
+ACCOUNT RESULT: 31 checks, 0 failures
+ARSENAL RESULT: 95 checks, 0 failures
+CAMPAIGN RESULT: 127 checks, 0 failures
+CLAY RESULT: 35 checks, 0 failures
+DEFENSE RESULT: 55 checks, 0 failures
+FORTRESS RESULT: 100 checks, 0 failures
+FRONTIER FEATURES RESULT: 31 checks, 0 failures
+INTERNET RESULT: 31 checks, 0 failures
+MOBILE EXPERIENCE RESULT: 30 checks, 0 failures
+MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
+TARGETING RESULT: 35 checks, 0 failures
+MOBILE RESULT: 48 checks, 0 failures
+ONLINE PREPARATION RESULT: 95 checks, 0 failures
+PROGRESSION RESULT: 43 checks, 0 failures
+ROLL RESULT: 33 checks, 0 failures
+RESULT: 85 checks, 0 failures
+SECTORS RESULT: 75 checks, 0 failures
+SURVIVAL RESULT: 80 checks, 0 failures
+ACCOUNT WORLD RESULT: 9 checks, 0 failures
+COOP HOST RESULT: 35 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures
+COOP CLIENT RESULT: 25 checks, 0 failures
+COOP CLIENT RESULT: 28 checks, 0 failures
+MOTION HOST RESULT: 3 checks, 0 failures
+MOTION CLIENT RESULT: 6 checks, 0 failures
+SPLIT HOST RESULT: 8 checks, 0 failures
+SPLIT CLIENT RESULT: 6 checks, 0 failures
+SPLIT CLIENT RESULT: 6 checks, 0 failures
+
+TOTAL: 1206 local checks, 0 failures
+Motion test: 30 FPS guest, maximum backward movement 0.0000 m.
+Visual: desktop home, mobile home, desktop vendor and mobile account form rendered with software OpenGL, inspected.
+Production Firebase and physical PC/Android cross-device account tests remain pending.
+
+Remote CI: https://github.com/Motatech2009/Zombie-bloom/actions/runs/43604055944
+Source commit: 57386114de2e269b4788d67604944febbc943338
+Full integration/network suite: passed.
+FIREBASE EMULATOR RESULT: 14 checks, 0 failures
+Total with emulator checks: 1220, 0 failures.
+All four rendered UI previews: passed.
+Windows export: passed.
+Android export and APK signature verification: passed.
+The exported development packages intentionally have no production Firebase configuration.

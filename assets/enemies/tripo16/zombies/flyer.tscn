@@ -1,0 +1,86 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/clay_enemy16.gd" id="1_ygsxg"]
+[ext_resource type="ArrayMesh" path="res://assets/enemies/tripo16/zombies/flyer.res" id="2_o8oof"]
+[ext_resource type="Material" path="res://assets/enemies/tripo16/zombies/material.tres" id="3_gld8a"]
+
+[sub_resource type="Skin" id="Skin_luy1t"]
+bind_count = 5
+bind/0/name = &""
+bind/0/bone = 0
+bind/0/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.39, 0)
+bind/1/name = &""
+bind/1/bone = 1
+bind/1/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4425, 0)
+bind/2/name = &""
+bind/2/bone = 2
+bind/2/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5475, 0.22)
+bind/3/name = &""
+bind/3/bone = 3
+bind/3/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2775, -0.4575, 0)
+bind/4/name = &""
+bind/4/bone = 4
+bind/4/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2775, -0.4575, 0)
+
+[node name="ClayEnemy16" type="Node3D" unique_id=2054323603]
+script = ExtResource("1_ygsxg")
+metadata/imported_enemy16 = true
+metadata/model_id16 = "flyer"
+metadata/profile16 = "flyer"
+metadata/separated_source16 = "asa_infectada"
+
+[node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=1153550361]
+bones/0/name = "Pelvis"
+bones/0/parent = -1
+bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, 0)
+bones/0/enabled = true
+bones/0/position = Vector3(0, 0.39, 0)
+bones/0/rotation = Quaternion(0, 0, 0, 1)
+bones/0/scale = Vector3(1, 1, 1)
+bones/1/name = "Spine"
+bones/1/parent = 0
+bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05250001, 0)
+bones/1/enabled = true
+bones/1/position = Vector3(0, 0.05250001, 0)
+bones/1/rotation = Quaternion(0, 0, 0, 1)
+bones/1/scale = Vector3(1, 1, 1)
+bones/2/name = "Head"
+bones/2/parent = 1
+bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.10500002, -0.22)
+bones/2/enabled = true
+bones/2/position = Vector3(0, 0.10500002, -0.22)
+bones/2/rotation = Quaternion(0, 0, 0, 1)
+bones/2/scale = Vector3(1, 1, 1)
+bones/3/name = "WingL"
+bones/3/parent = 1
+bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2775, 0.0150000155, 0)
+bones/3/enabled = true
+bones/3/position = Vector3(-0.2775, 0.0150000155, 0)
+bones/3/rotation = Quaternion(0, 0, 0, 1)
+bones/3/scale = Vector3(1, 1, 1)
+bones/4/name = "WingR"
+bones/4/parent = 1
+bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2775, 0.0150000155, 0)
+bones/4/enabled = true
+bones/4/position = Vector3(0.2775, 0.0150000155, 0)
+bones/4/rotation = Quaternion(0, 0, 0, 1)
+bones/4/scale = Vector3(1, 1, 1)
+
+[node name="Character" type="MeshInstance3D" parent="Skeleton3D" unique_id=263258709]
+custom_aabb = AABB(-1.4743645, -0.5, -1.0905356, 3.234156, 1.75, 2.2210715)
+mesh = ExtResource("2_o8oof")
+skin = SubResource("Skin_luy1t")
+skeleton = NodePath("..")
+surface_material_override/0 = ExtResource("3_gld8a")
+
+[node name="ArmL" type="Node3D" parent="." unique_id=843158571]
+
+[node name="ArmR" type="Node3D" parent="." unique_id=935539476]
+
+[node name="LegL" type="Node3D" parent="." unique_id=1090610493]
+
+[node name="LegR" type="Node3D" parent="." unique_id=737065254]
+
+[node name="WingL" type="Node3D" parent="." unique_id=608172195]
+
+[node name="WingR" type="Node3D" parent="." unique_id=510626109]

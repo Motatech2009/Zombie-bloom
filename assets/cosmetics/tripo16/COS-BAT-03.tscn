@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/cosmetics/tripo16/COS-BAT-03.res" id="1_syupv"]
+
+[ext_resource type="Material" path="res://assets/cosmetics/tripo16/material.tres" id="material"]
+
+[node name="COS-BAT-03" type="Node3D" unique_id=1872303506]
+metadata/cosmetic_id = "COS-BAT-03"
+metadata/slot = "outfit"
+metadata/source = "Tripo/user submission"
+
+[node name="Accessory" type="MeshInstance3D" parent="." unique_id=1803805178]
+mesh = ExtResource("1_syupv")
+surface_material_override/0 = ExtResource("material")

@@ -1,0 +1,438 @@
+extends "res://scripts/campaign/campaign_enemy.gd"
+var enemy_kind: int = 0
+var net_id: int = 0
+var proxy: bool = false
+var ability_left: float = 5
+var windup: float = 0
+var cast_point := Vector3.ZERO
+var warning: Node3D
+var summon_casts: int = 0
+var enraged: bool = false
+var shield_left: float = 0
+var rush_left: float = 0
+var rush_direction := Vector3.ZERO
+var rush_hits: Dictionary = {}
+var snare_left: float = 0
+var stun_left: float = 0
+var special_clock: float = 1
+var replica_motion: float = 0
+var visibility_left: float = 0
+var melee_left := 0.0
+var melee_target: Node3D
+var ranged_left := 2.0
+var stuck_left := 0.0
+var last_ground := Vector3.ZERO
+const BURST_RADIUS := 3.2
+const BURST_FUSE := .60
+const BURST_TRIGGER := 2.2
+var burster_fuse := 0.0
+
+func _ready() -> void:
+	super._ready()
+	label.hide()
+	label.set_meta("suppressed",true)
+	if spec.id in ["hound","flyer"] and not rig.get_meta("imported_enemy16",false):
+		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
+	ClayStyle.apply_tree(rig)
+	configure_bars()
+	if MobilePlatform.lightweight() and not rig.get_meta("imported_enemy16",false): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+	if is_boss:
+		collision_layer |= CollisionLayers.BOSS
+		health.setup(health.maximum*1.6*(1+.5*(world.party_count()-1)))
+		VisualFactory.ring(self,.9,Vector3(0,.08,0),Color("df7a5b"))
+	else: health.setup(health.maximum*(1.0 if spec.id in ["walker","runner"] else 1.25)*(1+.04*maxi(0,world.waves.wave-1)))
+	ability_left = 5+fmod(float(net_id),3)
+
+func create_model(factor: float) -> void:
+	if spec.id in ["hound","flyer"]:
+		super.create_model(factor)
+		if is_boss:
+			rig.scale = Vector3.ONE * factor
+		return
+	rig = load("res://assets/models/infected_"+str((enemy_kind if enemy_kind<=14 else 5 if enemy_kind==15 else 4) if not is_boss else 3 if spec.id=="broodmother" else 5 if spec.id=="mortar" else 8)+".tscn").instantiate()
+	rig.scale = Vector3.ONE*factor
+	add_child(rig)
+	if spec.id in ["mauler","cleaver"]:
+		for side in [-1,1]: ModelFactory.part(rig,Vector3(.45,.65,.5),Vector3(side*.6,1.0,0),Color("a07b68"))
+	if spec.id in ["mortar","lobber","broodmother"]:
+		for side in [-1,1]:
+			var sac := VisualFactory.cylinder(rig,.3,.55,Vector3(side*.4,1.2,.3),Color("b3bd67"))
+			sac.rotation.z = side*.3
+
+func _physics_process(delta: float) -> void:
+	if world.has_method("combat_paused") and world.combat_paused(): velocity = Vector3.ZERO; return
+	if proxy or health.dead or world.phase=="ended": return
+	recover_ground(delta)
+	shield_left = maxf(0,shield_left-delta)
+	snare_left = maxf(0,snare_left-delta)
+	stun_left = maxf(0,stun_left-delta)
+	if burster_fuse > 0.0:
+		burster_fuse -= delta
+		if burster_fuse <= 0.0: health.take_damage(health.current)
+		return
+	if stun_left>0: velocity = Vector3.ZERO; return
+	if enemy_kind == 9 and burster_near_survivor():
+		arm_burster()
+		return
+	if is_boss and not enraged and health.current<health.maximum*.4:
+		enraged = true
+		spec.values.speed *= 1.25
+		spec.values.damage *= 1.3
+		world.notify("FÚRIA · "+spec.title+" acelerou e aumentou o dano.")
+	if rush_left>0:
+		rush_left -= delta
+		velocity = rush_direction*16*(.55 if snare_left>0 else 1.0)
+		velocity.y = -1
+		move_and_slide()
+		rig.rotation.y = atan2(-rush_direction.x,-rush_direction.z)
+		if rig.has_meta("separated_source16") or spec.id == "mauler":
+			clock += delta
+			animate_ground(clock * 1.55, 1.0, true)
+		var blocked := false
+		for i in range(get_slide_collision_count()):
+			if absf(get_slide_collision(i).get_normal().y)<.5: blocked = true
+			var body = get_slide_collision(i).get_collider()
+			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies") and not rush_hits.has(body.get_instance_id()):
+				rush_hits[body.get_instance_id()] = true
+				if spec.id == "mauler" and rush_hits.size() == 1:
+					world.boss_sound(BossSoundBank.Cue.CHARGE_HIT,body.global_position)
+				body.take_damage(float(spec.values.damage)*(3.0 if spec.id=="mauler" and body.is_in_group("campaign_structure") and body.spec.id in ["wall","barricade","bastion"] else 1.5))
+		if blocked: rush_left = 0
+		return
+
+	if windup>0:
+		windup -= delta
+		velocity = Vector3.ZERO
+		if rig.has_meta("imported_enemy16") and rig.get_meta("profile16") == "human":
+			animate_ground(clock, 0.0)
+			if spec.id == "mauler":
+				var toward_cast := (cast_point - global_position) * Vector3(1, 0, 1)
+				if toward_cast.length_squared() > .01:
+					rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-toward_cast.x, -toward_cast.z), minf(1.0, delta * 10.0))
+		if windup<=0:
+			if is_instance_valid(warning): warning.queue_free()
+			if enemy_kind==12:
+				rush_direction = (cast_point-global_position)*Vector3(1,0,1)
+				rush_direction = rush_direction.normalized()
+				rush_left = .85
+				rush_hits.clear()
+			elif enemy_kind==13: world.frost_blast(cast_point)
+			elif enemy_kind==14: world.emp_blast(cast_point)
+			elif enemy_kind==10:
+				for i in range(2): world.spawn_minion(self,6,i)
+			elif is_boss: boss_cast()
+			return
+		return
+	ability_left -= delta
+	if (is_boss or enemy_kind in [10,12,13,14]) and ability_left<=0:
+		choose_target()
+		if not is_instance_valid(target) or target==self: return
+		var cast_distance := global_position.distance_to(target.global_position)
+		if (enemy_kind in [12,13] and cast_distance>13) or (is_boss and spec.id not in ["mortar","broodmother"] and cast_distance>18) or (is_boss and spec.id=="mortar" and (cast_distance>23 or cast_distance<7 or not line_of_sight())):
+			normal_step(delta)
+			return
+		cast_point = global_position if enemy_kind==14 else target.global_position
+		windup = 1.1
+		ability_left = 8 if is_boss else 9 if enemy_kind in [12,13,14] else 12
+		warning = create_cast_warning()
+		return
+	if enemy_kind==11:
+		special_clock -= delta
+		if special_clock<=0:
+			special_clock = 3
+			for ally in get_tree().get_nodes_in_group("enemies"):
+				if ally!=self and ally.global_position.distance_to(global_position)<7: ally.health.heal(12+world.waves.wave)
+	normal_step(delta)
+	label.hide()
+
+func choose_target() -> void:
+	if get_meta("rescue_wave16",false) and world.game_mode=="rescue":
+		target = world.core if world.rescue16.goal_coord()==Vector2i.ZERO else world.rescue16.objective
+		for actor in world.avatars.values():
+			if not actor.health.dead and actor.global_position.distance_to(global_position)<7: target = actor; break
+		return
+	if world.regions.enabled():
+		var coord: Vector2i = world.coord_at(global_position)
+		target = world.core if not field_enemy else self
+		var nearest := (1000.0 if field_enemy else 18.0 if spec.id in ["hound","runner"] else 11.0)*(1.5 if world.v15.day.night() else 1.0)
+		for survivor in world.avatars.values():
+			if survivor.health.dead or survivor.region_coord!=coord: continue
+			var d := global_position.distance_to(survivor.global_position)
+			if d<nearest: target = survivor; nearest = d
+		return
+	super.choose_target()
+	if not field_enemy and world.area_index!=-1: return
+	var closest: float = (18.0 if spec.id in ["hound","runner"] else 11.0)*(1.5 if world.v15.day.night() else 1.0)
+	for survivor in world.avatars.values():
+		if survivor.health.dead: continue
+		var distance := global_position.distance_to(survivor.global_position)
+		if distance<closest: target = survivor; closest = distance
+	if field_enemy and (not is_instance_valid(target) or target.health.dead):
+		for survivor in world.avatars.values():
+			if not survivor.health.dead: target = survivor; break
+
+func take_damage(amount: float) -> void:
+	if amount>0 and not health.dead: set_meta("killer_peer",world.shot_owner)
+	super.take_damage(amount*.35 if shield_left>0 else amount)
+
+func die() -> void:
+	if is_instance_valid(warning): warning.queue_free()
+	if enemy_kind == 9 and not proxy and world.phase != "ended":
+		var point := Vector3(global_position.x, 0.0, global_position.z)
+		BossFx18.spawn(world, "rupture", point, Vector3.ZERO, BURST_RADIUS, 0.0, .56)
+		BossFx18.spawn(world, "rupture_wave", point, Vector3.ZERO, BURST_RADIUS, 0.0, .36)
+		world.boss_sound(BossSoundBank.Cue.BURSTER, point)
+		world.hostile_blast(point, BURST_RADIUS, 22+world.waves.wave, false)
+	super.die()
+
+func _exit_tree() -> void:
+	if is_instance_valid(warning): warning.queue_free()
+
+func create_cast_warning() -> Node3D:
+	return VisualFactory.ring(world.effects, warning_radius(), cast_point+Vector3(0,.12,0), warning_color())
+
+func warning_radius() -> float:
+	return (3.2 if spec.id=="mortar" else 4.2) if is_boss else 8.0 if enemy_kind==14 else 4.5 if enemy_kind==13 else 1.7 if enemy_kind==12 else 2.5
+
+func warning_color() -> Color:
+	return Color("85d9f2") if enemy_kind==13 else Color("9aabf0") if enemy_kind==14 else Color("e67f5f")
+
+func ranged_only() -> bool:
+	return spec.id in ["spitter","mortar","lobber"]
+
+func movement_boost() -> float: return 1.0
+
+func normal_step(delta: float, update_pose: bool = true) -> void:
+	clock += delta
+	attack_left = maxf(0,attack_left-delta)
+	think_left -= delta
+	if (think_left<=0 or not is_instance_valid(target)) and world.allow_enemy_think(self):
+		choose_target(); think_left = .6
+		if is_instance_valid(target) and target!=self:
+			path = world.route_for_enemy(self,target.global_position); path_index = 1 if path.size()>1 else 0
+	if not is_instance_valid(target) or target==self: velocity = Vector3.ZERO; return
+	var flat := (target.global_position-global_position)*Vector3(1,0,1)
+	var distance := flat.length()
+	var direction := flat.normalized()
+	var speed := float(spec.values.speed)*(.55 if snare_left>0 else 1.0)*movement_boost()
+	if spec.id!="flyer" and path_index<path.size():
+		var point := Vector3(path[path_index].x,global_position.y,path[path_index].y)
+		while path_index + 1 < path.size() and global_position.distance_to(point) < .8:
+			path_index += 1
+			point = Vector3(path[path_index].x,global_position.y,path[path_index].y)
+		if global_position.distance_to(point) >= .8:
+			direction = (point-global_position).normalized()
+	if ranged_only():
+		ranged_left -= delta
+		if distance<7: direction = -flat.normalized()
+		elif distance<=21 and line_of_sight():
+			speed = 0
+			if ranged_left<=0 and spec.id!="mortar":
+				if spec.id == "lobber":
+					var point := Vector3(target.global_position.x, 0.0, target.global_position.z)
+					var shot: Node3D = world.projectile("spore",global_position+Vector3.UP*1.4,point,
+						float(spec.values.damage)*.24,SporePatch.RADIUS,1.25)
+					if shot != null:
+						BossFx18.spawn(world,"spore_warning",point,Vector3.ZERO,SporePatch.RADIUS,0.0,1.25)
+					ranged_left = 4.6
+				else:
+					world.projectile("acid",global_position+Vector3(0,1.4,0),target.global_position, float(spec.values.damage),2.0,1.2)
+					ranged_left = 3.5
+				recoil = .7
+		# No contact damage for ranged-only infected.
+	if melee_left>0:
+		melee_left = maxf(0,melee_left-delta); speed = 0
+		if melee_left==0 and is_instance_valid(melee_target) and not melee_target.health.dead:
+			var reaches := melee_reaches(melee_target)
+			if is_boss:
+				var impact := BossSoundBank.Cue.CLAW if spec.id in ["hound","flyer","broodmother"] else BossSoundBank.Cue.SLAP
+				world.boss_sound(impact if reaches else BossSoundBank.Cue.MELEE_MISS,global_position)
+			if reaches:
+				melee_target.take_damage(float(spec.values.damage)); recoil = .8
+	velocity = direction*speed; velocity.y = 0 if spec.id=="flyer" else -1
+	move_and_slide()
+	if not ranged_only() and attack_left<=0 and melee_left<=0:
+		var victim: Node3D
+		for i in range(get_slide_collision_count()):
+			var body = get_slide_collision(i).get_collider()
+			if is_instance_valid(body) and body.has_method("take_damage") and not body.is_in_group("enemies"): victim = body; break
+		if spec.id=="flyer" and distance<1.5 and line_of_sight(): victim = target
+		if victim!=null:
+			if enemy_kind == 9:
+				arm_burster()
+				return
+			melee_target = victim; melee_left = .45 if is_boss or spec.id=="cleaver" else .28
+			attack_left = float(spec.values.interval)+melee_left
+	var travel := get_real_velocity() * Vector3(1,0,1)
+	var facing := travel if speed > 0 and travel.length_squared() > .08 else flat
+	if melee_left > 0 and is_instance_valid(melee_target):
+		facing = (melee_target.global_position - global_position) * Vector3(1,0,1)
+	elif ranged_only() and distance < 7:
+		facing = flat
+	if facing.length_squared() > .001:
+		rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-facing.x,-facing.z), 1.0 - exp(-delta*13.0))
+	if update_pose:
+		if spec.id=="flyer":
+			for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
+		elif spec.id=="hound":
+			for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7
+		else: animate_ground(clock * speed / 2, 1.0 if speed > 0 else 0.0)
+		animate_melee()
+	recoil = maxf(0,recoil-delta*3)
+
+func burster_near_survivor() -> bool:
+	for actor in world.avatars.values():
+		var offset: Vector3 = actor.global_position - global_position
+		if actor.health.dead or offset.length_squared() > BURST_TRIGGER * BURST_TRIGGER: continue
+		if world.exp16.safe(actor.global_position): continue
+		var ray := PhysicsRayQueryParameters3D.create(global_position+Vector3.UP*.85,
+			actor.global_position+Vector3.UP*.85, 1|8, [get_rid()])
+		if get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): return true
+	return false
+
+func arm_burster() -> void:
+	burster_fuse = BURST_FUSE
+	velocity = Vector3.ZERO
+	var point := Vector3(global_position.x,0.0,global_position.z)
+	warning = BossFx18.spawn(world,"burst_warning",point,Vector3.ZERO,BURST_RADIUS,0.0,BURST_FUSE)
+
+func animate_ground(pose_clock: float, moving: float, sprinting := false) -> void:
+	moving = clampf(moving, 0.0, 1.0)
+	if rig.has_meta("separated_source16") or rig.has_meta("anatomical_stride16"):
+		rig.running = sprinting or spec.id == "runner"
+	elif not proxy and moving == 0.0:
+		moving = .1
+	VisualFactory.animate_human(rig, pose_clock, moving, recoil if not proxy else 0.0, false)
+	if rig.get_meta("profile16", "") == "human":
+		var swing := sin(pose_clock * 11.0) * moving
+		var lift := .16
+		var range_of_swing := .22 if spec.id == "runner" else .15
+		if sprinting:
+			lift = .49 if spec.id == "mauler" else .29
+			range_of_swing = .17 if spec.id == "mauler" else .24
+		pose_arms(lift - swing * range_of_swing, lift + swing * range_of_swing)
+
+func pose_arms(left: float, right: float) -> void:
+	# Keep the equipment and arms close to the body on the tightly posed source meshes.
+	var motion := .42 if spec.id in ["demolisher", "charger", "screamer", "spitter", "cryo", "saboteur", "cleaver", "brute"] else 1.0
+	var holds_shield: bool = spec.id == "shieldbearer"
+	rig.get_node("ArmL").rotation = Vector3.ZERO if holds_shield else Vector3(left * motion, 0, -.08 * motion)
+	rig.get_node("ArmR").rotation = Vector3(right * (.42 if holds_shield else motion), 0, .08 * motion)
+
+func melee_reaches(victim: Node3D) -> bool:
+	var reach := .36*float(spec.values.scale)+.75
+	if victim.is_in_group("buildings"):
+		var data: Dictionary = FortressData.pieces()[victim.piece_index] if victim!=world.core else {"size":Vector3(3,3,3)}
+		var local := victim.to_local(global_position)
+		var half: Vector3 = data.size*.5
+		var offset := Vector2(maxf(0,absf(local.x)-half.x),maxf(0,absf(local.z)-half.z))
+		return offset.length()<=reach
+	var old_target := target; target = victim
+	var clear := line_of_sight(); target = old_target
+	return Vector2(global_position.x-victim.global_position.x,global_position.z-victim.global_position.z).length()<=reach and clear
+
+func animate_melee() -> void:
+	if melee_left<=0 and recoil<=0: return
+	if rig.get_meta("profile16", "") == "human":
+		var duration := .45 if is_boss or spec.id == "cleaver" else .28
+		var prepare := clampf(1.0 - melee_left / duration, 0.0, 1.0)
+		var reach := .89 if spec.id == "mauler" else .73
+		if melee_left > 0.0:
+			var draw := smoothstep(0.0, .42, prepare) * (1.0 - smoothstep(.46, 1.0, prepare))
+			var strike := smoothstep(.46, 1.0, prepare)
+			pose_arms(.16 - .33 * draw + reach * strike, .16 - .24 * draw + reach * .77 * strike)
+		else:
+			var recover := smoothstep(0.0, .8, recoil)
+			pose_arms(.16 + reach * recover, .16 + reach * .77 * recover)
+	elif rig.has_node("ArmL"):
+		rig.get_node("ArmL").rotation.x = -1.2 if melee_left>0 else .7
+		rig.get_node("ArmR").rotation.x = -1.2 if melee_left>0 else .7
+
+func recover_ground(delta: float) -> void:
+	if spec.id=="flyer": return
+	if position.y<-.25 or position.y>.4: position.y = 0
+	stuck_left += delta
+	if stuck_left<2: return
+	var stalled := global_position.distance_to(last_ground)<.3
+	last_ground = global_position; stuck_left = 0
+	if not stalled: return
+	think_left = 0; path.clear(); rush_left = 0
+	for stall in get_tree().get_nodes_in_group("vendor_obstacles"):
+		if global_position.distance_to(stall.global_position)>4: continue
+		for offset in [Vector3(-4,0,0),Vector3(4,0,0),Vector3(0,0,4),Vector3(0,0,-4)]:
+			var candidate: Vector3 = stall.global_position+offset
+			var query := PhysicsShapeQueryParameters3D.new(); var sphere := SphereShape3D.new(); sphere.radius = .8*float(spec.values.scale)
+			query.shape = sphere; query.transform.origin = candidate+Vector3.UP; query.collision_mask = 1|2|8; query.exclude = [get_rid()]
+			if get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(): global_position = candidate; velocity = Vector3.ZERO; return
+
+func animate_replica(delta: float) -> void:
+	if health.dead or not rig.is_visible_in_tree(): return
+	clock += delta
+	if spec.id=="hound":
+		for i in range(wings.size()): wings[i].rotation.x = sin(clock*17+i*PI)*.7*minf(1,replica_motion)
+	elif spec.id=="flyer":
+		for i in range(wings.size()): wings[i].rotation.z = sin(clock*12)*.55*(1 if i==0 else -1)
+		rig.position.y = sin(clock*4)*.12
+	else:
+		rig.rotation.x = 0
+		var sprinting: bool = rush_left > 0.0 and spec.id in ["charger", "mauler"]
+		animate_ground(clock * (1.55 if sprinting else float(spec.values.speed) / 2), replica_motion, sprinting)
+		if windup > 0.0:
+			animate_cast()
+		elif sprinting and spec.id == "mauler":
+			rig.rotation.x = -.19
+		elif not sprinting:
+			animate_melee()
+
+func animate_cast() -> void:
+	if windup<=0 or not rig.has_node("ArmL"): return
+	if rig.get_meta("profile16", "") == "human":
+		var anticipation := smoothstep(1.1, .52, windup)
+		if spec.id == "mauler":
+			pose_arms(.16 + .62 * anticipation, .16 + .46 * anticipation)
+			rig.rotation.x = -.24 * anticipation
+		else:
+			pose_arms(.16 + .59 * anticipation, .16 + .67 * anticipation)
+			rig.rotation.x = .09 * anticipation
+		return
+	rig.get_node("ArmL").rotation.x = 1.6+sin(Time.get_ticks_msec()*.015)*.1
+	rig.get_node("ArmR").rotation.x = 1.6-sin(Time.get_ticks_msec()*.015)*.1
+	rig.rotation.x = -.15
+
+func update_visibility(delta: float) -> void:
+	visibility_left -= delta
+	if visibility_left<=0:
+		visibility_left = .2
+		rig.visible = visible_near_camera()
+
+func _process(delta: float) -> void:
+	update_visibility(delta)
+	if proxy or health.dead or not rig.visible or world.combat_paused(): return
+	if windup > 0.0:
+		animate_cast()
+	else:
+		rig.rotation.x = -.19 if spec.id == "mauler" and rush_left > 0.0 else 0.0
+
+func configure_bars() -> void:
+	if MobilePlatform.enabled(): return
+	if get_node_or_null("DetailBar")==null:
+		var bar := Node3D.new(); bar.name = "DetailBar"
+		bar.set_script(load("res://scripts/survival/enemy_bar.gd")); bar.actor = self; add_child(bar)
+
+func refresh_quality() -> void:
+	var previous := rig
+	wings.clear()
+	remove_child(previous); previous.queue_free()
+	create_model(float(spec.values.scale))
+	if spec.id in ["hound","flyer"] and not rig.get_meta("imported_enemy16",false):
+		for x in [-.2,.2]: ModelFactory.part(rig,Vector3(.12,.15,.7),Vector3(x,.85,0),Color("aab9a0"))
+	ClayStyle.apply_tree(rig)
+	if MobilePlatform.lightweight() and not rig.get_meta("imported_enemy16",false): MobileVisuals.compact(rig,str(enemy_kind)+spec.id)
+
+func visible_near_camera() -> bool:
+	if not MobilePlatform.enabled(): return true
+	var point := global_position+Vector3.UP
+	return not world.camera.is_position_behind(point) and Rect2(Vector2.ZERO,world.get_viewport().get_visible_rect().size).grow(120).has_point(world.camera.unproject_position(point))
+
+func boss_cast() -> void:
+	world.hostile_blast(global_position,4.2,24+world.waves.wave*1.5)

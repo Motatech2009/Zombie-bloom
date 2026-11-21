@@ -1,0 +1,81 @@
+{
+  "source": "GLBs supplied by the creator",
+  "godot": "4.6.3",
+  "inputs": [
+    {
+      "filename": "bosses.glb",
+      "bytes": 58420956,
+      "sha256": "61ca38de9c91bd68a59d5b6145ba6deaca79d494aea3b464f9861534088a8125",
+      "source_triangles": 1936669,
+      "skins": 0,
+      "animations": 0,
+      "library_file_id": "libfile_01c90fee5bec81918cd828f8aab7a657"
+    },
+    {
+      "filename": "zombies.glb",
+      "bytes": 59451712,
+      "sha256": "e3c6b9d4f4df8ab9b81641f679c20156e4deb440738f110fc92d238d0bb58ca9",
+      "source_triangles": 1938999,
+      "skins": 0,
+      "animations": 0,
+      "library_file_id": "libfile_d91d9172af488191ada403e5c29bb766"
+    }
+  ],
+  "prepared": [
+    {
+      "error": 0,
+      "lods": [
+        968333,
+        484165,
+        242081,
+        121039,
+        60519,
+        30259,
+        15129,
+        7563,
+        3779,
+        1222,
+        536
+      ],
+      "output_sha256": "68e4aef8dbcee673e61d0227aa23c5045d8c955f713efcc31d1d29089cc0e5d7",
+      "source_sha256": "61ca38de9c91bd68a59d5b6145ba6deaca79d494aea3b464f9861534088a8125",
+      "source_triangles": 1936669,
+      "texture_size": 2048,
+      "triangles": 121039,
+      "vertices": 74886
+    },
+    {
+      "error": 0,
+      "lods": [
+        969499,
+        484749,
+        242373,
+        121185,
+        60591,
+        30295,
+        15147,
+        7571,
+        3785,
+        562,
+        266
+      ],
+      "output_sha256": "4c47f3542ca462b5ee3bd2ad45b4f33f2f7f26dccc4974fc4caf5bcadc816b0f",
+      "source_sha256": "e3c6b9d4f4df8ab9b81641f679c20156e4deb440738f110fc92d238d0bb58ca9",
+      "source_triangles": 1938999,
+      "texture_size": 2048,
+      "triangles": 121185,
+      "vertices": 75827
+    }
+  ],
+  "runtime": {
+    "normal_types": 19,
+    "bosses": 8,
+    "source_components": {
+      "bosses": 8,
+      "zombies": 19
+    },
+    "parasite": "derived from the supplied hound at scale 0.45; no separate component supplied",
+    "legacy_alpha": "kept as an offline/reference asset; kind 8 continues the seven-boss rotation",
+    "texture_limit": 2048
+  }
+}

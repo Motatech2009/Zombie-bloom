@@ -1,0 +1,96 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: nine weapon specs agree with inventory IDs
+PASS: original vector icon imports at full resolution: pistol
+PASS: editable multi-part model is available: pistol
+PASS: original vector icon imports at full resolution: shotgun
+PASS: editable multi-part model is available: shotgun
+PASS: original vector icon imports at full resolution: rifle
+PASS: editable multi-part model is available: rifle
+PASS: original vector icon imports at full resolution: smg
+PASS: editable multi-part model is available: smg
+PASS: original vector icon imports at full resolution: launcher
+PASS: editable multi-part model is available: launcher
+PASS: original vector icon imports at full resolution: scrap
+PASS: editable multi-part model is available: scrap
+PASS: original vector icon imports at full resolution: wood
+PASS: editable multi-part model is available: wood
+PASS: original vector icon imports at full resolution: parts
+PASS: editable multi-part model is available: parts
+PASS: original vector icon imports at full resolution: light
+PASS: editable multi-part model is available: light
+PASS: original vector icon imports at full resolution: shell
+PASS: editable multi-part model is available: shell
+PASS: original vector icon imports at full resolution: rifle_ammo
+PASS: editable multi-part model is available: rifle_ammo
+PASS: original vector icon imports at full resolution: rocket
+PASS: editable multi-part model is available: rocket
+PASS: original vector icon imports at full resolution: grenade
+PASS: editable multi-part model is available: grenade
+PASS: original vector icon imports at full resolution: medkit
+PASS: editable multi-part model is available: medkit
+PASS: original vector icon imports at full resolution: revolver
+PASS: editable multi-part model is available: revolver
+PASS: original vector icon imports at full resolution: sniper
+PASS: editable multi-part model is available: sniper
+PASS: original vector icon imports at full resolution: lmg
+PASS: editable multi-part model is available: lmg
+PASS: original vector icon imports at full resolution: tesla
+PASS: editable multi-part model is available: tesla
+PASS: original vector icon imports at full resolution: heavy
+PASS: editable multi-part model is available: heavy
+PASS: original vector icon imports at full resolution: cells
+PASS: editable multi-part model is available: cells
+PASS: infected model keeps animation hierarchy and unique attachments: 0
+PASS: infected model keeps animation hierarchy and unique attachments: 1
+PASS: infected model keeps animation hierarchy and unique attachments: 2
+PASS: infected model keeps animation hierarchy and unique attachments: 3
+PASS: infected model keeps animation hierarchy and unique attachments: 4
+PASS: infected model keeps animation hierarchy and unique attachments: 5
+PASS: infected model keeps animation hierarchy and unique attachments: 8
+PASS: infected model keeps animation hierarchy and unique attachments: 9
+PASS: infected model keeps animation hierarchy and unique attachments: 10
+PASS: infected model keeps animation hierarchy and unique attachments: 11
+PASS: infected model keeps animation hierarchy and unique attachments: 12
+PASS: infected model keeps animation hierarchy and unique attachments: 13
+PASS: infected model keeps animation hierarchy and unique attachments: 14
+PASS: initial automatic checkpoint already contains nine valid weapon states
+PASS: survivor initializes all nine weapon states from the physical bag
+PASS: new weapon equips its actual model: revolver
+PASS: new weapon equips its actual model: sniper
+PASS: new weapon equips its actual model: lmg
+PASS: new weapon equips its actual model: tesla
+PASS: sniper fires and consumes one loaded round
+PASS: sniper penetrates exactly three aligned infected
+PASS: penetrating damage decreases at each impact
+PASS: Tesla initiates a discharge against a raycast target
+PASS: Tesla reaches up to four connected nearby targets
+PASS: chain damage decays rather than duplicating primary damage
+PASS: solid cover blocks the Tesla chain
+PASS: revolver reload accepts carried heavy ammunition
+PASS: partial heavy-ammo reload conserves three rounds
+PASS: new Tesla model is purchasable through the real vendor transaction
+PASS: vendor sells the finite energy-cell pack
+PASS: new infected enter the live horde roster progressively
+PASS: charger announces a narrow rush before moving
+PASS: charger commits a direction toward the last target position
+PASS: charge produces actual fast physical movement
+PASS: cryo attack uses a distinct blue warning
+PASS: cryo pulse damages and applies temporary slow to a survivor in the area
+PASS: cooperative state includes the slow duration
+PASS: saboteur announces a larger EMP area
+PASS: EMP disables the nearby actual turret for five seconds
+PASS: disabled turret cannot bypass EMP through its firing method
+PASS: turret resumes firing after the effect expires
+PASS: v6 serializes and validates the full nine-weapon arsenal
+PASS: saving remains valid when a gun, including the starter pistol, is stored elsewhere
+PASS: v6 restores new guns and loaded ammunition
+PASS: v4 migration extends weapon states without modifying the original save
+PASS: migrated v4 world and guest profiles pass validation
+PASS: inventory and hotbar use real icon slots
+PASS: expanded arsenal shop opens with all nine weapon entries
+PASS: survival world enters a real procedural sector with the expanded arsenal
+PASS: rare stash can hold a new weapon beyond the original five
+PASS: new hidden weapon still requires the full three-second solo gathering time
+PASS: finishing the rare gather grants one Tesla with its loaded magazine
+ARSENAL RESULT: 93 checks, 0 failures

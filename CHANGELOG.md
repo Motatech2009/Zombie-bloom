@@ -1,0 +1,62 @@
+# Changelog
+
+## 1.5.0-rc.1 — 2026-11-15
+
+- Construção e aprimoramento com canalização cancelável, classes iniciais e upgrades limitados por horda.
+- Dia/noite de 30 minutos, Noite Vermelha, trilha de alerta e aviso de ataque ao Núcleo.
+- Sete bosses com habilidades próprias, três novos infectados e estilhaços de argila.
+- Comboio, ninho e escolta nos setores; reciclagem, fusão de torres e sinalizador de extração.
+- Cosméticos por elo; desafios após vitória; pontos de desafios separados de abates reais no Firestore.
+- Protocolo cooperativo 17, persistência dos novos sistemas e revisão de interface PC/Android.
+- Candidata: exige regras atualizadas do Firestore para o novo campo points antes da promoção final.
+
+
+## 1.0.0-dev.3 — 2026-11-14
+
+- Login lembrado ao fechar e reabrir o jogo, sem armazenar senha ou ID token.
+- Renovação automática com refresh token local, recuperação offline e limpeza ao sair ou receber revogação.
+- Testes de sessão adicionados ao CI; dados pendentes continuam separados por conta.
+
+## 0.6.0 — 2026-11-12
+
+- Núcleo fixo e setores procedurais cardinalmente conectados; geração nova por visita.
+- Cinco biomas/riscos, populações de 0 a 140, loot crescente e arsenais raros.
+- Hordas automáticas com avisos, relógio salvo e chefe em toda onda.
+- Núcleo/defesas/invasores permanecem na física enquanto o jogador explora.
+- Mapa contínuo com coordenadas e orientação, sem teleporte.
+- Saves versão 3 com timer/RNG/histórico e importação de versões anteriores.
+- Quatro suítes, 342 verificações aprovadas.
+
+
+## 0.5.0 — 2026-11-12
+
+- Construção com prévia/material/grade reutilizados; script pré-carregado e limite de 120 peças.
+- Campanha de 20 hordas e defesa infinita; checkpoints distintos e importação do save 0.4.
+- Arenas de 110 m, HUD compacto e atalhos ocultáveis.
+- Corrosivos, cães, voadores e Alfa periódico, com escala de pressão maior.
+- SMG, lança-foguetes, granadas e munição explosiva finita.
+- Limites de drops, projéteis e poças; 267 verificações.
+
+
+## 0.4.0 — 2026-11-12
+
+- Retomada da arena original enviada por ZIP, em branch independente da Beta.
+- Quatro áreas finitas, limpeza, reservas, extração e desbloqueios por horda.
+- Armeiro físico, compra de armas/materiais e tratamento.
+- Seis defesas, rotação, melhorias, portões, estacas, apoio e Núcleo N4.
+- Oito hordas; blindados e demolidores.
+- Checkpoints validados e continuação; 103 verificações de campanha e 85 de regressão.
+
+
+## 0.1.0 — 2026-11-11
+
+- Projeto Godot 4.6.3, menu e partida conectados.
+- Cenário 3D, câmera ortográfica, personagem articulado, movimento, corrida e mira.
+- Três armas, raycasts, efeitos, munição e recarga.
+- Três zumbis, navegação e cinco hordas.
+- Coleta, XP, níveis, seis upgrades e três bônus temporários.
+- Núcleo, barricada, torreta, prévia e reparos.
+- HUD, equipamentos, configurações, pausa, reinício, vitória e derrota.
+- Geometria, sons e animações procedurais originais.
+- Suíte de integração e workflow de validação/exportação Windows.
+- Corrigido cálculo de vida para não reduzir atributos antes da primeira onda.

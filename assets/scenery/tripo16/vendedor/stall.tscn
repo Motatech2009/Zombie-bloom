@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/scenery/tripo16/vendedor/stall.res" id="1_tnk6y"]
+
+[ext_resource type="Material" path="res://assets/scenery/tripo16/vendedor/material.tres" id="material"]
+
+[node name="stall" type="Node3D" unique_id=1539809373]
+metadata/source = "Tripo/user submission"
+
+[node name="Model" type="MeshInstance3D" parent="." unique_id=654837795]
+mesh = ExtResource("1_tnk6y")
+surface_material_override/0 = ExtResource("material")

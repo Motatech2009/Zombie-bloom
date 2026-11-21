@@ -1,0 +1,1814 @@
+extends "res://scripts/sectors/roaming_world.gd"
+const ENEMY_MODELS := preload("res://scripts/presentation/enemy_models16.gd")
+const INFECTED_SCRIPT := preload("res://scripts/release15/enemy15.gd")
+const TITAN_SCRIPT := preload("res://scripts/release16/titan16.gd")
+const HEAL_RANGE := 3.2
+const HEAL_TIME := 4.0
+const HEAL_COOLDOWN := 30.0
+const HEAL_AMOUNT := 50.0
+const CORE_MESHES := [
+	preload("res://assets/defenses/core/base_1.res"),
+	preload("res://assets/defenses/core/base_2.res"),
+	preload("res://assets/defenses/core/base_3.res"),
+	preload("res://assets/defenses/core/base_4.res"),
+]
+const CORE_MATERIAL := preload("res://assets/defenses/core/material.tres")
+var core_visual: MeshInstance3D
+
+static var opening_story_requested := false
+var damage_origin15 := Vector3.INF
+var damage_point16 := Vector3.INF
+var exp16 := Exploration16.new()
+var rescue16 := Rescue16.new()
+var truce16 := Truce16.new()
+var explosive15 := false
+var critical15 := false
+var v15 := Director15.new()
+var channel15 := Channel15.new()
+var is_client: bool = false
+var network: Node
+var avatars: Dictionary = {}
+var profiles: Dictionary = {}
+var depot_items: Dictionary = {}
+var built_this_round: int = 0
+var next_uid: int = 1
+var client_enemies: Dictionary = {}
+var client_structures: Dictionary = {}
+var client_loot: Dictionary = {}
+var client_hazards: Dictionary = {}
+var last_scene_revision: int = -1
+var scene_revision: int = 0
+var shot_owner: int = 0
+var records := RunRecords.new()
+var account_run_id := ""
+var account_clock := 0.0
+var account_baseline := false
+var account_identity := ""
+var airdrops := AirdropDirector.new()
+var touch_controls: TouchControls
+var pending_slot: int = -1
+var enemy_index: Dictionary = {}
+var sector_memory: Dictionary = {}
+var pending_sector_memory: Dictionary = {}
+var field_defeated: Array[int] = []
+var remote_sector_times: Dictionary = {}
+var restoring_boss_stage: int = 0
+var client_scene_ready: bool = false
+var outfit_retry_at := 0
+var remote_interaction_hint: String = ""
+var remote_mobile_context: Dictionary = {}
+var prediction := ClientPrediction.new()
+var regions := SectorSessions.new()
+var private_notices: Dictionary = {}
+var ai_frame: int = -1
+var ai_budget: int = 0
+
+func prune_sector_memory() -> void:
+	for key in sector_memory.keys():
+		if float(sector_memory[key].expires)<=elapsed: sector_memory.erase(key)
+
+func remember_sector() -> void:
+	exp16.remember()
+	prune_sector_memory()
+	sector_memory[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+	SectorMemory.trim(sector_memory)
+
+func sector_descriptor(coord: Vector2i,visits: int) -> Dictionary:
+	prune_sector_memory()
+	var key := SectorGenerator.key(coord)
+	pending_sector_memory = sector_memory.get(key,{})
+	sector_memory.erase(key)
+	if not Exploration16.special_allowed(coord) and pending_sector_memory.get("layout", {}).get("special16") == "post":
+		# An old post layout has neither loot caches nor a regular spawn roster.
+		pending_sector_memory.clear()
+	if not pending_sector_memory.is_empty():
+		return exp16.decorate(airdrops.decorate(SectorMemory.decode_layout(pending_sector_memory.layout)),coord)
+	return exp16.decorate(super.sector_descriptor(coord,visits),coord)
+
+func restore_sector_state() -> void:
+	field_defeated.clear()
+	if not pending_sector_memory.is_empty(): SectorMemory.restore(self,pending_sector_memory)
+	pending_sector_memory.clear()
+	exp16.load_sector(); rescue16.load_sector()
+
+func sector_remaining(coord: Vector2i) -> float:
+	if coord == Vector2i.ZERO: return 0
+	if coord == sector_coord or (regions.enabled() and regions.sessions.has(coord)): return -1.0
+	var key := SectorGenerator.key(coord)
+	if is_client: return float(remote_sector_times.get(key,0))
+	return maxf(0,float(sector_memory.get(key,{"expires":0}).expires)-elapsed)
+
+func sector_refresh_text(coord: Vector2i) -> String:
+	if coord == Vector2i.ZERO: return "O Núcleo é permanente."
+	if sector_remaining(coord) < 0: return "Setor ocupado. O reset começa quando todos saírem."
+	var remaining := ceili(sector_remaining(coord))
+	if remaining>0: return "Reset em %02d:%02d enquanto o setor estiver vazio." % [remaining/60,remaining%60]
+	return "A próxima entrada gera outra área com novos suprimentos."
+
+func sector_times() -> Dictionary:
+	var times := {}
+	if regions.enabled():
+		for coord in regions.sessions:
+			if coord!=Vector2i.ZERO: times[SectorGenerator.key(coord)] = -1.0
+	for key in sector_memory:
+		var remaining := float(sector_memory[key].expires)-elapsed
+		if remaining > 0: times[key] = remaining
+	if area_index!=-1: times[SectorGenerator.key(sector_coord)] = -1.0
+	return times
+
+func target_enemy(id: int) -> Node3D:
+	var enemy: Node3D = client_enemies.get(id) if is_client else enemy_index.get(id)
+	if enemy!=null: return enemy
+	for nest in get_tree().get_nodes_in_group("enemy_nests"):
+		if nest.net_id==id: return nest
+	return null
+
+static func survival_path(mode: String) -> String:
+	return "user://zombie_bloom_"+mode+"_v6.json"
+
+func checkpoint_path() -> String: return survival_path(game_mode)
+func hud_script() -> Script: return load("res://scripts/mobile/mobile_hud.gd") if MobilePlatform.enabled() else load("res://scripts/survival/survival_hud.gd")
+func wave_script() -> Script: return load("res://scripts/release16/rescue_waves16.gd" if next_mode=="rescue" else "res://scripts/survival/survival_waves.gd")
+func builder_script() -> Script: return load("res://scripts/survival/survival_build.gd")
+func weapon_script() -> Script: return load("res://scripts/survival/survival_weapons.gd")
+func create_starting_loot() -> void: pass
+func structure_script() -> Script: return load("res://scripts/fortress/fortress_structure.gd")
+
+func make_player() -> CharacterBody3D:
+	var actor := CharacterBody3D.new()
+	actor.set_script(load("res://scripts/survival/survivor.gd"))
+	starter_bag(actor.bag)
+	avatars[1] = actor
+	return actor
+
+func starter_bag(bag: ItemBag) -> void:
+	bag.add("pistol",1)
+	bag.add("light",48)
+	bag.add("grenade",1)
+	bag.add("medkit",1)
+	bag.add("bat",1)
+
+func _ready() -> void:
+	var opening_story := opening_story_requested and next_mode == "campaign" and not resume_requested
+	opening_story_requested = false
+	truce16.world = self
+	exp16.world = self; rescue16.world = self
+	resources.free(); resources = HordeResources16.new()
+	upgrades.free(); upgrades = IndividualProgression16.new(); channel15.world = self; v15.world = self; v15.day.world = self
+	account_run_id = Crypto.new().generate_random_bytes(16).hex_encode()
+	account_identity = Account.user_id
+	regions.world = self
+	prediction.world = self
+	MobilePlatform.configure(get_tree().root)
+	if MobilePlatform.enabled(): get_tree().auto_accept_quit = false
+	ClayStyle.prewarm()
+	BossFx18.prepare()
+	ENEMY_MODELS.prepare()
+	airdrops.world = self
+	network = get_node_or_null("/root/Coop")
+	is_client = network!=null and network.mode=="client"
+	if next_mode=="rescue": checkpoint_enabled = false
+	if is_client:
+		checkpoint_enabled = false
+		account_baseline = true
+	resources.scrap = 85
+	stock = {"wood":6,"parts":2}
+	super._ready()
+	audio.prepare_boss_audio()
+	v15.initialize(self)
+	upgrades.state(player); upgrades.refresh_local()
+	player.set_meta("account_uid16",Account.user_id)
+	Meta16.world = self; Meta16.bound_run = ""
+	Meta16.changed.connect(refresh_local_outfit)
+	if Meta16.local_economy: Meta16.observe_progress()
+	var range_view := DefenseRange16.new(); range_view.world = self; add_child(range_view)
+	if MobilePlatform.enabled():
+		MobilePlatform.configure(get_tree().root)
+		camera.size = 27
+	if MobilePlatform.lightweight(): MobileVisuals.prewarm(self)
+	ClayScenery.decorate(base_arena,8417,0)
+	var music := MusicDirector.new(); music.world = self; add_child(music)
+	player.weapons.sync_hand()
+	refresh_core_model()
+	ENEMY_MODELS.warm_render(self)
+	BossFx18.warm_render(self)
+	if network!=null and network.mode=="host": player.display_name = network.nickname
+	if is_client:
+		player.proxy = true
+		waves.set_physics_process(false)
+		core.set_physics_process(false)
+	if network!=null: network.bind_world(self)
+	notify("BOLSA 18 espaços · 1–9 barra rápida · Drops automáticos · Segure E nas caixas · Deposite no Núcleo · I mochila")
+	if opening_story and not connected_game():
+		hud.show_story17.call_deferred(0)
+
+func party_count() -> int: return maxi(1,avatars.size())
+func team_multiplier() -> int: return 1 << (mini(4,party_count())-1)
+func build_quota() -> int: return mini(12,6+waves.wave/3)+(1 if player!=null and player.specialization=="engineer" else 0)
+func connected_game() -> bool: return network!=null and network.mode in ["host","client"]
+
+func select_hotbar(index: int) -> void:
+	if index<0 or index>8: return
+	player.bag.selected = index
+	if is_client: pending_slot = index
+	else: player.weapons.sync_hand()
+
+func local_input(actor: Node3D) -> Dictionary:
+	var blocked: bool = combat_paused() or (hud!=null and not hud.mode.is_empty()) or (is_client and not client_scene_ready)
+	if MobilePlatform.enabled() and is_instance_valid(touch_controls):
+		var frame := touch_controls.frame()
+		if blocked:
+			frame.move = Vector2.ZERO; frame.fire = false; frame.sprint = false; frame.reload = false; frame.interact = false
+		return frame
+	var hovering_button := get_viewport().gui_get_hovered_control() is Button
+	var mouse_aim := mouse_ground(1.15)-actor.position
+	mouse_aim.y = 0
+	return {"move":Vector2.ZERO if blocked else Input.get_vector("move_left","move_right","move_up","move_down"),"aim":mouse_aim.normalized(),"sprint":not blocked and Input.is_action_pressed("sprint"),"fire":not blocked and not hovering_button and Input.is_action_pressed("fire"),"reload":not blocked and Input.is_action_pressed("reload"),"interact":not blocked and Input.is_action_pressed("interact"),"slot":pending_slot if is_client and pending_slot>=0 else actor.bag.selected}
+
+func _process(delta: float) -> void:
+	var listening := phase != "ended" and not combat_paused() and (not is_client or client_scene_ready)
+	audio.update_field(player if listening else null, delta, not waves.running)
+	if not combat_paused():
+		v15.tick(delta); exp16.tick(delta); rescue16.tick(delta)
+		if not is_client: channel15.tick(delta)
+	account_clock -= delta
+	if account_clock<=0:
+		account_clock = 1
+		sync_account_progress()
+	if is_client:
+		for actor in avatars.values():
+			if actor!=player or not prediction.enabled():
+				actor.position = SnapshotTrack.position_at(actor,Time.get_ticks_msec()*.001)
+				actor.roll_cooldown = maxf(0,actor.roll_cooldown-delta)
+				actor.roll_left = maxf(0,actor.roll_left-delta)
+			actor.presentation_offset *= exp(-delta*18)
+			actor.rig.rotation.y = lerp_angle(actor.rig.rotation.y,atan2(-actor.aim.x,-actor.aim.z),1-exp(-delta*24))
+			actor.clock += delta
+			actor.recoil = move_toward(actor.recoil,0,delta*2)
+			actor.weapons.reload_left = maxf(0,actor.weapons.reload_left-delta)
+			if not actor.health.dead: actor.animate_pose(actor.replica_motion)
+		update_client_camera(delta)
+		for enemy in client_enemies.values():
+			enemy.position = SnapshotTrack.position_at(enemy,Time.get_ticks_msec()*.001)
+			enemy.rig.rotation.y = lerp_angle(enemy.rig.rotation.y,float(enemy.get_meta("target_rotation",enemy.rig.rotation.y)),1-exp(-delta*18))
+			enemy.animate_replica(delta)
+		notice_left = maxf(0,notice_left-delta)
+		return
+	if combat_paused():
+		if resources.pending>0 and upgrades.offers.is_empty(): upgrades.roll()
+		return
+	super._process(delta)
+	regions.tick(delta)
+	airdrops.tick(delta)
+	for cache in caches:
+		if cache.has_meta("weapon"):
+			cache.visible = not int(cache.get_meta("index")) in claimed and avatars.values().any(func(actor): return actor.position.distance_to(cache.global_position)<10)
+	if resources.pending>0 and upgrades.offers.is_empty(): upgrades.roll()
+	grenades = player.bag.count("grenade")
+	rockets = player.bag.count("rocket")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact") and not event.is_echo() and hud.mode.is_empty() and local_heal_available():
+		send_action("heal",{})
+		return
+	if event.is_action_pressed("interact") and hud.mode.is_empty() and game_mode=="rescue": send_action("mission16",{})
+	if event.is_action_pressed("interact") and hud.mode.is_empty() and exp16.safe(player.global_position): hud.show_post16(); return
+	if event.is_action_pressed("melee") and hud.mode.is_empty():
+		for i in range(9):
+			if player.bag.slots[i].id=="bat": select_hotbar(i); return
+	if MobilePlatform.enabled() and (event is InputEventMouseButton or event is InputEventMouseMotion): return
+	# Consume Space here so it never reaches the legacy manual-wave action.
+	if event.is_action_pressed("roll"):
+		if not event.is_echo() and hud.mode.is_empty() and not builder.active:
+			var frame := local_input(player)
+			send_action("roll",{"direction":player.movement_direction(frame.move) if frame.move.length_squared()>.01 else frame.aim})
+		return
+	if event.is_action_pressed("inventory"):
+		if hud.mode=="inventory": hud.close_modal()
+		elif hud.mode.is_empty(): hud.show_inventory()
+		return
+	if not builder.active:
+		for i in range(9):
+			if event.is_action_pressed("slot_%d" % (i+1)):
+				select_hotbar(i)
+				return
+	if event.is_action_pressed("grenade") and hud.mode.is_empty(): send_action("grenade",{}); return
+	if event.is_action_pressed("interact"):
+		if hud.mode.is_empty():
+			for i in range(4):
+				if local_player().distance_to(SectorGenerator.EXITS[i])<3.7: send_action("travel",{"direction":i}); break
+		return
+	if is_client:
+		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT: builder.set_active(false)
+		if event.is_action_pressed("sector_map") and hud.mode.is_empty(): hud.show_routes()
+		elif event.is_action_pressed("vendor") and hud.mode.is_empty(): open_shop()
+		elif event.is_action_pressed("build"):
+			if builder.active: builder.set_active(false)
+		elif event.is_action_pressed("upgrade_piece"): send_action("upgrade",{})
+		elif event.is_action_pressed("use_gate"): send_action("gate",{})
+		elif event.is_action_pressed("remove_piece"): hud.confirm_dismantle()
+		elif event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT and builder.active:
+			var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
+			if point!=null: builder.location = Vector3(snappedf(point.x,1),0,snappedf(point.z,1)); builder.place()
+		return
+	super._unhandled_input(event)
+
+func send_action(action: String,data: Dictionary) -> void:
+	if is_client:
+		if action=="roll" and prediction.enabled() and prediction.ready:
+			if hud.mode.is_empty() and not builder.active and data.get("direction") is Vector3: prediction.roll(data.direction)
+			return
+		network.command(action,data)
+	else: perform_action(1,action,data)
+
+func apply_appearance(actor: Node3D, class_id: String, rank: int, outfit: Dictionary) -> void:
+	if actor.specialization == class_id and actor.cosmetic == rank and actor.outfit16 == outfit and actor.rig.has_node("Atelier16"):
+		return
+	actor.specialization = class_id
+	actor.cosmetic = rank
+	actor.outfit16 = outfit.duplicate()
+	v15.decorate(actor)
+
+func refresh_local_outfit() -> void:
+	if not is_instance_valid(player) or (is_client and not client_scene_ready): return
+	var outfit := Meta16.outfit(player.specialization)
+	if player.outfit16 == outfit: return
+	apply_appearance(player, player.specialization, player.cosmetic, outfit)
+	if is_client: send_local_outfit(outfit)
+
+func send_local_outfit(outfit: Dictionary) -> void:
+	outfit_retry_at = Time.get_ticks_msec() + 500
+	send_action("outfit16", {"outfit": outfit})
+
+func perform_action(peer: int,action: String,data: Dictionary) -> bool:
+	if action == "outfit16":
+		if is_client or not avatars.has(peer) or phase == "ended": return false
+		var actor: Node3D = avatars[peer]
+		var outfit = data.get("outfit")
+		if not Cosmetics16.valid(outfit, actor.specialization): return false
+		apply_appearance(actor, actor.specialization, actor.cosmetic, outfit)
+		return true
+	if combat_paused() and action not in ["choice","defer_choice"]: return false
+	if regions.enabled() and avatars.has(peer):
+		if action=="travel": return regions.travel(avatars[peer],int(data.get("direction",-1)))
+		if avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return perform_action(peer,action,data))==true
+	if is_client or not avatars.has(peer) or phase=="ended": return false
+	var actor: Node3D = avatars[peer]
+	if actor.health.dead and action not in ["choice","defer_choice"]: return false
+	var saved: CharacterBody3D = player
+	player = actor
+	var result := false
+	match action:
+		"roll":
+			if data.get("direction") is Vector3 and not (peer==1 and builder.active): result = actor.start_roll(data.direction)
+		"grenade": result = throw_for(actor)
+		"consume":
+			var slot = data.get("slot")
+			var direction = data.get("aim")
+			if slot is int and slot>=0 and slot<9 and direction is Vector3 and direction.is_finite():
+				var hand: String = actor.bag.slots[slot].id
+				if hand in ["grenade","medkit"]:
+					actor.bag.selected = slot; actor.weapons.sync_hand()
+					if direction.length_squared()>.01: actor.aim = (direction*Vector3(1,0,1)).normalized()
+					result = throw_for(actor) if hand=="grenade" else use_medkit(actor)
+		"travel":
+			if data.get("direction") is int: result = step_sector(data.direction)
+		"buy":
+			if data.get("weapon") is int: result = buy_weapon(data.weapon)
+		"tune": result = tune_weapon()
+		"mission16": result = rescue16.interact(actor)
+		"heal": result = start_heal(actor)
+		"post_trade":
+			if data.get("id") is String: result = exp16.trade(actor,data.id)
+		"decoy16": result = truce16.activate(actor)
+		"equip_bag": result = actor.bag.equip_field_bag()
+		"fuse": result = v15.fuse(actor)
+		"recycle": result = v15.recycle(actor)
+		"beacon": result = v15.buy_beacon(actor)
+		"extract": result = v15.start_extract(actor)
+		"service":
+			if data.get("id") is String: result = shop_service(data.id)
+		"swap":
+			if data.get("a") is int and data.get("b") is int: result = actor.bag.swap(data.a,data.b)
+		"withdraw":
+			if data.get("id") is String: result = withdraw(actor,data.id,mini(20,int(data.get("qty",1))))
+		"store":
+			if data.get("slot") is int: result = store_slot(actor,data.slot)
+		"drop":
+			if data.get("slot") is int: result = drop_slot(actor,data.slot)
+		"upgrade": result = improve_nearby()
+		"gate": result = toggle_nearby_gate()
+		"dismantle":
+			var target := nearest_structure()
+			if target!=null and target!=core: result = target.dismantle()
+		"choice":
+			if data.get("index") is int and data.get("choice_id") is String: result = upgrades.choose_for(actor,data.index,data.choice_id)
+		"defer_choice":
+			if data.get("choice_id") is String: result = upgrades.defer_for(actor,data.choice_id)
+		"build":
+			var pos = data.get("pos")
+			var piece = data.get("piece")
+			var angle = data.get("angle")
+			if pos is Vector3 and piece is int and piece>=0 and piece<FortressData.pieces().size() and (angle is float or angle is int) and is_finite(pos.x) and is_finite(pos.z) and is_finite(float(angle)):
+				var previous := {"active":builder.active,"location":builder.location,"selected":builder.selected,"angle":builder.angle}
+				builder.active = true
+				builder.location = Vector3(snappedf(pos.x,1),0,snappedf(pos.z,1))
+				builder.selected = piece
+				builder.angle = fposmod(snappedf(float(angle),PI/2),TAU)
+				if builder.can_place(builder.location, false):
+					result = channel15.start(actor,"build",null,{"pos":builder.location,"piece":builder.selected,"angle":builder.angle})
+				else:
+					private_notice(peer, builder.reason)
+				builder.active = previous.active
+				builder.location = previous.location
+				builder.selected = previous.selected
+				builder.angle = previous.angle
+	player = saved
+	if result and action in ["choice","defer_choice","decoy16"] and area_index==-1 and phase=="prep": save_checkpoint(false)
+	return result
+
+func load_individual_sector(direction: int) -> bool:
+	return super.step_sector(direction)
+
+func step_sector(direction: int) -> bool:
+	if player.rooted_left18 > 0.0: return false
+	if game_mode=="rescue" and waves.running and not regions.enabled(): notify("Proteja a estação até concluir a defesa."); return false
+	if regions.enabled(): return regions.travel(player,direction)
+	if is_client: return false
+	if direction<0 or direction>3: return false
+	for actor in avatars.values():
+		if actor.health.dead: continue
+		if (actor.position-sector_offset(sector_coord)).distance_to(SectorGenerator.EXITS[direction])>6:
+			notify("Reúna o grupo na mesma saída. O cooperativo viaja junto entre setores.")
+			return false
+	var save_enabled := checkpoint_enabled
+	checkpoint_enabled = false
+	var traveled := super.step_sector(direction)
+	checkpoint_enabled = save_enabled
+	if not traveled: return false
+	for actor in avatars.values(): actor.region_coord = sector_coord
+	var entry := player.position
+	var i := 0
+	for actor in avatars.values():
+		actor.cancel_gather()
+		actor.stop_roll()
+		if actor!=player: actor.position = entry+Vector3(i%2*1.2,0,i/2*1.2)
+		i += 1
+	if area_index!=-1: scale_field_population()
+	airdrops.ensure_crate()
+
+	scene_revision += 1
+	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
+	if area_index==-1 and phase=="prep" and resources.pending==0: save_checkpoint(false)
+	elif area_index!=-1:
+		notify("SETOR (%d,%d) · %s · %d infectados\nReset após 5 min vazio · %s" % [sector_coord.x,sector_coord.y,SectorGenerator.RISKS[descriptor.risk],descriptor.count,return_hint()])
+	return true
+
+func scale_field_population() -> void:
+	if descriptor.is_empty(): return
+	if not descriptor.has("base_count"): descriptor.base_count = descriptor.count; descriptor.base_roster = descriptor.roster.duplicate()
+	descriptor.count = int(descriptor.base_count)*team_multiplier()
+	descriptor.roster.clear()
+	for i in range(descriptor.count):
+		var kind: int = descriptor.base_roster[i%maxi(1,descriptor.base_roster.size())]
+		if i>0 and kind==8: kind = 4
+		if descriptor.risk>=2 and i%13==0 and i>0: kind = 9+(i/13)%6
+		descriptor.roster.append(kind)
+	field_queue.clear()
+	var occupied := {}
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.field_enemy and field_root.is_ancestor_of(enemy) and enemy.encounter_index>=0: occupied[enemy.encounter_index] = true
+	for i in range(descriptor.count):
+		if not i in field_defeated and not occupied.has(i): field_queue.append(i)
+
+func next_id() -> int:
+	var result := next_uid
+	next_uid += 1
+	return result
+
+func make_enemy(kind: int,pos: Vector3,field: bool,index: int) -> Node3D:
+	var enemy := CharacterBody3D.new()
+	enemy.set_script(TITAN_SCRIPT if kind == 20 else INFECTED_SCRIPT)
+	enemy.enemy_kind = kind
+	enemy.net_id = next_id()
+	if kind==20:
+		enemy.spec = CampaignData.enemy_spec(2).duplicate(true); enemy.spec.id = "titan16"; enemy.spec.title = "Titã Enraizado"; enemy.spec.values.scale = SectorGenerator.TITAN_SCALE; enemy.spec.values.damage = 25; enemy.spec.values.speed = 1.5; enemy.set_meta("titan16",true)
+	elif kind==8:
+		var stage := restoring_boss_stage if restoring_boss_stage>0 else maxi(1,waves.wave if not field else maxi(waves.wave,SectorGenerator.distance(sector_coord)+2))
+		enemy.spec = SectorGenerator.boss_spec(stage); enemy.set_meta("boss_stage",stage)
+	elif kind<9: enemy.spec = CampaignData.enemy_spec(kind)
+	else: enemy.spec = InfectedRoster.extra_spec(kind)
+	enemy.is_boss = kind in [8,20]
+	enemy.world = self
+	enemy.field_enemy = field
+	enemy.encounter_index = index
+	enemy.position = pos
+	(field_root if field else base_root).add_child(enemy)
+	if not is_client:
+		var uid: int = enemy.net_id
+		enemy_index[uid] = enemy
+		enemy.tree_exiting.connect(func(): enemy_index.erase(uid))
+	if kind==20: enemy.health.setup(20000)
+	if field and kind!=20 and descriptor.has("supply"):
+		enemy.health.setup(enemy.health.maximum*1.3)
+		enemy.spec.values.damage *= 1.15
+	if not field: enemy.add_to_group("wave_enemies")
+	v15.day.apply_enemy(enemy)
+	if kind==8: enemy.add_to_group("boss_enemies")
+	return enemy
+
+func spawn_minion(parent: Node3D,kind: int,index: int,offset := Vector3.INF) -> Node3D:
+	if regions.enabled() and coord_at(parent.global_position)!=sector_coord:
+		return regions.run_in(coord_at(parent.global_position),func(): return spawn_minion(parent,kind,index,offset))
+	if get_tree().get_nodes_in_group("enemies").size()>=72: return null
+	var root_node: Node3D = field_root if parent.field_enemy else base_root
+	var spawn_offset := offset if offset.is_finite() else Vector3(1.5+index,0,1)
+	var pos: Vector3 = parent.global_position-root_node.global_position+spawn_offset
+	var child := make_enemy(kind,pos,parent.field_enemy,-1)
+	parent.set_meta("summon_token",str(parent.get_meta("summon_token",parent.net_id)))
+	child.set_meta("summoner",parent.net_id); child.set_meta("summoner_token",parent.get_meta("summon_token"))
+	return child
+
+func boss_sound(cue: int, point: Vector3) -> void:
+	if is_client or phase == "ended" or not BossSoundBank.valid_cue(cue): return
+	hear_boss_sound(cue, point)
+	if network != null: network.boss_sound_event(cue, point)
+
+func hear_boss_sound(cue: int, point: Vector3) -> void:
+	if phase != "ended" and point.is_finite() and coord_at(point) == coord_at(player.global_position):
+		audio.play_boss(cue, point, player.global_position)
+
+func hostile_blast(point: Vector3,radius: float,damage: float, show_burst := true) -> void:
+	if is_client: return
+	damage *= v15.day.damage_factor()
+	if show_burst:
+		effects.burst(point,Color("e79a65"),12)
+		if network!=null and network.mode=="host": network.blast_event(point,radius)
+	for body in get_tree().get_nodes_in_group("damageable"):
+		if body.is_in_group("enemies") or body.health.dead: continue
+		var offset: Vector3 = body.global_position-point
+		offset.y = 0
+		if offset.length()<radius: body.take_damage(damage)
+
+func enemy_defeated(enemy: Node3D) -> void:
+	if regions.enabled() and coord_at(enemy.global_position)!=sector_coord:
+		regions.run_in(coord_at(enemy.global_position),func(): enemy_defeated(enemy)); return
+	if enemy.get_meta("recorded_death",false): return
+	enemy.set_meta("recorded_death",true)
+	var killer := int(enemy.get_meta("killer_peer",0))
+	if killer==0:
+		for peer in avatars:
+			records.credit(record_identity(peer),"kills",1); records.credit(record_identity(peer),"points",v15.score_multiplier())
+	else:
+		records.credit(record_identity(killer),"kills",1); records.credit(record_identity(killer),"points",v15.score_multiplier())
+	if enemy.is_boss and not enemy.get_meta("boss_rewarded",false):
+		enemy.set_meta("boss_rewarded",true)
+		var reward := spawn_loot(enemy.global_position,LootTables.boss(maxi(waves.wave,int(enemy.get_meta("boss_stage",1))),world_rng,enemy.is_in_group("wave_enemies") and not enemy.field_enemy and game_mode!="rescue"))
+		if reward!=null: mark_boss_drop(reward)
+		notify("CHEFE VENCIDO · Suprimentos extras no chão: munição, sucata e componentes.")
+	if enemy.field_enemy and enemy.encounter_index>=0 and not enemy.encounter_index in field_defeated: field_defeated.append(enemy.encounter_index)
+	if enemy.has_meta("house_id"):
+		var house := raid_house(int(enemy.get_meta("house_id")))
+		if house!=null: house.defeated(int(enemy.get_meta("house_guard")))
+		if enemy.is_in_group("house_guards"): enemy.remove_from_group("house_guards")
+		kills += 1
+		spawn_pickup(enemy.global_position,int(enemy.spec.values.xp),int(enemy.spec.values.scrap))
+		return
+	if enemy.has_meta("supply_event"):
+		airdrops.defeated(enemy)
+		if enemy.is_in_group("airdrop_guards"): enemy.remove_from_group("airdrop_guards")
+		if enemy.is_in_group("boss_enemies"): enemy.remove_from_group("boss_enemies")
+		kills += 1
+		spawn_pickup(enemy.global_position,int(enemy.spec.values.xp),int(enemy.spec.values.scrap))
+		return
+	if enemy.encounter_index<0:
+		if enemy.is_in_group("wave_enemies"): enemy.remove_from_group("wave_enemies")
+		kills += 1
+		return
+	super.enemy_defeated(enemy)
+
+func create_caches() -> void:
+	# Keep the original rarity roll; select a larger arsenal deterministically from the visit seed.
+	if int(descriptor.rare)>=1: descriptor.rare = 1+absi(int(descriptor.seed))%(Arsenal.WEAPONS.size()-1)
+	super.create_caches()
+	for i in range(caches.size()):
+		var contents := {}
+		if caches[i].has_meta("weapon"):
+			var weapon: int = caches[i].get_meta("weapon")
+			contents[ItemBag.WEAPON_IDS[weapon]] = 1
+			contents[ItemBag.AMMO_IDS[weapon]] = 1 if weapon==4 else mini(16,int(Arsenal.WEAPONS[weapon].values.capacity))
+		else:
+			contents = LootTables.regional(descriptor,i)
+			for id in descriptor.reward: contents[id] = maxi(1,int(descriptor.reward[id]*.45)/3+(1 if i<int(descriptor.reward[id]*.45)%3 else 0))
+		caches[i].set_meta("contents",contents)
+		caches[i].set_meta("uid",next_id())
+		caches[i].add_to_group("survival_sources")
+
+func spawn_pickup(pos: Vector3,experience: int,metal: int,power: String = "") -> Node3D:
+	if metal<=0 and experience<=0 and power.is_empty(): return null
+	var contents := {"scrap":maxi(1,metal/2)} if metal>0 else {}
+	if metal>0: contents.merge(LootTables.infected(int(descriptor.get("biome",-1)) if region_at(pos)!="0:0" else -1,world_rng),true)
+	return spawn_loot(pos,contents,experience,power)
+
+func mark_boss_drop(loot: Node3D) -> void:
+	loot.set_meta("boss_drop",true)
+	if not loot.has_node("BossReward"):
+		var ring := VisualFactory.ring(loot,.7,Vector3(0,.08,0),Color("efc86d")); ring.name = "BossReward"
+
+func spawn_loot(pos: Vector3,contents: Dictionary,experience: int = 0,power: String = "",loaded: int = 0,automatic: bool = true,world_origin: bool = true,isolated: bool = false) -> Node3D:
+	var parent: Node3D = regions.root_at(coord_at(pos)) if regions.enabled() else base_root if region_at(pos)=="0:0" else field_root
+	if parent==null: return null
+	var items := get_tree().get_nodes_in_group("survival_loot").filter(func(pile): return pile.get_parent()==parent and not pile.is_queued_for_deletion())
+	if items.size()>=128 and not isolated:
+		for pile in items:
+			if not pile.get_meta("special16",false) and bool(pile.get_meta("world_origin",false))==world_origin and bool(pile.get_meta("auto",true))==automatic and pile.get_parent()==parent and pile.power.is_empty() and power.is_empty() and loaded==0 and (int(pile.loaded)==0 or not contents.keys().any(func(id): return id in ItemBag.WEAPON_IDS)):
+				for id in contents: pile.contents[id] = int(pile.contents.get(id,0))+int(contents[id])
+				pile.set_meta("xp",int(pile.get_meta("xp",0))+experience)
+				pile.show(); pile.refresh_model()
+				return pile
+		return null
+	var loot := Node3D.new()
+	loot.set_script(load("res://scripts/survival/survival_loot.gd"))
+	loot.world = self
+	loot.uid = next_id()
+	loot.contents = contents.duplicate()
+	loot.power = power
+	loot.loaded = loaded
+	loot.position = (pos-parent.global_position)*Vector3(1,0,1)
+	loot.set_meta("contents",loot.contents)
+	loot.set_meta("uid",loot.uid)
+	loot.set_meta("xp",experience)
+	loot.set_meta("power",power)
+	loot.set_meta("loaded",loaded)
+	loot.set_meta("auto",automatic)
+	loot.set_meta("world_origin",world_origin)
+	loot.add_to_group("survival_sources")
+	parent.add_child(loot)
+	return loot
+
+func raid_house(id: int) -> Node3D:
+	for house in get_tree().get_nodes_in_group("raid_houses"):
+		if not house.is_queued_for_deletion() and house.is_inside_tree() and field_root!=null and field_root.is_ancestor_of(house) and int(house.data.id)==id: return house
+	return null
+
+func house_source_open(actor: Node3D,source: Node3D) -> bool:
+	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return house_source_open(actor,source))==true
+	if not source.has_meta("house_id"): return true
+	var house := raid_house(int(source.get_meta("house_id")))
+	if house==null or not house.can_open(): return false
+	var query := PhysicsRayQueryParameters3D.create(actor.position+Vector3.UP,source.global_position+Vector3.UP,1|8,[actor.get_rid()])
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+func nearest_source(actor: Node3D) -> Node3D:
+	var result: Node3D
+	var distance := 2.8
+	for source in get_tree().get_nodes_in_group("survival_sources"):
+		if source.get_meta("auto",false) or source.is_queued_for_deletion() or source.get_meta("contents",{}).is_empty() and int(source.get_meta("xp",0))==0 and source.get_meta("power","")=="": continue
+		var d: float = source.global_position.distance_to(actor.position)
+		if d<distance: result = source; distance = d
+	return result
+
+func can_heal_target(actor: Node3D, target: Node3D) -> bool:
+	if not is_instance_valid(target) or target==actor or target.is_queued_for_deletion() or target.health.dead:
+		return false
+	if actor.region_coord!=target.region_coord or target.health.current>=target.health.maximum:
+		return false
+	if actor.global_position.distance_squared_to(target.global_position)>HEAL_RANGE*HEAL_RANGE:
+		return false
+	var ray := PhysicsRayQueryParameters3D.create(actor.global_position+Vector3.UP,target.global_position+Vector3.UP,1|8)
+	return get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
+
+func heal_target(actor: Node3D) -> Node3D:
+	if actor.specialization!="medic" or actor.health.dead or actor.heal_cooldown>0 or actor.roll_left>0 or actor.rooted_left18>0 or actor.gather_target!=null or actor.bag.count("medkit")==0:
+		return null
+	var nearest: Node3D
+	var distance := INF
+	for ally in avatars.values():
+		if not can_heal_target(actor,ally): continue
+		var candidate: float = actor.global_position.distance_squared_to(ally.global_position)
+		if candidate<distance: nearest = ally; distance = candidate
+	return nearest
+
+func local_heal_available() -> bool:
+	if player.specialization!="medic" or player.heal_cooldown>0 or player.gather_kind=="heal" or combat_paused(): return false
+	return remote_mobile_context.get("heal",false) if is_client else heal_target(player)!=null
+
+func start_heal(actor: Node3D) -> bool:
+	var ally := heal_target(actor)
+	if ally==null: return false
+	begin_gather(actor,ally,"heal",HEAL_TIME)
+	return true
+
+func tick_gather(actor: Node3D,delta: float) -> void:
+	if regions.enabled() and actor.region_coord!=sector_coord:
+		regions.run_in(actor.region_coord,func(): tick_gather(actor,delta)); return
+	if actor.roll_left>0: actor.cancel_gather(); return
+	if is_client: return
+	if actor.gather_target==null and v15.interact_event(actor): return
+	if actor.gather_target==null:
+		for other in avatars.values():
+			if other!=actor and other.health.dead and actor.position.distance_to(other.position)<2.8 and actor.bag.count("medkit")>0:
+				begin_gather(actor,other,"revive",3.5)
+				break
+		if actor.gather_target==null and area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): begin_gather(actor,core,"deposit",1.8)
+		if actor.gather_target==null:
+			var source := nearest_source(actor)
+			if source!=null:
+				if not house_source_open(actor,source):
+					notify("Casa sob ameaça: elimine os infectados e entre pela porta para coletar."); return
+				if source.get_meta("airdrop",false) and not airdrops.can_open():
+					notify("Airdrop bloqueado: espere a queda e elimine a escolta (%d restantes)." % airdrops.remaining())
+					return
+				begin_gather(actor,source,"loot",5.0 if source.has_meta("weapon") or source.get_meta("airdrop",false) or source.has_meta("house_id") else 2.8)
+		if actor.gather_target==null and area_index==-1 and phase=="prep":
+			for structure in get_tree().get_nodes_in_group("buildings"):
+				if not structure.health.dead and structure.health.current<structure.health.maximum and actor.position.distance_to(structure.global_position)<2.8:
+					begin_gather(actor,structure,"repair",1.8)
+					break
+	if actor.gather_target==null: return
+	var target: Node3D = actor.gather_target
+	var reach := HEAL_RANGE if actor.gather_kind=="heal" else 4.2 if target==core else 3.1
+	if not is_instance_valid(target) or target.is_queued_for_deletion() or actor.position.distance_to(actor.gather_start)>.45 or actor.last_damage!=actor.gather_damage_mark or actor.position.distance_to(target.global_position)>reach: actor.cancel_gather(); return
+	if actor.gather_kind=="heal" and (actor.rooted_left18>0 or not can_heal_target(actor,target)):
+		actor.cancel_gather()
+		return
+	if actor.gather_kind=="loot":
+		if not house_source_open(actor,target): actor.cancel_gather(); return
+		if target.get_meta("airdrop",false) and not airdrops.can_open(): actor.cancel_gather(); return
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if enemy.global_position.distance_to(target.global_position)<4.5: actor.cancel_gather(); return
+	var duration := collect_seconds(actor.gather_kind,actor.gather_base_duration)
+	if actor.gather_kind=="loot": duration /= (1+.5*upgrades.level_for(actor,"gather")/12.0)*(1+Catalog16.bonus(actor,"scout_loot"))
+	if actor.gather_kind=="repair": duration = maxf(.7,duration*(1-.4*upgrades.level_for(actor,"engineering")/12.0)*(1-Catalog16.bonus(actor,"eng_hands")))
+	if not is_equal_approx(duration,actor.gather_duration):
+		actor.gather_progress = actor.gather_progress/maxf(.01,actor.gather_duration)*duration
+		actor.gather_duration = duration
+	actor.gather_progress += delta
+	if actor.gather_progress<actor.gather_duration: return
+	var kind: String = actor.gather_kind
+	actor.cancel_gather()
+	if kind=="deposit": deposit_materials(actor)
+	elif kind=="repair": repair_for15(actor,target)
+	elif kind=="revive":
+		if target.health.dead and actor.bag.remove("medkit",1): target.revive()
+	elif kind=="heal":
+		if actor.bag.remove("medkit",1):
+			target.health.heal(HEAL_AMOUNT)
+			actor.heal_cooldown = HEAL_COOLDOWN
+			private_notice(actor.peer_id,"CURA CONCLUÍDA · "+target.display_name)
+	else: transfer_source(actor,target)
+
+func begin_gather(actor: Node3D,target: Node3D,kind: String,duration: float) -> void:
+	actor.gather_target = target
+	actor.gather_kind = kind
+	actor.gather_base_duration = duration
+	actor.gather_duration = collect_seconds(kind,duration)
+	actor.gather_progress = 0
+	actor.gather_damage_mark = actor.last_damage
+	actor.gather_start = actor.position
+
+func collect_seconds(kind: String,duration: float) -> float:
+	return duration*(.6 if party_count()==1 and kind in ["loot","deposit"] else 1.0)
+
+func transfer_source(actor: Node3D,source: Node3D) -> bool:
+	if not house_source_open(actor,source): return false
+	if source.get_meta("airdrop",false) and not airdrops.can_open(): return false
+	var contents: Dictionary = source.get_meta("contents",{})
+	var transferred := false
+	for id in contents.keys():
+		var amount: int = mini(int(contents[id]),ItemBag.stack(id) if source.get_meta("boss_drop",false) or source.get_meta("airdrop",false) or source.has_meta("house_id") else 4 if id not in ItemBag.WEAPON_IDS else 1)
+		var taken: int = actor.bag.add(id,amount)
+		if taken<=0: continue
+		if id=="scrap" and source.get_meta("world_origin",true): records.credit(record_identity(actor.peer_id),"scrap",taken)
+		contents[id] -= taken
+		if contents[id]<=0: contents.erase(id)
+		if id in ItemBag.WEAPON_IDS:
+			var index := ItemBag.WEAPON_IDS.find(id)
+			actor.weapons.ammo[index] = clampi(int(source.get_meta("loaded",actor.weapons.capacity(index))),0,actor.weapons.capacity(index))
+		transferred = true
+		break
+	if contents.is_empty():
+		var xp: int = source.get_meta("xp",0)
+		var power: String = source.get_meta("power","")
+		if xp>0: resources.add_loot(xp,0); source.set_meta("xp",0); transferred = true
+		if not power.is_empty(): actor.grant_power(power); source.set_meta("power",""); transferred = true
+		if source.has_meta("index") and not int(source.get_meta("index")) in claimed: claimed.append(int(source.get_meta("index")))
+		source.hide()
+		if source.get_meta("airdrop",false): airdrops.mark_collected()
+	exp16.loot_changed(source)
+	actor.weapons.sync_hand()
+	if not transferred: notify("Bolsa cheia ou arma já carregada. Deposite no Núcleo ou reorganize com I.")
+	return transferred
+
+func has_materials(bag: ItemBag) -> bool:
+	return bag.count("scrap")+bag.count("wood")+bag.count("parts")>0
+
+func deposit_materials(actor: Node3D) -> bool:
+	if area_index!=-1 or actor.position.distance_to(core.position)>4: return false
+	for id in ["scrap","wood","parts"]:
+		var amount: int = actor.bag.count(id)
+		if amount>0: actor.bag.remove(id,amount); credit(id,amount)
+	notify("Materiais guardados no Núcleo. O estoque compartilhado paga construções.")
+	return true
+
+func depot_count(id: String) -> int:
+	if id=="scrap": return resources.scrap
+	if id in ["wood","parts"]: return int(stock[id])
+	return int(depot_items.get(id,0))
+
+func withdraw(actor: Node3D,id: String,quantity: int) -> bool:
+	if id not in ItemBag.IDS or quantity<=0 or area_index!=-1 or actor.position.distance_to(core.position)>4: return false
+	var count := mini(quantity,depot_count(id))
+	var moved: int = actor.bag.add(id,count)
+	if moved<=0: return false
+	if id=="scrap": resources.scrap -= moved
+	elif id in ["wood","parts"]: stock[id] -= moved
+	else: depot_items[id] -= moved
+	actor.weapons.sync_hand()
+	return true
+
+func store_slot(actor: Node3D,index: int) -> bool:
+	if index<0 or index>=actor.bag.slots.size() or area_index!=-1 or actor.position.distance_to(core.position)>4: return false
+	var item: Dictionary = actor.bag.slots[index].duplicate()
+	if item.qty<=0: return false
+	if item.id in ["scrap","wood","parts"]: credit(item.id,item.qty)
+	else:
+		depot_items[item.id] = int(depot_items.get(item.id,0))+int(item.qty)
+		if item.id in ItemBag.WEAPON_IDS:
+			var gun := ItemBag.WEAPON_IDS.find(item.id)
+			var ammo_id: String = ItemBag.AMMO_IDS[gun]
+			depot_items[ammo_id] = int(depot_items.get(ammo_id,0))+actor.weapons.ammo[gun]
+			actor.weapons.ammo[gun] = 0
+	actor.bag.slots[index] = {"id":"","qty":0}
+	actor.weapons.sync_hand()
+	return true
+
+func drop_slot(actor: Node3D,index: int) -> bool:
+	if index<0 or index>=actor.bag.slots.size(): return false
+	var item: Dictionary = actor.bag.slots[index].duplicate()
+	if item.qty<=0: return false
+	var loaded := 0
+	if item.id in ItemBag.WEAPON_IDS:
+		var gun := ItemBag.WEAPON_IDS.find(item.id)
+		loaded = actor.weapons.ammo[gun]
+	if spawn_loot(actor.position+Vector3(2.3,0,0),{item.id:item.qty},0,"",loaded,true,false)==null: return false
+	if item.id in ItemBag.WEAPON_IDS: actor.weapons.ammo[ItemBag.WEAPON_IDS.find(item.id)] = 0
+	actor.bag.slots[index] = {"id":"","qty":0}
+	actor.weapons.sync_hand()
+	return true
+
+func buy_weapon(index: int) -> bool:
+	if "no_vendor" in v15.mutators: return false
+	if index<1 or index>=Arsenal.WEAPONS.size() or area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
+	var id: String = ItemBag.WEAPON_IDS[index]
+	var copy := ItemBag.new()
+	copy.restore(player.bag.dump())
+	if copy.add(id,1)!=1 or resources.scrap<int(Arsenal.PRICES[index]): return false
+	resources.scrap -= int(Arsenal.PRICES[index])
+	player.bag.restore(copy.dump())
+	player.weapons.ammo[index] = player.weapons.capacity(index)
+	player.weapons.sync_hand()
+	return true
+
+func shop_service(id: String) -> bool:
+	if "no_vendor" in v15.mutators: return false
+	if area_index!=-1 or phase!="prep" or player.position.distance_to(vendor_pos)>5: return false
+	var packs: Dictionary = Arsenal.PACKS
+	if not packs.has(id): return false
+	var quantity: int = packs[id][0]
+	var price: int = packs[id][1]
+	var copy := ItemBag.new()
+	copy.restore(player.bag.dump())
+	if copy.add(id,quantity)!=quantity or resources.scrap<price: return false
+	resources.scrap -= price
+	player.bag.restore(copy.dump())
+	return true
+
+func throw_grenade() -> bool: return throw_for(player)
+
+func throw_for(actor: Node3D) -> bool:
+	if exp16.safe(actor.global_position): return false
+	if is_client or actor.roll_left>0 or phase not in ["combat","expedition"] or actor.bag.count("grenade")==0 or actor.weapons.cooldown>0: return false
+	var aim: Vector3 = actor.aim
+	var shot: Node3D = projectile("grenade",actor.position+Vector3(0,1.2,0),actor.position+aim*14+Vector3(0,.15,0),105,4.5,.85)
+	if shot==null: return false
+	shot.owner_peer = actor.peer_id
+	actor.bag.remove("grenade",1)
+	actor.weapons.cooldown = 1.5
+	return true
+
+func explode_from(point: Vector3,radius: float,power: float,owner: int) -> void:
+	explosive15 = true
+	var saved: CharacterBody3D = player
+	if avatars.has(owner): player = avatars[owner]
+	shot_owner = owner
+	super.explode(point,radius,power)
+	shot_owner = 0
+	player = saved
+	if network!=null and network.mode=="host": network.blast_event(point,radius)
+
+	explosive15 = false
+
+func survivor_down(actor: Node3D) -> void:
+	for id in ["scrap","wood","parts"]:
+		var qty: int = actor.bag.count(id)
+		if qty>0 and spawn_loot(actor.position,{id:qty},0,"",0,true,false)!=null: actor.bag.remove(id,qty)
+	if party_count()==1: finish(false,"O sobrevivente caiu com a carga. Retome o último checkpoint."); return
+	for teammate in avatars.values():
+		if not teammate.health.dead:
+			notify(actor.display_name+" caiu. Segure E perto dele com um kit médico para reanimar.")
+			return
+	finish(false,"Todos os sobreviventes caíram.")
+
+func choose_team_upgrade(index: int) -> bool:
+	return upgrades.choose(index)
+
+func actor_profile(actor: Node3D) -> Dictionary:
+	return {"titan_owner16":str(actor.get_meta("titan_owner16","")),"titan_victory16":str(actor.get_meta("titan_victory16","")),"outfit16":actor.outfit16.duplicate(),"class":actor.specialization,"cosmetic":actor.cosmetic,"tuning":actor.weapons.tuning.duplicate(),"bag":actor.bag.dump(),"ammo":actor.weapons.ammo.duplicate(),"gun":[actor.weapons.damage_multiplier,actor.weapons.rate_multiplier,actor.weapons.capacity_multiplier,actor.weapons.reload_multiplier,actor.weapons.level],"max_hp":actor.health.maximum,"hp":maxf(0,actor.health.current),"downed":actor.health.dead,"speed":actor.speed_multiplier,"roll_cd":actor.roll_cooldown,"heal_cd":actor.heal_cooldown}
+
+func valid_profile(data: Variant) -> bool:
+	if data is Dictionary and (not data.get("titan_owner16","") is String or str(data.get("titan_owner16","")).length()>128): return false
+	if data is Dictionary and (not data.get("titan_victory16","") is String or str(data.get("titan_victory16","")).length()>64): return false
+	if data is Dictionary and not Cosmetics16.valid(data.get("outfit16",{}),str(data.get("class","engineer"))): return false
+	if data is Dictionary and (not Director15.CLASSES.has(data.get("class","engineer")) or not bounded(data.get("cosmetic",0),0,10) or not bounded(data.get("heal_cd",0),0,HEAL_COOLDOWN)): return false
+	if data is Dictionary and data.has("tuning"):
+		if not data.tuning is Array or data.tuning.size()!=9 or not data.tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
+	if not data is Dictionary or not ItemBag.valid(data.get("bag")) or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not data.get("gun") is Array or data.gun.size()!=5: return false
+	if data.bag.get("medical",false)!=(data.get("class","engineer")=="medic"): return false
+	for value in data.ammo:
+		if not bounded(value,0,100000): return false
+	for value in data.gun:
+		if not bounded(value,.01,100000): return false
+	return bounded(data.get("roll_cd",0),0,5) and bounded(data.get("max_hp"),100,1000000) and bounded(data.get("hp"),0,data.max_hp) and bounded(data.get("speed"),.1,1000)
+
+func restore_profile(actor: Node3D,data: Dictionary) -> void:
+	actor.set_meta("titan_victory16",str(data.get("titan_victory16","")))
+	actor.set_meta("titan_owner16",str(data.get("titan_owner16","")))
+	var class_id := str(data.get("class", "engineer"))
+	var outfit: Dictionary = data.get("outfit16", {})
+	if actor == player: outfit = Meta16.outfit(class_id)
+	apply_appearance(actor, class_id, int(data.get("cosmetic", 0)), outfit)
+	actor.weapons.tuning.assign(data.get("tuning",[0,0,0,0,0,0,0,0,0]))
+	actor.bag.restore(data.bag)
+	actor.heal_cooldown = float(data.get("heal_cd",0))
+	actor.weapons.ammo.assign(data.ammo)
+	actor.weapons.damage_multiplier = data.gun[0]
+	actor.weapons.rate_multiplier = data.gun[1]
+	actor.weapons.capacity_multiplier = data.gun[2]
+	actor.weapons.reload_multiplier = data.gun[3]
+	actor.weapons.level = int(data.gun[4])
+	actor.health.setup(data.max_hp)
+	actor.health.current = data.hp
+	actor.health.dead = data.hp<=0
+	actor.downed = actor.health.dead
+	actor.rig.rotation.z = PI*.5 if actor.downed else 0.0
+	if not is_client or actor!=player or not prediction.enabled(): actor.roll_cooldown = float(data.get("roll_cd",0))
+	if not is_client: actor.stop_roll()
+	actor.speed_multiplier = data.speed
+	actor.weapons.sync_hand()
+
+func snapshot() -> Dictionary:
+	prune_sector_memory()
+	exp16.remember()
+	var saved_sectors := sector_memory.duplicate(true)
+	if regions.enabled():
+		regions.initialize()
+		for coord in regions.sessions.keys():
+			if coord!=Vector2i.ZERO:
+				saved_sectors[SectorGenerator.key(coord)] = regions.run_in(coord,func(): return SectorMemory.capture(self))
+	elif is_instance_valid(field_root):
+		saved_sectors[SectorGenerator.key(sector_coord)] = SectorMemory.capture(self)
+	SectorMemory.trim(saved_sectors)
+	var saved_player: CharacterBody3D = player
+	player = avatars.get(1,player)
+	player.weapons.sync_hand()
+	grenades = player.bag.count("grenade")
+	rockets = player.bag.count("rocket")
+	var data := super.snapshot()
+	data.format = 6
+	data.systems16 = exp16.dump()
+	data.truce16 = truce16.dump()
+	data.systems15 = v15.dump()
+	data.progression16 = upgrades.dump()
+	data.horde_interval = HORDE_INTERVAL
+	data.preparation_policy = 2
+	data.records = records.dump()
+	data.account_run_id = account_run_id
+	data.airdrops = airdrops.dump()
+	data.sector_memory = saved_sectors
+	data.sector_reset_policy = 1
+	data.weapon_tuning = player.weapons.tuning.duplicate()
+	data.bag = player.bag.dump()
+	data.depot_items = depot_items.duplicate()
+	data.built = built_this_round
+	for actor in avatars.values(): profiles[actor.profile_id] = actor_profile(actor)
+	data.profiles = profiles.duplicate(true)
+	data.loose = []
+	for loot in get_tree().get_nodes_in_group("survival_loot"):
+		if loot.get_parent()==base_root: data.loose.append({"pos":[loot.position.x,loot.position.z],"contents":loot.contents.duplicate(),"xp":int(loot.get_meta("xp",0)),"power":loot.get_meta("power",""),"loaded":int(loot.get_meta("loaded",0)),"auto":bool(loot.get_meta("auto",true)),"boss":bool(loot.get_meta("boss_drop",false)),"origin":bool(loot.get_meta("world_origin",false))})
+	player = saved_player
+	for entry in data.structures:
+		for structure in get_tree().get_nodes_in_group("campaign_structure"):
+			if structure.position.distance_to(Vector3(entry.pos[0],0,entry.pos[1]))<.1: entry.fused = bool(structure.get_meta("fused",false)); entry.alloy16 = float(structure.get_meta("alloy16",0)); entry.builder16 = str(structure.get_meta("builder16",""))
+	return data
+
+func valid_snapshot(data: Variant) -> bool:
+	if data is Dictionary and data.has("truce16") and not Truce16.valid(data.truce16): return false
+	if data is Dictionary and data.has("systems16") and not Exploration16.valid(data.systems16): return false
+	if data is Dictionary and data.has("progression16") and not IndividualProgression16.valid(data.progression16): return false
+	if data is Dictionary and data.has("systems15") and not Director15.valid(data.systems15): return false
+	if data is Dictionary and data.has("weapon_tuning"):
+		if not data.weapon_tuning is Array or data.weapon_tuning.size()!=9 or not data.weapon_tuning.all(func(v): return (v is int or v is float) and v==floor(v) and v>=0 and v<=3): return false
+	if data is Dictionary and data.has("records") and not RunRecords.valid(data.records): return false
+	if not data is Dictionary or data.get("format")!=6 or not ItemBag.valid(data.get("bag")) or not data.get("depot_items") is Dictionary or not bounded(data.get("built"),0,13) or not data.get("profiles") is Dictionary or data.profiles.size()>64 or not data.get("loose") is Array or data.loose.size()>128: return false
+	if not AirdropDirector.valid(data.get("airdrops")): return false
+	if not bounded(data.get("elapsed"),0,1000000000) or not SectorMemory.valid(data.get("sector_memory",{}),float(data.elapsed)): return false
+	for id in data.depot_items:
+		if id not in ItemBag.IDS or not bounded(data.depot_items[id],0,10000000): return false
+	for id in data.profiles:
+		if not id is String or id.length()>64 or not valid_profile(data.profiles[id]): return false
+	for item in data.loose:
+		if not item is Dictionary or not point_valid(item.get("pos")) or not item.get("contents") is Dictionary or not bounded(item.get("xp"),0,1000000) or item.get("power") not in ["","speed","rapid","shield"] or not bounded(item.get("loaded"),0,100000) or not item.get("auto") is bool: return false
+		for id in item.contents:
+			if id not in ItemBag.IDS or not bounded(item.contents[id],1,1000000): return false
+	var old: Dictionary = data.duplicate(true)
+	if not data.get("owned") is Array or data.owned.size()!=Arsenal.WEAPONS.size() or not data.get("ammo") is Array or data.ammo.size()!=Arsenal.WEAPONS.size() or not bounded(data.get("slot"),0,Arsenal.WEAPONS.size()-1): return false
+	for i in range(Arsenal.WEAPONS.size()):
+		if not data.owned[i] is bool or not bounded(data.ammo[i],0,100000): return false
+	if not data.get("structures") is Array or data.structures.size()>120: return false
+	for entry in data.structures:
+		if not valid_fortification(entry) or not bounded(entry.get("alloy16",0),0,.12) or not entry.get("builder16","") is String: return false
+	old.structures = []
+	old.format = 3
+	# The inherited validator covers world/base data using its five-weapon schema.
+	old.owned.resize(5); old.ammo.resize(5); old.owned[0] = true; old.slot = 0
+	return super.valid_snapshot(old)
+
+func migrate_snapshot(data: Variant) -> Variant:
+	var converted = super.migrate_snapshot(data)
+	if not converted is Dictionary: return converted
+	if converted.get("format")==3:
+		converted = converted.duplicate(true)
+		if not converted.get("owned") is Array or converted.owned.size()<5: return data
+		var bag := ItemBag.new()
+		for i in range(5):
+			if converted.owned[i]: bag.add(ItemBag.WEAPON_IDS[i],1)
+		bag.add("light",48)
+		var remainder := {}
+		for entry in [["grenade",int(converted.get("grenades",0))],["rocket",int(converted.get("rockets",0))]]:
+			var moved := bag.add(entry[0],entry[1])
+			if moved<entry[1]: remainder[entry[0]] = entry[1]-moved
+		converted.format = 4; converted.bag = bag.dump(); converted.depot_items = remainder
+		converted.built = 0; converted.profiles = {}; converted.loose = []
+	if converted.get("format")==4:
+		converted = converted.duplicate(true)
+		if not converted.get("ammo") is Array or not converted.get("owned") is Array or converted.ammo.size() not in [5,9] or converted.owned.size() not in [5,9] or not converted.get("profiles") is Dictionary: return data
+		while converted.ammo.size()<Arsenal.WEAPONS.size(): converted.ammo.append(0)
+		while converted.owned.size()<Arsenal.WEAPONS.size(): converted.owned.append(false)
+		for profile in converted.profiles.values():
+			if not profile is Dictionary or not profile.get("ammo") is Array or profile.ammo.size() not in [5,9]: return data
+			while profile.ammo.size()<Arsenal.WEAPONS.size(): profile.ammo.append(0)
+		converted.format = 5
+	if converted.get("format")==5:
+		converted = converted.duplicate(true)
+		converted.format = 6
+		converted.airdrops = {"left":600.0,"serial":0,"state":{}}
+		if converted.get("loose") is Array:
+			for item in converted.loose:
+				if item is Dictionary: item.auto = true
+	return converted
+
+func apply_snapshot(data: Dictionary) -> void:
+	if int(data.get("preparation_policy",0))!=2 and float(data.get("horde_left",0))>0:
+		data = data.duplicate(true)
+		data.horde_left = minf(float(data.horde_left),preparation_seconds(int(data.get("wave",0))+1))
+	truce16.restore(data.get("truce16",{}))
+	exp16.restore(data.get("systems16",{"sectors":{}}))
+	if not data.has("systems16"):
+		for key in data.get("discovered",{}):
+			if key!="0:0": exp16.sectors[key] = {"kind":"normal","hp":20000.0,"dead":false,"reward":{},"stocks":{},"pos":[15.0,0.0]}
+	super.apply_snapshot(data)
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var key := SectorGenerator.key(Vector2i(x, z))
+			if discovered.has(key):
+				discovered[key].erase("special16")
+	if data.has("systems15"): v15.restore(data.systems15)
+	for key in upgrades.levels: upgrades.levels[key] = clampi(int(upgrades.levels[key]),0,12)
+	if data.profiles.has("host"): restore_profile(player,data.profiles.host)
+	records.restore(data.get("records",{}))
+	account_run_id = str(data.get("account_run_id","legacy-"+str(data.get("world_seed",0))))
+	account_baseline = true
+	player.weapons.tuning.assign(data.get("weapon_tuning",[0,0,0,0,0,0,0,0,0]))
+	player.bag.restore(data.bag)
+	player.weapons.sync_hand()
+	depot_items = data.depot_items.duplicate()
+	built_this_round = int(data.built)
+	profiles = data.profiles.duplicate(true)
+	upgrades.restore(data.get("progression16",{}),upgrades.levels,profiles)
+	# World supplies and every connected bag must rewind together.
+	for peer in avatars:
+		var actor: Node3D = avatars[peer]
+		actor.cancel_gather(); actor.powers.clear(); actor.shield = 0
+		if peer==1: continue
+		var profile: Dictionary = profiles.get(actor.profile_id,{})
+		if profile.is_empty():
+			profile = actor_profile(player)
+			var bag := ItemBag.new(); starter_bag(bag)
+			bag.medical = profile.class == "medic"
+			profile.bag = bag.dump(); profile.ammo = [12,0,0,0,0,0,0,0,0]
+			profile.heal_cd = 0.0
+			profile.hp = profile.max_hp; profile.downed = false; profile.roll_cd = 0
+		restore_profile(actor,profile)
+		actor.position = player.position+Vector3(peer%2*1.2,0,1.2)
+		actor.weapons.cooldown = .2; actor.weapons.reload_left = 0
+	for actor in avatars.values(): upgrades.apply_actor(actor)
+	airdrops.restore(data.airdrops)
+	sector_memory = data.get("sector_memory",{}).duplicate(true)
+	if data.get("sector_reset_policy",0) == 0:
+		for state in sector_memory.values():
+			if float(state.expires) > elapsed:
+				state.expires = minf(elapsed+SectorMemory.LIFETIME,float(state.expires)+SectorMemory.LIFETIME-SectorMemory.LEGACY_LIFETIME)
+	prune_sector_memory()
+	for loot in get_tree().get_nodes_in_group("survival_loot"):
+		loot.get_parent().remove_child(loot)
+		loot.queue_free()
+	for item in data.loose:
+		var loot := spawn_loot(Vector3(item.pos[0],0,item.pos[1]),item.contents,int(item.xp),item.power,int(item.loaded),bool(item.auto),bool(item.get("origin",false)))
+		if loot!=null and item.get("boss",false): mark_boss_drop(loot)
+	for entry in data.structures:
+		for structure in get_tree().get_nodes_in_group("campaign_structure"):
+			if structure.position.distance_to(Vector3(entry.pos[0],0,entry.pos[1]))<.1:
+				structure.set_meta("alloy16",float(entry.get("alloy16",0))); structure.set_meta("builder16",str(entry.get("builder16","")))
+				structure.refresh_tier()
+		if entry.get("fused",false):
+			for structure in get_tree().get_nodes_in_group("campaign_structure"):
+				if structure.position.distance_to(Vector3(entry.pos[0],0,entry.pos[1]))<.1:
+					structure.set_meta("fused",true); structure.spec.values.interval *= .55
+	scene_revision += 1
+	for actor in avatars.values(): actor.input_queue.clear(); actor.roll_intents.clear()
+
+func load_checkpoint() -> bool:
+	if is_client or area_index!=-1 or phase!="prep": return false
+	var paths := [checkpoint_path(),"user://zombie_bloom_"+game_mode+"_v5.json","user://zombie_bloom_"+game_mode+"_v4.json",frontier_path(game_mode),save_path(game_mode)]
+	if game_mode=="campaign": paths.append(CHECKPOINT)
+	for path in paths:
+		if not FileAccess.file_exists(path): continue
+		var data = migrate_snapshot(JSON.parse_string(FileAccess.get_file_as_string(path)))
+		if not valid_snapshot(data): notify("Checkpoint inválido; partida preservada."); return false
+		apply_snapshot(data)
+		return true
+	return false
+
+func projectile(kind: String,from: Vector3,to: Vector3,power: float,radius: float,travel_time: float,show_landing := true) -> Node3D:
+	var shot := super.projectile(kind,from,to,power,radius,travel_time,show_landing)
+	if shot!=null: shot.owner_peer = shot_owner; shot.set_meta("uid",next_id())
+	return shot
+
+func spawn_acid(point: Vector3,radius: float,power: float) -> Node3D:
+	var pool := super.spawn_acid(point,radius,power)
+	if pool!=null: pool.set_meta("uid",next_id())
+	return pool
+
+func use_medkit(actor: Node3D) -> bool:
+	if actor.roll_left>0 or actor.weapons.cooldown>0 or actor.health.current>=actor.health.maximum or not actor.bag.remove("medkit",1): return false
+	actor.health.heal(45)
+	actor.weapons.cooldown = 1
+	return true
+
+func attach_peer(peer: int,identity: String,nickname: String) -> bool:
+	if is_client or avatars.has(peer) or avatars.values().any(func(a): return a.profile_id==identity) or avatars.size()>=4 or (not profiles.has(identity) and profiles.size()>=64) or phase=="ended": return false
+	var actor := CharacterBody3D.new()
+	actor.set_script(load("res://scripts/survival/survivor.gd"))
+	actor.world = self
+	actor.peer_id = peer
+	actor.region_coord = sector_coord
+	actor.profile_id = identity
+	actor.display_name = nickname.left(16)
+	starter_bag(actor.bag)
+	actor.weapons.free()
+	actor.weapons = weapon_script().new()
+	actor.position = player.position+Vector3(avatars.size()*1.1,0,1)
+	avatars[peer] = actor
+	add_child(actor)
+	if profiles.has(identity): restore_profile(actor,profiles[identity])
+	else:
+		v15.apply_class(actor,Director15.selected_class,true)
+		actor.weapons.sync_hand()
+	upgrades.state(actor); upgrades.apply_actor(actor)
+	actor.invulnerable = 3
+	waves.rescale()
+	rescale_regions()
+	notify("%s entrou · %d jogadores · população x%d" % [actor.display_name,party_count(),team_multiplier()])
+	return true
+
+func detach_peer(peer: int) -> void:
+	if not avatars.has(peer) or peer==1: return
+	var actor: Node3D = avatars[peer]
+	profiles[actor.profile_id] = actor_profile(actor)
+	avatars.erase(peer)
+	actor.queue_free()
+	waves.rescale()
+	rescale_regions()
+
+func net_scene(peer: int = 1) -> Dictionary:
+	if regions.enabled() and avatars.has(peer) and avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return net_scene(peer))
+	return {"protocol":Coop.PROTOCOL_VERSION,"rev":peer_revision(peer),"coord":sector_coord,"descriptor":descriptor.duplicate(true),"mode":game_mode}
+
+func apply_net_scene(data: Dictionary) -> void:
+	if not is_client: return
+	prediction.reset()
+	client_scene_ready = false
+	clear_hazards()
+	for node in client_enemies.values(): node.queue_free()
+	for node in client_structures.values(): node.queue_free()
+	for node in client_loot.values(): node.queue_free()
+	for node in client_hazards.values(): node.queue_free()
+	client_enemies.clear()
+	client_structures.clear()
+	client_loot.clear()
+	client_hazards.clear()
+	if field_root!=null: field_root.queue_free(); field_root = null
+	sector_coord = data.coord
+	area_index = -1 if sector_coord==Vector2i.ZERO else 0
+	game_mode = data.mode
+	descriptor = data.descriptor.duplicate(true)
+	if area_index!=-1:
+		field_root = Node3D.new()
+		field_root.position = sector_offset(sector_coord)
+		add_child(field_root)
+		var field: Arena = load("res://scripts/sectors/sector_arena.gd").new()
+		field.world = self
+		field.descriptor = descriptor
+		field_root.add_child(field)
+		if descriptor.get("special16", "") == "post" and Exploration16.special_allowed(sector_coord):
+			exp16.build_post(field_root)
+		arena = field
+		add_exits(field_root)
+	else: arena = base_arena; add_exits_again_for_base()
+	last_scene_revision = int(data.rev)
+
+func net_state(peer: int,include_bulk: bool = true) -> Dictionary:
+	if regions.enabled() and avatars.has(peer) and avatars[peer].region_coord!=sector_coord: return regions.run_in(avatars[peer].region_coord,func(): return net_state(peer,include_bulk))
+	var actors: Array = []
+	for id in avatars:
+		var actor: Node3D = avatars[id]
+		actors.append({"id":id,"ack":actor.input_ack,"velocity":actor.velocity,"name":actor.display_name,"class":actor.specialization,"cosmetic":actor.cosmetic,"outfit16":actor.outfit16.duplicate(),"pin":actor.pinned_left,"root18":actor.rooted_left18,"combat":actor.combat_left,"p":actor.position,"aim":actor.aim,"hp":actor.health.current,"max":actor.health.maximum,"gun":actor.weapons.hand_weapon,"held":actor.bag.hand(),"down":actor.health.dead,"gather":actor.gather_progress,"duration":actor.gather_duration,"kind":actor.gather_kind,"slow":actor.slow_left,"roll_count":actor.roll_count,"roll":actor.roll_left,"roll_cd":actor.roll_cooldown,"roll_dir":actor.roll_direction,"region":actor.region_coord,"swing":actor.weapons.swing_left,"motion":Vector2(actor.velocity.x,actor.velocity.z).length()/6.3,"reload":actor.weapons.reload_left,"reload_total":actor.weapons.reload_total,"recoil":actor.recoil})
+	var enemies: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if regions.enabled() and coord_at(enemy.global_position)!=sector_coord: continue
+		var motion: float = (enemy.ground_motion if enemy.stride_boss else
+			Vector2(enemy.velocity.x,enemy.velocity.z).length()/maxf(.1,float(enemy.spec.values.speed)))
+		enemies.append({"id":enemy.net_id,"k":enemy.enemy_kind,"p":enemy.global_position,"r":enemy.rig.rotation.y,"hp":enemy.health.current,"max":enemy.health.maximum,"boss":enemy.is_boss,"field":enemy.field_enemy,"title":enemy.spec.title,"spec":enemy.spec.id,"motion":motion,"melee":enemy.melee_left,"recoil":enemy.recoil,"rush":enemy.rush_left,"cast":enemy.windup,"attack18":enemy.boss18.attack if enemy.boss18 != null else "","time18":enemy.boss18.elapsed if enemy.boss18 != null else 0.0,"leap18":enemy.leap_left,"land18":enemy.landing18,"cast16":enemy.cast16 if enemy.spec.id=="titan16" else "","exposed16":enemy.exposed if enemy.spec.id=="titan16" else 0.0})
+	var structures: Array = []
+	for s in (get_tree().get_nodes_in_group("campaign_structure") if include_bulk and area_index==-1 else []):
+		if not s.has_meta("uid"): s.set_meta("uid",next_id())
+		structures.append({"id":s.get_meta("uid"),"piece":s.piece_index,"tier":s.tier,"p":s.position,"r":s.rotation.y,"hp":s.health.current,"max":s.health.maximum,"open":s.opened,"emp":s.disabled_left,"aim16":s.aim_pose()})
+	var loot: Array = []
+	for s in (get_tree().get_nodes_in_group("survival_sources") if include_bulk else []):
+		if regions.enabled() and coord_at(s.global_position)!=sector_coord: continue
+		if s.is_queued_for_deletion() or s.get_meta("airdrop",false) or s.has_meta("house_id"): continue
+		loot.append({"id":s.get_meta("uid"),"p":s.global_position,"contents":s.get_meta("contents",{}).duplicate(),"rare":s.has_meta("weapon"),"visible":s.visible,"boss":bool(s.get_meta("boss_drop",false))})
+	var hazards: Array = []
+	for group in ["campaign_projectiles","acid_pools"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if regions.enabled() and coord_at(node.global_position)!=sector_coord: continue
+			if not node.has_meta("uid"): node.set_meta("uid",next_id())
+			var visual := {"id":node.get_meta("uid"),"p":node.global_position,"pool":group=="acid_pools","warning":false,"radius":node.radius}
+			if group=="campaign_projectiles" and node.kind=="spore": visual.spore = true
+			if group=="campaign_projectiles" and node.kind=="defense_shell":
+				visual.shell16 = true; visual.direction16 = (node.destination-node.start).normalized()
+			hazards.append(visual)
+	for node in get_tree().get_nodes_in_group("boss_fx18"):
+		if not node.is_queued_for_deletion() and (not regions.enabled() or coord_at(node.global_position) == sector_coord):
+			hazards.append(node.state())
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if (not regions.enabled() or coord_at(enemy.global_position) == sector_coord) and enemy.windup > 0 and enemy.boss18 == null:
+			hazards.append({"id":-enemy.net_id,"p":enemy.cast_point,"pool":true,"warning":true,"radius":enemy.warning_radius(),"color":enemy.warning_color()})
+
+	return {"truce16":truce16.dump(),"visuals15":v15.visuals() if include_bulk else [],"mission16":rescue16.dump() if game_mode=="rescue" else {},"special16":{SectorGenerator.key(avatars[peer].region_coord):{"kind":exp16.kind_at(avatars[peer].region_coord),"stocks":exp16.sectors.get(SectorGenerator.key(avatars[peer].region_coord),{}).get("stocks",{}).duplicate()}},"systems15":v15.net_dump(include_bulk),"account_run_id":account_run_id,"run_totals":records.totals.duplicate(true) if include_bulk else {},"sector_times":sector_times() if include_bulk else {},"airdrops":airdrops.dump() if include_bulk else {},"rev":peer_revision(peer),"phase":phase,"mode":game_mode,"wave":waves.wave,"remaining":waves.remaining(),"running":waves.running,"clock":horde_left,"core_hp":core.health.current,"core_max":core.health.maximum,"core_tier":core_tier,"scrap":resources.scrap,"stock":stock.duplicate(),"depot":depot_items.duplicate() if include_bulk else {},"built":built_this_round,"level":resources.level,"xp":resources.xp,"pending":upgrades.pending_for(avatars[peer]),"offers":upgrades.current(avatars[peer]).get("offers",[]).duplicate(true),"progression16":upgrades.private_state(avatars[peer]),"paused16":combat_paused(),"interaction":interaction_hint(avatars[peer]),"mobile_context":mobile_context(avatars[peer]),"profile":actor_profile(avatars[peer]),"houses":get_tree().get_nodes_in_group("raid_houses").filter(func(house): return not house.is_queued_for_deletion() and field_root!=null and field_root.is_ancestor_of(house)).map(func(house): return house.dump()) if include_bulk else [],"players":actors,"enemies":enemies,"structures":structures,"loot":loot,"hazards":hazards,"notice":notice_for(peer),"dead":field_dead,"discovered":discovered.duplicate(true),"won":won,"reason":ending_reason}
+
+func apply_net_state(data: Dictionary,own_id: int) -> void:
+	if not data.get("mission16",{}).is_empty(): rescue16.apply(data.mission16)
+	for key in data.get("special16",{}): exp16.sectors[key] = data.special16[key].duplicate(true)
+	if data.has("systems15"): v15.restore(data.systems15)
+	if data.get("_bulk",true) and data.has("visuals15"): v15.apply_visuals(data.visuals15)
+	account_run_id = str(data.get("account_run_id",account_run_id))
+	if not data.get("run_totals",{}).is_empty():
+		records.totals = data.run_totals.duplicate(true)
+		account_run_id = str(data.get("account_run_id",account_run_id))
+	if not is_client or int(data.rev)!=last_scene_revision: return
+	if player.peer_id!=own_id:
+		avatars.erase(1)
+		player.peer_id = own_id
+		avatars[own_id] = player
+	remote_interaction_hint = data.get("interaction","")
+	remote_mobile_context = data.get("mobile_context",{}).duplicate(true)
+	phase = data.phase
+	game_mode = data.mode
+	waves.wave = int(data.wave)
+	waves.running = data.running
+	waves.to_spawn = int(data.remaining)
+	horde_left = data.clock
+	truce16.restore(data.get("truce16",{}))
+	core.health.maximum = data.core_max
+	core.health.current = data.core_hp
+	if core_tier!=int(data.core_tier):
+		var raised := int(data.core_tier) > core_tier
+		core_tier = int(data.core_tier)
+		refresh_core_model()
+		if raised and client_scene_ready and player.region_coord == Vector2i.ZERO:
+			audio.play_cue(GameAudio.Cue.CORE_UPGRADE)
+	resources.scrap = int(data.scrap)
+	stock = data.stock.duplicate()
+	depot_items = data.depot.duplicate()
+	built_this_round = int(data.built)
+	resources.level = int(data.level)
+	resources.xp = int(data.xp)
+	resources.pending = int(data.pending)
+	upgrades.offers = data.offers.duplicate(true)
+	upgrades.remote_paused = bool(data.get("paused16",false))
+	var private_progress: Dictionary = data.get("progression16",{})
+	player.profile_id = str(private_progress.get("identity",player.profile_id))
+	upgrades.players[player.profile_id] = {"levels":private_progress.get("levels",{}).duplicate(),"queue":[private_progress.choice.duplicate(true)] if not private_progress.get("choice",{}).is_empty() else [],"through":int(private_progress.get("through",0)),"deferred":bool(private_progress.get("deferred",false))}
+	upgrades.levels = private_progress.get("levels",{}).duplicate()
+	field_dead = int(data.dead)
+	discovered = data.discovered.duplicate(true)
+	remote_sector_times = data.get("sector_times",{}).duplicate()
+	if data.get("_bulk",true) and AirdropDirector.valid(data.get("airdrops")):
+		airdrops.left = float(data.airdrops.left); airdrops.serial = int(data.airdrops.serial); airdrops.state = data.airdrops.state.duplicate(true)
+		airdrops.ensure_crate()
+	if not data.notice.is_empty(): notice = data.notice; notice_left = .25
+	if valid_profile(data.profile):
+		restore_profile(player,data.profile)
+		if pending_slot>=0:
+			if int(data.profile.bag.selected)==pending_slot: pending_slot = -1
+			else: player.bag.selected = pending_slot
+	for house_state in (data.get("houses",[]) if data.get("_bulk",true) else []):
+		var house := raid_house(int(house_state.id))
+		if house!=null: house.apply_state(house_state)
+	var seen := {}
+	for state in data.players:
+		var id := int(state.id)
+		seen[id] = true
+		if not avatars.has(id):
+			var actor := CharacterBody3D.new()
+			actor.set_script(load("res://scripts/survival/survivor.gd"))
+			actor.world = self
+			actor.peer_id = id
+			actor.display_name = state.name
+			actor.proxy = true
+			actor.weapons.free()
+			actor.weapons = weapon_script().new()
+			actor.position = state.p
+			add_child(actor)
+			avatars[id] = actor
+		var actor: Node3D = avatars[id]
+		actor.region_coord = state.get("region",sector_coord)
+		var class_id := str(state.get("class", "engineer"))
+		var outfit: Dictionary = state.get("outfit16", {})
+		if id == own_id:
+			var equipped := Meta16.outfit(class_id)
+			if outfit != equipped and Time.get_ticks_msec() >= outfit_retry_at:
+				send_local_outfit(equipped)
+			outfit = equipped
+		apply_appearance(actor, class_id, int(state.get("cosmetic", 0)), outfit)
+		actor.pinned_left = float(state.get("pin",0)); actor.combat_left = float(state.get("combat",0))
+		actor.weapons.swing_left = maxf(actor.weapons.swing_left,float(state.get("swing",0)))
+		actor.target_position = state.p
+		if actor!=player or not prediction.enabled():
+			if actor.position.distance_to(state.p)>15: actor.position = state.p
+			SnapshotTrack.push(actor,state.p,Time.get_ticks_msec()*.001)
+		if actor!=player or not prediction.enabled(): actor.aim = state.aim
+		actor.health.maximum = state.max
+		actor.health.current = state.hp
+		actor.health.dead = state.down
+		actor.rig.rotation.z = PI*.5 if state.down else 0
+		actor.gather_progress = state.gather
+		actor.gather_duration = state.duration
+		actor.gather_kind = state.kind
+		actor.slow_left = float(state.get("slow",0))
+		actor.authoritative_roll_count = int(state.get("roll_count",0))
+		# The predicted local roll is reconciled with its pending inputs in physics.
+		# Writing a stale snapshot here erases it between physics and rendering.
+		if actor!=player or not prediction.enabled():
+			actor.rooted_left18 = float(state.get("root18",0.0))
+			actor.roll_left = float(state.get("roll",0))
+			actor.roll_cooldown = float(state.get("roll_cd",0))
+			actor.roll_direction = state.get("roll_dir",Vector3.FORWARD)
+		if state.down: actor.stop_roll()
+		if actor==player: prediction.queue_reconcile(state)
+		actor.replica_motion = float(state.get("motion",0))
+		actor.weapons.reload_left = float(state.get("reload",0))
+		actor.weapons.reload_total = float(state.get("reload_total",1))
+		actor.recoil = float(state.get("recoil",0))
+		actor.weapons.hand_weapon = int(state.gun)
+		actor.weapons.visual_item = state.get("held","")
+		if actor.weapons.last_model!=actor.weapons.hand_weapon or actor.weapons.last_item!=actor.weapons.visual_item: actor.weapons.rebuild_model()
+	for id in avatars.keys():
+		if not seen.has(id): avatars[id].queue_free(); avatars.erase(id)
+	seen.clear()
+	for state in data.enemies:
+		var id := int(state.id)
+		seen[id] = true
+		if not client_enemies.has(id):
+			# Several bosses share kind 8. Resolve the actual rig and hitbox before _ready.
+			var stage_before := restoring_boss_stage
+			if int(state.k) == 8:
+				restoring_boss_stage = SectorGenerator.BOSS_IDS.find(state.get("spec", "")) + 1
+			var enemy: Node3D = make_enemy(int(state.k),Vector3.ZERO,false,-1)
+			restoring_boss_stage = stage_before
+			enemy.proxy = true
+			enemy.remove_from_group("wave_enemies")
+			enemy.set_physics_process(false)
+			enemy.collision_mask = 0
+			enemy.position = state.p
+			client_enemies[id] = enemy
+		var enemy: Node3D = client_enemies[id]
+		enemy.net_id = id
+		enemy.field_enemy = state.field
+		enemy.set_meta("target",state.p)
+		enemy.set_meta("target_rotation",state.r)
+		SnapshotTrack.push(enemy,state.p,Time.get_ticks_msec()*.001)
+		enemy.health.maximum = state.max
+		enemy.replica_motion = float(state.get("motion",0))
+		enemy.windup = float(state.get("cast",0))
+		enemy.leap_left = float(state.get("leap18",0.0))
+		enemy.landing18 = float(state.get("land18",0.0))
+		if enemy.boss18 != null:
+			enemy.boss18.attack = state.get("attack18","")
+			enemy.boss18.elapsed = float(state.get("time18",0.0))
+		if enemy.spec.id=="titan16": enemy.cast16 = str(state.get("cast16","")); enemy.exposed = float(state.get("exposed16",0))
+		enemy.melee_left = float(state.get("melee",0)); enemy.recoil = float(state.get("recoil",0)); enemy.rush_left = float(state.get("rush",0))
+		enemy.health.current = state.hp
+		if enemy.spec.id!=str(state.get("spec",enemy.spec.id)):
+			enemy.spec.id = state.spec
+			enemy.refresh_quality()
+		enemy.spec.title = state.title
+		enemy.label.hide()
+	for id in client_enemies.keys():
+		if not seen.has(id): client_enemies[id].queue_free(); client_enemies.erase(id)
+	seen.clear()
+	for state in (data.structures if data.get("_bulk",true) else []):
+		var id := int(state.id)
+		seen[id] = true
+		if not client_structures.has(id):
+			var s := StaticBody3D.new()
+			s.set_script(structure_script())
+			s.world = self
+			s.piece_index = int(state.piece)
+			s.position = state.p
+			s.rotation.y = state.r
+			base_root.add_child(s)
+			s.set_physics_process(false)
+			client_structures[id] = s
+		var s: Node3D = client_structures[id]
+		s.tier = int(state.tier)
+		if s.has_method("refresh_visual"): s.refresh_visual()
+		if s.has_method("apply_aim_pose"): s.apply_aim_pose(state.get("aim16",Vector2.ZERO))
+		s.health.maximum = state.max
+		s.health.current = state.hp
+		s.opened = state.open
+		s.disabled_left = float(state.get("emp",0))
+		s.label.text = "EMP · %.1f s" % s.disabled_left if s.disabled_left>0 else "%s N%d · %d/%d" % [s.spec.title,s.tier,ceili(s.health.current),ceili(s.health.maximum)]
+		s.label.visible = s.disabled_left>0 or s.health.current<s.health.maximum or s.position.distance_to(player.position)<5
+		s.collision_layer = 0 if state.open or FortressData.passable(s.spec.id) else 8
+		if s.has_method("set_open_visual"): s.set_open_visual()
+		else: s.model.position.y = -1.65 if state.open else 0
+	for id in client_structures.keys():
+		if data.get("_bulk",true) and not seen.has(id): client_structures[id].queue_free(); client_structures.erase(id)
+	seen.clear()
+	for state in (data.loot if data.get("_bulk",true) else []):
+		var id := int(state.id)
+		seen[id] = true
+		var model_id: String = str(state.contents.keys()[0]) if not state.contents.is_empty() else "cells"
+		if client_loot.has(id) and client_loot[id].get_meta("item","")!=model_id:
+			client_loot[id].queue_free(); client_loot.erase(id)
+		if not client_loot.has(id):
+			var model_path := "res://assets/models/"+("weapon_" if model_id in ItemBag.WEAPON_IDS else "item_")+model_id+".tscn"
+			client_loot[id] = load(model_path).instantiate()
+			add_child(client_loot[id])
+			client_loot[id].set_meta("item",model_id)
+		client_loot[id].set_meta("contents",state.contents.duplicate())
+		if state.get("boss",false) and not client_loot[id].has_node("BossReward"):
+			var ring := VisualFactory.ring(client_loot[id],.7,Vector3(0,-.22,0),Color("efc86d")); ring.name = "BossReward"
+		client_loot[id].visible = state.visible
+		client_loot[id].position = state.p+Vector3(0,.3,0)
+	for id in client_loot.keys():
+		if data.get("_bulk",true) and not seen.has(id): client_loot[id].queue_free(); client_loot.erase(id)
+	seen.clear()
+	for state in data.hazards:
+		var id := int(state.id)
+		seen[id] = true
+		if not client_hazards.has(id):
+			if state.has("fx18"):
+				var visual := BossFx18.from_state(self,state)
+				add_child(visual)
+				client_hazards[id] = visual
+			elif state.get("shell16",false): client_hazards[id] = VisualFactory.box(self,Vector3(.38,.38,.84),Vector3.ZERO,Color("e1af64"),true)
+			elif state.get("spore",false):
+				client_hazards[id] = VisualFactory.box(self,Vector3(.23,.23,.4),Vector3.ZERO,Color("bf83d4"),true)
+			elif state.get("warning",false): client_hazards[id] = VisualFactory.ring(self,state.radius,Vector3.ZERO,state.get("color",Color("e67f5f")))
+			else: client_hazards[id] = VisualFactory.cylinder(self,state.radius if state.pool else .15,.04 if state.pool else .25,Vector3.ZERO,Color("9dc45f") if state.pool else Color("e1af64"))
+		client_hazards[id].position = state.p
+		if state.get("shell16",false) and state.get("direction16",Vector3.ZERO).length_squared()>.001: client_hazards[id].look_at(state.p+state.direction16)
+	for id in client_hazards.keys():
+		if not seen.has(id): client_hazards[id].queue_free(); client_hazards.erase(id)
+	if data.get("_bulk",true): client_scene_ready = true
+	if phase=="ended" and hud.mode!="result": won = data.won; ending_reason = data.reason; hud.show_result()
+
+func shot_visual(from: Vector3,to: Vector3,color: Color,local: bool = true) -> void:
+	if local: effects.tracer(from,to,color); effects.flash(from)
+	if network!=null and network.mode=="host": network.shot_event(from,to,color)
+
+func frost_blast(point: Vector3) -> void:
+	effects.burst(point,Color("8bd8ef"),14)
+	for actor in avatars.values():
+		if not actor.health.dead and actor.position.distance_to(point)<4.5:
+			actor.slow_left = maxf(actor.slow_left,5)
+			actor.take_damage((8+waves.wave)*v15.day.damage_factor())
+
+func emp_blast(point: Vector3) -> void:
+	effects.burst(point,Color("9aabf0"),14)
+	for structure in get_tree().get_nodes_in_group("campaign_structure"):
+		if FortressData.turret(structure.spec.id) and structure.global_position.distance_to(point)<8: structure.disabled_left = maxf(structure.disabled_left,5)
+
+func collect_ground(actor: Node3D,source: Node3D) -> bool:
+	if is_client or phase=="ended" or actor.health.dead or not is_instance_valid(source) or source.is_queued_for_deletion() or not source.get_meta("auto",false) or actor.global_position.distance_to(source.global_position)>=1.65: return false
+	var contents: Dictionary = source.get_meta("contents",{})
+	var moved := false
+	for id in contents.keys():
+		var taken: int = actor.bag.add(id,int(contents[id]))
+		if taken<=0: continue
+		if id=="scrap" and source.get_meta("world_origin",true): records.credit(record_identity(actor.peer_id),"scrap",taken)
+		contents[id] -= taken
+		if contents[id]<=0: contents.erase(id)
+		if id in ItemBag.WEAPON_IDS:
+			var index := ItemBag.WEAPON_IDS.find(id)
+			actor.weapons.ammo[index] = clampi(int(source.get_meta("loaded",0)),0,actor.weapons.capacity(index))
+		moved = true
+	var xp: int = source.get_meta("xp",0)
+	if xp>0: source.set_meta("xp",0); resources.add_loot(xp,0); moved = true
+	var power: String = source.get_meta("power","")
+	if not power.is_empty(): source.set_meta("power",""); actor.grant_power(power); moved = true
+	if contents.is_empty(): source.hide()
+	exp16.loot_changed(source)
+	actor.weapons.sync_hand()
+	return moved
+
+func refresh_core_model() -> void:
+	var tier := clampi(core_tier, 1, CORE_MESHES.size())
+	var placeholder_parts: Array[Node] = []
+	if not is_instance_valid(core_visual):
+		placeholder_parts = core.model.get_children()
+		core_visual = MeshInstance3D.new()
+		core_visual.name = "CoreVisual"
+
+	# The registered renderer instance stays in the world throughout upgrades and saves.
+	core_visual.mesh = CORE_MESHES[tier - 1]
+	core_visual.set_surface_override_material(0, CORE_MATERIAL)
+	core_visual.set_meta("tier", tier)
+	core_visual.show()
+	if core_visual.get_parent() == null:
+		core.model.add_child(core_visual)
+	for child in placeholder_parts:
+		core.model.remove_child(child)
+		child.queue_free()
+
+func defense_shell(from: Vector3,to: Vector3,power: float,radius: float) -> Node3D:
+	if is_client or get_tree().get_nodes_in_group("campaign_projectiles").size()>=48: return null
+	var shell := Node3D.new(); shell.set_script(load("res://scripts/fortress/defense_shell.gd"))
+	shell.world = self; shell.kind = "defense_shell"; shell.start = from; shell.destination = to
+	shell.damage = power; shell.radius = radius; shell.life = .24; shell.set_meta("uid",next_id())
+	add_child(shell)
+	return shell
+
+func defense_blast(point: Vector3,radius: float,power: float) -> void:
+	if is_client: return
+	explosive15 = true
+	effects.burst(point,Color("e8b675"),16)
+	if network!=null and network.mode=="host": network.blast_event(point,radius)
+	for enemy in get_tree().get_nodes_in_group("enemies")+get_tree().get_nodes_in_group("enemy_nests"):
+		var target: Vector3 = enemy.global_position+Vector3(0,enemy.aim_height,0)
+		if target.distance_to(point)>radius: continue
+		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(point+Vector3.UP*.25,target,1|8))
+		if hit.is_empty(): enemy.take_damage(power)
+
+	explosive15 = false
+
+func prepare_sector_descriptor(data: Dictionary) -> Dictionary:
+	return HouseLayout.populate(airdrops.decorate(data),waves.wave)
+
+func valid_fortification(entry: Variant) -> bool:
+	if not entry is Dictionary or (entry.has("fused") and not entry.fused is bool): return false
+	for key in ["piece","tier","hp","pos","angle","open","invested"]:
+		if not entry.has(key): return false
+	if not bounded(entry.piece,0,FortressData.pieces().size()-1) or int(entry.piece)!=entry.piece or not bounded(entry.tier,1,3) or int(entry.tier)!=entry.tier or not point_valid(entry.pos) or not bounded(entry.angle,0,TAU) or not entry.open is bool or not entry.invested is Dictionary: return false
+	var data: Dictionary = FortressData.pieces()[int(entry.piece)]
+	if not bounded(entry.hp,.01,data.health*(1+.65*(entry.tier-1))*(1+float(entry.get("alloy16",0)))+.001): return false
+	if entry.open and data.id!="gate": return false
+	for id in ["scrap","wood","parts"]:
+		if not entry.invested.has(id) or not bounded(entry.invested[id],0,100000): return false
+	return true
+
+func _notification(what: int) -> void:
+	if not MobilePlatform.enabled() or not is_instance_valid(hud): return
+	if what==NOTIFICATION_WM_GO_BACK_REQUEST:
+		if phase=="ended": hud.menu()
+		elif not hud.mode.is_empty(): hud.close_modal()
+		else: hud.show_pause()
+
+func apply_mobile_quality() -> void:
+	MobilePlatform.apply_quality(self)
+	ENEMY_MODELS.warm_render(self)
+
+func open_shop() -> void:
+	if exp16.interact(player) or (is_client and local_mobile_context().get("post16",false)):
+		if hud.mode.is_empty(): hud.show_post16()
+		return
+	super.open_shop()
+
+func interaction_hint(actor: Node3D) -> String:
+	if v15.event_interactable(actor): return "COLETAR"
+	for i in range(4):
+		if local_position(actor).distance_to(SectorGenerator.EXITS[i])<3.7: return "VIAJAR"
+	for other in avatars.values():
+		if other!=actor and other.health.dead and actor.position.distance_to(other.position)<2.8 and actor.bag.count("medkit")>0: return "REANIMAR"
+	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): return "GUARDAR"
+	if nearest_source(actor)!=null: return "COLETAR"
+	if area_index==-1 and phase=="prep":
+		for structure in get_tree().get_nodes_in_group("buildings"):
+			if not structure.health.dead and structure.health.current<structure.health.maximum and actor.position.distance_to(structure.global_position)<2.8: return "REPARAR"
+	return ""
+
+func mobile_context(actor: Node3D) -> Dictionary:
+	if regions.enabled() and actor.region_coord!=sector_coord: return regions.run_in(actor.region_coord,func(): return mobile_context(actor))
+	if actor.health.dead or phase=="ended": return {}
+	var preparing := sector_coord==Vector2i.ZERO and area_index==-1 and phase=="prep" and not waves.running
+	var at_post := exp16.interact(actor)
+	var collect := "NEGOCIAR" if at_post else "COLETAR" if v15.event_interactable(actor) else ""
+	if area_index==-1 and actor.position.distance_to(core.position)<4 and has_materials(actor.bag): collect = "GUARDAR"
+	elif nearest_source(actor)!=null: collect = "COLETAR"
+	var nearest: Node3D
+	var distance := 4.5
+	var gate := false
+	for structure in get_tree().get_nodes_in_group("buildings"):
+		if structure.is_queued_for_deletion() or structure.health.dead: continue
+		var d: float = actor.position.distance_to(structure.global_position)
+		if d<distance: nearest = structure; distance = d
+		if structure.spec.id=="gate" and d<4: gate = true
+	var upgrade := {}
+	if preparing and nearest!=null:
+		var tier: int = core_tier if nearest==core else nearest.tier
+		if tier<(4 if nearest==core else 3):
+			upgrade = {"title":nearest.spec.title,"tier":tier,"cost":{"scrap":75*tier,"wood":10*tier,"parts":5*tier} if nearest==core else nearest.upgrade_cost()}
+	var hint := interaction_hint(actor)
+	if at_post: collect = "NEGOCIAR"
+	return {"post16":at_post,"build":preparing,"collect":collect,"upgrade":upgrade,"shop":at_post or (preparing and "no_vendor" not in v15.mutators and actor.position.distance_to(vendor_pos)<=5),"travel":hint=="VIAJAR","revive":hint=="REANIMAR","heal":heal_target(actor)!=null,"repair":hint=="REPARAR","gate":gate}
+
+func local_mobile_context() -> Dictionary:
+	if is_client: return remote_mobile_context if client_scene_ready else {}
+	return mobile_context(player)
+
+func local_position(actor: Node3D) -> Vector3:
+	return actor.position-sector_offset(actor.region_coord if regions.enabled() else sector_coord)
+
+func _physics_process(_delta: float) -> void:
+	if is_client: prediction.tick()
+
+func update_client_camera(delta: float) -> void:
+	# Follow the same displayed position as the local model, not a corrected collider.
+	var displayed: Vector3 = player.position+player.presentation_offset
+	var origin := sector_offset(sector_coord)
+	var target: Vector3 = origin+(displayed-origin)*.82
+	var focus: Vector3 = (camera.position-camera_offset).lerp(target,1-exp(-delta*5))
+	camera.position = focus+camera_offset
+	# Smooth translation and gaze together; packet corrections must not tilt the world.
+	camera.look_at(focus)
+
+func allow_enemy_think(enemy: Node3D) -> bool:
+	var tick := Engine.get_physics_frames()
+	if ai_frame!=tick: ai_frame = tick; ai_budget = 0
+	if int(enemy.get_instance_id()%4)!=int(tick%4) or ai_budget>=4: return false
+	ai_budget += 1
+	return true
+
+func combat_paused() -> bool:
+	return upgrades.paused() and phase!="ended"
+
+func coord_at(point: Vector3) -> Vector2i:
+	return Vector2i(roundi(point.x/120),roundi(point.z/120))
+func peer_revision(peer: int) -> int:
+	return avatars[peer].region_revision if regions.enabled() and avatars.has(peer) else scene_revision
+func actor_revision(actor: Node3D) -> int:
+	return peer_revision(actor.peer_id)
+func region_at(point: Vector3) -> String:
+	return SectorGenerator.key(coord_at(point)) if regions.enabled() else super.region_at(point)
+func region_active(key: String) -> bool:
+	if not regions.enabled(): return super.region_active(key)
+	var parts := key.split(":")
+	return parts.size()==2 and regions.has(Vector2i(int(parts[0]),int(parts[1])))
+func route_for_enemy(enemy: Node3D,target: Vector3) -> PackedVector2Array:
+	if regions.enabled() and enemy.field_enemy and coord_at(enemy.global_position)!=sector_coord: return regions.run_in(coord_at(enemy.global_position),func(): return route_for_enemy(enemy,target))
+	return super.route_for_enemy(enemy,target)
+func field_alive() -> int:
+	if not regions.enabled(): return super.field_alive()
+	return get_tree().get_nodes_in_group("enemies").filter(func(e): return e.field_enemy and is_instance_valid(field_root) and field_root.is_ancestor_of(e)).size()
+func bump_region_revision(coord: Vector2i) -> void:
+	if not regions.enabled(): scene_revision += 1; return
+	for actor in avatars.values():
+		if actor.region_coord==coord: actor.region_revision += 1
+	scene_revision = avatars[1].region_revision
+
+func rescale_regions() -> void:
+	if not regions.enabled():
+		if area_index!=-1: scale_field_population()
+		return
+	regions.initialize()
+	for coord in regions.sessions.keys():
+		if coord!=Vector2i.ZERO: regions.run_in(coord,scale_field_population)
+
+func notice_for(peer: int) -> String:
+	var entry: Dictionary = private_notices.get(peer,{})
+	if not entry.is_empty() and Time.get_ticks_msec()<int(entry.expires): return entry.text
+	return notice if notice_left>0 else ""
+func private_notice(peer: int,text: String) -> void:
+	private_notices[peer] = {"text":text,"expires":Time.get_ticks_msec()+4000}
+
+func record_identity(peer: int) -> String:
+	if peer==0 or not avatars.has(peer): return "team_defenses"
+	return "host" if peer==1 else str(avatars[peer].profile_id)
+
+func record_victory(wave: int) -> void:
+	var participants: Array = []
+	for peer in avatars:
+		if not avatars[peer].health.dead: participants.append(record_identity(peer))
+	records.victory(wave,participants)
+	sync_account_progress()
+	Account.flush_progress()
+
+func sync_account_progress() -> void:
+	if not is_instance_valid(player) or not Account.signed_in() or (is_client and not client_scene_ready): return
+	if account_identity!=Account.user_id:
+		account_identity = Account.user_id; account_baseline = true
+	var identity := record_identity(player.peer_id)
+	# Late login and loaded legacy saves start at the current totals.
+	var key := account_run_id+":"+identity
+	Account.record_progress(key,records.totals.get(identity,{}),account_baseline)
+	account_baseline = false
+
+func _exit_tree() -> void:
+	Meta16.release_world(self)
+	sync_account_progress()
+	Account.persist()
+	Account.flush_progress()
+	super._exit_tree()
+
+func tune_weapon() -> bool:
+	if is_client or not local_mobile_context().get("shop",false): return false
+	var index: int = player.weapons.hand_weapon
+	if index<0 or player.weapons.tuning[index]>=3: return false
+	var tier: int = player.weapons.tuning[index]
+	if not pay({"scrap":[80,180,360][tier],"parts":[2,5,10][tier]}): return false
+	player.weapons.tuning[index] += 1
+	notify("OFICINA · "+Arsenal.WEAPONS[index].title+" melhorada. Dano, cadência, capacidade e recarga aprimorados.")
+	return true
+
+func improve_nearby() -> bool:
+	if not base_preparing(): return false
+	var target := nearest_structure()
+	return target!=null and channel15.start(player,"upgrade",target,{"tier":core_tier if target==core else target.tier})
+
+func commit_upgrade() -> bool:
+	var target := nearest_structure()
+	var result := super.improve_nearby()
+	if result:
+		if target == core:
+			audio.play_cue(GameAudio.Cue.CORE_UPGRADE)
+		else:
+			mark_alloy16(target,player)
+	return result
+
+func mark_alloy16(structure: Node3D,actor: Node3D) -> void:
+	var bonus := Catalog16.bonus(actor,"eng_alloy")
+	if bonus<=float(structure.get_meta("alloy16",0)): return
+	var fraction: float = structure.health.current/maxf(1,structure.health.maximum)
+	structure.set_meta("alloy16",bonus); structure.set_meta("builder16",actor.profile_id)
+	structure.refresh_tier(); structure.health.current = structure.health.maximum*fraction
+
+func extract_solo15(actor: Node3D) -> void:
+	if field_root!=null:
+		remember_sector(); clear_region_hazards(SectorGenerator.key(sector_coord)); remove_child(field_root); field_root.queue_free(); field_root = null
+	caches.clear(); claimed.clear(); descriptor.clear(); field_queue.clear(); sector_coord = Vector2i.ZERO; actor.region_coord = Vector2i.ZERO
+	area_index = -1; arena = base_arena; phase = "combat" if waves.running else "prep"; add_exits_again_for_base()
+	actor.position = Vector3(4,0,4); actor.velocity = Vector3.ZERO; actor.invulnerable = 1
+	camera.position = actor.position+camera_offset; camera.look_at(actor.position); scene_revision += 1
+
+func repair_for15(actor: Node3D,target: Node3D) -> bool:
+	if not base_preparing() or target.health.dead or target.health.current>=target.health.maximum: return false
+	var price := ceili(float(target.spec.values.repair_cost)*(.85 if actor.specialization=="engineer" else 1.0)*(1-Catalog16.bonus(actor,"eng_economy")))
+	if not resources.spend(price): return false
+	target.health.heal(float(target.spec.values.repair_amount)); return true
+
+func hit_enemy16(enemy: Node3D,point: Vector3,power: float) -> void:
+	damage_point16 = point; enemy.take_damage(power); damage_point16 = Vector3.INF

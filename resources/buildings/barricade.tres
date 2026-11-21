@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "barricade"
+title = "Barricada"
+color = Color(0.64, 0.43, 0.25, 1)
+values = {
+"health": 180.0,
+"cost": 25,
+"radius": 1.05,
+"repair_cost": 8,
+"repair_amount": 65.0
+}

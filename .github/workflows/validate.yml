@@ -1,0 +1,421 @@
+name: Validate and build Zombie Bloom
+
+on:
+  push:
+    branches: [main, 'feat/**', 'release/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GODOT_VERSION: 4.6.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned official Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          echo 'd0bc2113065e481c9c2c2b2c37daa4e8be3fe9e27f0ab9ab0b6096e9a37907f3  /tmp/godot.zip' | sha256sum --check
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_*
+          echo /tmp/godot >> "$GITHUB_PATH"
+          ln -s "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /tmp/godot/godot
+      - name: Import project and run integration suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|ERROR:' import.log; then exit 1; fi
+          timeout 120s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:' tests.log; then exit 1; fi
+          grep -E 'RESULT: [0-9]+ checks, 0 failures' tests.log
+          timeout 120s godot --headless --path . --script res://tests/campaign_tests.gd 2>&1 | tee campaign-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' campaign-tests.log; then exit 1; fi
+          grep -E 'CAMPAIGN RESULT: [0-9]+ checks, 0 failures' campaign-tests.log
+          timeout 120s godot --headless --path . --script res://tests/defense_tests.gd 2>&1 | tee defense-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' defense-tests.log; then exit 1; fi
+          grep -E 'DEFENSE RESULT: [0-9]+ checks, 0 failures' defense-tests.log
+          timeout 120s godot --headless --path . --script res://tests/sectors_tests.gd 2>&1 | tee sectors-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' sectors-tests.log; then exit 1; fi
+          grep -E 'SECTORS RESULT: [0-9]+ checks, 0 failures' sectors-tests.log
+          timeout 120s godot --headless --path . --script res://tests/survival_tests.gd 2>&1 | tee survival-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' survival-tests.log; then exit 1; fi
+          grep -E 'SURVIVAL RESULT: [0-9]+ checks, 0 failures' survival-tests.log
+          timeout 120s godot --headless --path . --script res://tests/arsenal_tests.gd 2>&1 | tee arsenal-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' arsenal-tests.log; then exit 1; fi
+          grep -E 'ARSENAL RESULT: [0-9]+ checks, 0 failures' arsenal-tests.log
+          timeout 120s godot --headless --path . --script res://tests/fortress_tests.gd 2>&1 | tee fortress-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' fortress-tests.log; then exit 1; fi
+          grep -E 'FORTRESS RESULT: [0-9]+ checks, 0 failures' fortress-tests.log
+          timeout 120s godot --headless --path . --script res://tests/roll_tests.gd 2>&1 | tee roll-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' roll-tests.log; then exit 1; fi
+          grep -E 'ROLL RESULT: [0-9]+ checks, 0 failures' roll-tests.log
+          timeout 120s godot --headless --path . --script res://tests/clay_tests.gd 2>&1 | tee clay-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' clay-tests.log; then exit 1; fi
+          grep -E 'CLAY RESULT: [0-9]+ checks, 0 failures' clay-tests.log
+          timeout 120s godot --headless --path . --script res://tests/internet_tests.gd 2>&1 | tee internet-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' internet-tests.log; then exit 1; fi
+          grep -E 'INTERNET RESULT: [0-9]+ checks, 0 failures' internet-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_tests.gd 2>&1 | tee mobile-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-tests.log; then exit 1; fi
+          grep -E 'MOBILE RESULT: [0-9]+ checks, 0 failures' mobile-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_targeting_tests.gd 2>&1 | tee targeting-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' targeting-tests.log; then exit 1; fi
+          grep -E 'TARGETING RESULT: [0-9]+ checks, 0 failures' targeting-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_performance_tests.gd 2>&1 | tee mobile-performance-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-performance-tests.log; then exit 1; fi
+          grep -E 'MOBILE PERFORMANCE RESULT: [0-9]+ checks, 0 failures' mobile-performance-tests.log
+          timeout 120s godot --headless --verbose --path . --script res://tests/progression_tests.gd 2>&1 | tee progression-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' progression-tests.log; then exit 1; fi
+          grep -E 'PROGRESSION RESULT: [0-9]+ checks, 0 failures' progression-tests.log
+          timeout 120s godot --headless --path . --script res://tests/mobile_experience_tests.gd 2>&1 | tee mobile-experience-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' mobile-experience-tests.log; then exit 1; fi
+          grep -E 'MOBILE EXPERIENCE RESULT: [0-9]+ checks, 0 failures' mobile-experience-tests.log
+          timeout 120s godot --headless --path . --script res://tests/frontier_features_tests.gd 2>&1 | tee frontier-features-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' frontier-features-tests.log; then exit 1; fi
+          grep -E 'FRONTIER FEATURES RESULT: [0-9]+ checks, 0 failures' frontier-features-tests.log
+          timeout 120s godot --headless --path . --script res://tests/online_preparation_tests.gd 2>&1 | tee online-preparation-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' online-preparation-tests.log; then exit 1; fi
+          grep -E 'ONLINE PREPARATION RESULT: [0-9]+ checks, 0 failures' online-preparation-tests.log
+          timeout 120s godot --headless --path . --script res://tests/account_tests.gd 2>&1 | tee account-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-tests.log; then exit 1; fi
+          grep -E 'ACCOUNT RESULT: [0-9]+ checks, 0 failures' account-tests.log
+          timeout 120s godot --headless --path . --script res://tests/session_tests.gd 2>&1 | tee session-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' session-tests.log; then exit 1; fi
+          grep -E 'SESSION RESULT: [0-9]+ checks, 0 failures' session-tests.log
+          timeout 120s godot --headless --path . --script res://tests/account_world_tests.gd 2>&1 | tee account-world-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' account-world-tests.log; then exit 1; fi
+          grep -E 'ACCOUNT WORLD RESULT: [0-9]+ checks, 0 failures' account-world-tests.log
+          timeout 120s godot --headless --path . --script res://tests/rank_combat_tests.gd 2>&1 | tee rank-combat-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' rank-combat-tests.log; then exit 1; fi
+          grep -E 'RANK COMBAT RESULT: [0-9]+ checks, 0 failures' rank-combat-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release15_tests.gd 2>&1 | tee release15-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release15-tests.log; then exit 1; fi
+          grep -E 'RELEASE15 RESULT: [0-9]+ checks, 0 failures' release15-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release15_encounters_tests.gd 2>&1 | tee release15-encounters-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release15-encounters-tests.log; then exit 1; fi
+          grep -E 'RELEASE15 ENCOUNTERS RESULT: [0-9]+ checks, 0 failures' release15-encounters-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release16_progression_tests.gd 2>&1 | tee release16-progression-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-progression-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 PROGRESSION RESULT: [0-9]+ checks, 0 failures' release16-progression-tests.log
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/release16_ui_tests.gd "${args[@]}" 2>&1 | tee "release16-ui-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release16-ui-${platform}.log"; then exit 1; fi
+            grep -E 'RELEASE16 UI RESULT: [0-9]+ checks, 0 failures' "release16-ui-${platform}.log"
+          done
+          for players in 2 3 4; do
+            python3 tests/run_release16_coop_test.py --players "$players" 2>&1 | tee "release16-coop-${players}.log"
+          done
+          timeout 120s godot --headless --path . --script res://tests/release16_content_tests.gd 2>&1 | tee release16-content-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-content-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 CONTENT RESULT: [0-9]+ checks, 0 failures' release16-content-tests.log
+          timeout 120s godot --headless --path . --script res://tests/release16_meta_tests.gd 2>&1 | tee release16-meta-tests.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' release16-meta-tests.log; then exit 1; fi
+          grep -E 'RELEASE16 META RESULT: [0-9]+ checks, 0 failures' release16-meta-tests.log
+          python3 tests/run_release16_coop_test.py --players 4 --script release16_rescue_coop_test.gd 2>&1 | tee release16-rescue-coop.log
+          python3 tests/run_coop_test.py 2>&1 | tee coop-tests.log
+          python3 tests/run_motion_test.py 2>&1 | tee motion-tests.log
+          python3 tests/run_split_test.py 2>&1 | tee split-tests.log
+      - name: Validate 1.6 diversion, trophy and defense additions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/release16_additions_tests.gd 2>&1 | tee release16-additions.log
+          if grep -E "SCRIPT ERROR:|ERROR:|FAIL:|WARNING: ObjectDB" release16-additions.log; then exit 1; fi
+          grep -E "RELEASE16 ADDITIONS RESULT: [0-9]+ checks, 0 failures" release16-additions.log
+      - name: Validate the campaign journal and core upgrades on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/release17_campaign_tests.gd "${args[@]}" 2>&1 | tee "release17-campaign-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "release17-campaign-${platform}.log"; then exit 1; fi
+            grep -E 'RELEASE17 CAMPAIGN RESULT: [0-9]+ checks, 0 failures' "release17-campaign-${platform}.log"
+            timeout 120s godot --headless --path . --script res://tests/core171_tests.gd "${args[@]}" 2>&1 | tee "core171-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "core171-${platform}.log"; then exit 1; fi
+            grep -E 'CORE171 RESULT: [0-9]+ checks, 0 failures' "core171-${platform}.log"
+          done
+      - name: Validate increased horde population and pistol durability
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/balance16_tests.gd 2>&1 | tee balance16.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' balance16.log; then exit 1; fi
+          grep -E 'BALANCE16 RESULT: [0-9]+ checks, 0 failures' balance16.log
+      - name: Validate imported basic turret models and real firing
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/basic_turret_models_tests.gd 2>&1 | tee basic-turret-models.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' basic-turret-models.log; then exit 1; fi
+          grep -E 'BASIC TURRET MODELS RESULT: [0-9]+ checks, 0 failures' basic-turret-models.log
+      - name: Validate Tripo defense models and cosmetic kits
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://tests/tripo16_models_tests.gd 2>&1 | tee tripo16-models.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' tripo16-models.log; then exit 1; fi
+          grep -E 'TRIPO MODELS RESULT: [0-9]+ checks, 0 failures' tripo16-models.log
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/tripo16_cosmetics_tests.gd "${args[@]}" 2>&1 | tee "tripo16-cosmetics-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "tripo16-cosmetics-${platform}.log"; then exit 1; fi
+            grep -E 'COSMETIC MODELS RESULT: [0-9]+ checks, 0 failures' "tripo16-cosmetics-${platform}.log"
+          done
+      - name: Validate weighted player and actor props
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/player16_models_tests.gd "${args[@]}" 2>&1 | tee "player-models-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "player-models-${platform}.log"; then exit 1; fi
+            grep -E 'PLAYER MODELS RESULT: [0-9]+ checks, 0 failures' "player-models-${platform}.log"
+          done
+      - name: Validate scene transitions on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/scene_transition_tests.gd "${args[@]}" 2>&1 | tee "scene-transition-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "scene-transition-${platform}.log"; then exit 1; fi
+            grep -E 'SCENE TRANSITION RESULT: [0-9]+ checks, 0 failures' "scene-transition-${platform}.log"
+          done
+      - name: Validate RC8 arm, rank, combat and exploration fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            for suite in presentation combat_events; do
+              log="rc8-${suite}-${platform}.log"
+              timeout 120s godot --headless --path . --script "res://tests/rc8_${suite}_tests.gd" "${args[@]}" 2>&1 | tee "$log"
+              if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "$log"; then exit 1; fi
+              grep -E 'RESULT: [0-9]+ checks, 0 failures' "$log"
+            done
+          done
+      - name: Validate supplied enemy models on desktop and touch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s godot --headless --path . --script res://tests/enemy16_models_tests.gd "${args[@]}" 2>&1 | tee "enemy-models-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "enemy-models-${platform}.log"; then exit 1; fi
+            grep -E 'ENEMY MODELS RESULT: [0-9]+ checks, 0 failures' "enemy-models-${platform}.log"
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Validate Firebase REST integration and rules in emulators
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global firebase-tools
+          npm ci --prefix backend/firebase/functions --ignore-scripts
+          node --test backend/firebase/functions/test/*.test.js
+          cd backend/firebase
+          firebase emulators:exec --project demo-zombie-bloom --only auth,firestore 'godot --headless --path ../.. --script res://tests/firebase_emulator_test.gd' 2>&1 | tee ../../firebase-emulator.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../firebase-emulator.log; then exit 1; fi
+          grep -E 'FIREBASE EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../firebase-emulator.log
+          firebase emulators:exec --project demo-zombie-bloom --only auth,firestore 'node test/spark-economy.js && godot --headless --path ../.. --script res://tests/spark_economy_emulator_test.gd' 2>&1 | tee ../../spark-economy.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../spark-economy.log; then exit 1; fi
+          grep -E 'SPARK ECONOMY RESULT: [0-9]+ checks, 0 failures' ../../spark-economy.log
+          grep -E 'SPARK GODOT RESULT: [0-9]+ checks, 0 failures' ../../spark-economy.log
+          firebase emulators:exec --project demo-zombie-bloom --only auth,firestore,functions 'node functions/test/emulator-integration.js && godot --headless --path ../.. --script res://tests/release16_meta_emulator_test.gd' 2>&1 | tee ../../account16-emulator.log
+          if grep -E 'SCRIPT ERROR:|FAIL:|WARNING: ObjectDB' ../../account16-emulator.log; then exit 1; fi
+          grep -E 'ACCOUNT16 EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../account16-emulator.log
+          grep -E 'ACCOUNT16 GODOT EMULATOR RESULT: [0-9]+ checks, 0 failures' ../../account16-emulator.log
+      - name: Render desktop and mobile review images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds
+          for view in desktop mobile desktop-shop mobile-account desktop-ranks mobile-ranks; do
+            args=()
+            case "$view" in
+              mobile) args=(--mobile) ;;
+              desktop-shop) args=(--shop) ;;
+              mobile-account) args=(--mobile --account) ;;
+              desktop-ranks) args=(--ranks) ;;
+              mobile-ranks) args=(--mobile --ranks) ;;
+            esac
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release_preview.gd -- "${args[@]}" 2>&1 | tee "preview-${view}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "preview-${view}.log"; then exit 1; fi
+            test -s "builds/${view}-1.0.png"
+          done
+      - name: Render version 1.5 review images
+        shell: bash
+        run: |
+          set -euo pipefail
+          for view in loadout loadout-mobile blood blood-mobile systems-mobile events; do
+            args=()
+            case "$view" in
+              loadout) args=(--loadout) ;;
+              loadout-mobile) args=(--loadout --mobile) ;;
+              blood) args=(--blood) ;;
+              blood-mobile) args=(--blood --mobile) ;;
+              systems-mobile) args=(--systems --mobile) ;;
+              events) args=(--events) ;;
+            esac
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release15_preview.gd -- "${args[@]}" 2>&1 | tee "preview15-${view}.log"
+            if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "preview15-${view}.log"; then exit 1; fi
+          done
+      - name: Render version 1.6 review images
+        shell: bash
+        run: |
+          set -euo pipefail
+          for view in menu profile elos shop account cards post titan rescue defenses diversion trophy turret-models cannon-models tesla-models raised-models core-models cosmetic-models; do
+            for platform in desktop mobile; do
+              args=(--view="$view")
+              if [ "$platform" = mobile ]; then args+=(--mobile); fi
+              timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/release16_preview.gd -- "${args[@]}" 2>&1 | tee "preview16-${platform}-${view}.log"
+              if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "preview16-${platform}-${view}.log"; then exit 1; fi
+            done
+          done
+      - name: Render weighted player closeups
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/player16_preview.gd "${args[@]}" 2>&1 | tee "player-preview-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "player-preview-${platform}.log"; then exit 1; fi
+          done
+      - name: Render RC8 rank models
+        shell: bash
+        run: |
+          set -euo pipefail
+          for platform in desktop mobile; do
+            args=()
+            if [ "$platform" = mobile ]; then args=(-- --mobile); fi
+            timeout 120s xvfb-run -a godot --audio-driver Dummy --path . --script res://tests/rc8_preview.gd "${args[@]}" 2>&1 | tee "rc8-preview-${platform}.log"
+            if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' "rc8-preview-${platform}.log"; then exit 1; fi
+          done
+      - name: Render supplied enemy closeups
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180s xvfb-run -a godot --audio-driver Dummy --path . --script res://tools/art/render_enemy_references16.gd -- --overview --out=res://builds/review16/enemies 2>&1 | tee enemy-models-preview.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|WARNING: ObjectDB' enemy-models-preview.log; then exit 1; fi
+          cp builds/review16/enemies/galeria_*.png builds/review16/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.6-UI-previews
+          path: builds/review16/*.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.5-UI-previews
+          path: builds/review15/*.png
+          if-no-files-found: error
+      - name: Upload 1.0 review images
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.0-UI-previews
+          path: builds/*-1.0.png
+          if-no-files-found: error
+      - name: Check production Firebase setup without creating accounts
+        run: python3 .ci/check_firebase_config.py 2>&1 | tee firebase-live-setup.log
+      - name: Install matching export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 -o /tmp/templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          echo '3fbe2c0e2dec9d537ab9ec97bcf8da91dcf23357fc51f67092dd068d839290a8  /tmp/templates.tpz' | sha256sum --check
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          mv /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Export portable Windows build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds/windows
+          timeout 120s godot --headless --path . --export-release "Windows Desktop" builds/windows/ZombieBloom.exe 2>&1 | tee export.log
+          test -s builds/windows/ZombieBloom.exe
+          if grep -E 'SCRIPT ERROR:|ERROR:' export.log; then exit 1; fi
+          cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md CLAY_WORLD.md README.md FORTRESS.md ARSENAL.md ASSETS.md SURVIVAL.md MULTIPLAYER.md CAMPAIGN.md WORLD_SECTORS.md TEST_REPORT.md builds/windows/
+          mkdir -p builds/windows/docs
+          cp docs/frontier014-results.txt docs/network0132-results.txt docs/mobile0131-results.txt docs/mobile013-results.txt docs/progression-results.txt docs/mobile-performance-results.txt docs/mobile-render-benchmark.json docs/targeting-results.txt docs/mobile-results.txt docs/clay-results.txt docs/internet-results.txt docs/roll-results.txt docs/fortress-results.txt docs/arsenal-results.txt docs/survival-results.txt docs/coop-results.txt docs/sectors-results.txt docs/campaign-results.txt docs/defense-results.txt docs/build-performance.json docs/integration-results.txt builds/windows/docs/
+      - name: Verify models inside the exported Windows package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_root="$PWD"
+          mkdir -p /tmp/zb-export-smoke
+          cd /tmp/zb-export-smoke
+          timeout 120s godot --headless --main-pack "$source_root/builds/windows/ZombieBloom.exe" --script "$source_root/tests/exported_models_smoke.gd" 2>&1 | tee "$source_root/exported-models.log"
+          if grep -E 'SCRIPT ERROR:|FAIL:|ERROR:|WARNING: ObjectDB' "$source_root/exported-models.log"; then exit 1; fi
+          grep -E 'EXPORTED MODELS RESULT: [0-9]+ checks, 0 failures' "$source_root/exported-models.log"
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.7-Windows-x64
+          path: builds/windows/
+          if-no-files-found: error
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK and development signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          python3 .ci/configure_android.py
+      - name: Export signed Android test APK
+        shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: builds/signing/development.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          mkdir -p builds/android
+          timeout 120s godot --headless --path . --export-debug "Android" builds/android/ZombieBloom-Android.apk 2>&1 | tee android-export.log
+          test -s builds/android/ZombieBloom-Android.apk
+          if grep -E 'SCRIPT ERROR:|ERROR:' android-export.log; then exit 1; fi
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose builds/android/ZombieBloom-Android.apk | tee android-signature.log
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging builds/android/ZombieBloom-Android.apk | tee android-manifest.log
+          grep 'android.permission.INTERNET' android-manifest.log
+          grep "native-code:.*arm64-v8a" android-manifest.log
+          cp RELEASE_1_6.md RELEASE_1_5.md RANK_COMBAT_1_0.md RELEASE_1_0.md ACCOUNTS_015.md ROADMAP_1_0.md FRONTIER_014.md NETWORK_0132.md MOBILE_0131.md MOBILE_013.md PROGRESSION.md MOBILE.md MULTIPLAYER.md builds/android/
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieBloom-1.7-Android-APK
+          path: builds/android/
+          if-no-files-found: error
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Validation-logs
+          path: |
+            *.log
+            builds/coop-test/*.log
+            builds/motion-test/*.log
+            builds/split-test/*.log
+            builds/release16-*/*.log

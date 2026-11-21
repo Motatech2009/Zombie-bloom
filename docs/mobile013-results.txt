@@ -1,0 +1,30 @@
+Zombie Bloom 0.13 candidate — local validation 2026-11-13
+
+ARSENAL RESULT: 93 checks, 0 failures
+CAMPAIGN RESULT: 127 checks, 0 failures
+CLAY RESULT: 35 checks, 0 failures
+DEFENSE RESULT: 55 checks, 0 failures
+FORTRESS RESULT: 100 checks, 0 failures
+INTERNET RESULT: 31 checks, 0 failures
+MOBILE EXPERIENCE RESULT: 28 checks, 0 failures
+MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
+TARGETING RESULT: 33 checks, 0 failures
+MOBILE RESULT: 28 checks, 0 failures
+PROGRESSION RESULT: 43 checks, 0 failures
+ROLL RESULT: 33 checks, 0 failures
+RESULT: 85 checks, 0 failures
+SECTORS RESULT: 75 checks, 0 failures
+SURVIVAL RESULT: 80 checks, 0 failures
+
+host exit 0
+COOP HOST RESULT: 35 checks, 0 failures
+client1 exit 0
+COOP CLIENT RESULT: 25 checks, 0 failures
+client2 exit 0
+COOP CLIENT RESULT: 25 checks, 0 failures
+client3 exit 0
+COOP CLIENT RESULT: 28 checks, 0 failures
+
+Total: 985 checks, 0 failures.
+The 200 ms gap is a deterministic prediction test, not a real mobile/internet benchmark.
+Scene readiness uses acknowledgements from all three guests.

@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/defenses/shock/base_1.res" id="1_3rrxf"]
+
+[ext_resource type="Material" path="res://assets/defenses/shock/material.tres" id="material"]
+
+[node name="shock_N1" type="Node3D" unique_id=1191417294]
+metadata/tier = 1
+metadata/source = "Tripo/user submission"
+
+[node name="Head" type="Node3D" parent="." unique_id=1255040197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8612005, 0)
+
+[node name="Pitch" type="Node3D" parent="Head" unique_id=1580604025]
+
+[node name="Muzzle1" type="Marker3D" parent="Head/Pitch" unique_id=1590206152]
+
+[node name="Base" type="MeshInstance3D" parent="." unique_id=405493027]
+mesh = ExtResource("1_3rrxf")
+surface_material_override/0 = ExtResource("material")

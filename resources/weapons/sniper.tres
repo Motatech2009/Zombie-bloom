@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sniper"
+title = "Rifle de precisão"
+color = Color(0.72, 0.86, 0.94, 1)
+values = {
+"damage": 92,
+"interval": 1.2,
+"range": 48,
+"capacity": 4,
+"reload": 2.7,
+"pellets": 1,
+"spread": 0
+}

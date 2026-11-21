@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "revolver"
+title = "Revólver"
+color = Color(0.92, 0.69, 0.42, 1)
+values = {
+"damage": 46,
+"interval": 0.62,
+"range": 27,
+"capacity": 6,
+"reload": 1.9,
+"pellets": 1,
+"spread": 0.008
+}

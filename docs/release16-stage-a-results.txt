@@ -1,0 +1,84 @@
+Zombie Bloom 1.6 — etapa A, validação local
+Data: 16/11/2026
+Godot 4.6.3 Linux headless
+
+account.log
+  ACCOUNT RESULT: 31 checks, 0 failures
+account_world.log
+  ACCOUNT WORLD RESULT: 9 checks, 0 failures
+arsenal.log
+  ARSENAL RESULT: 97 checks, 0 failures
+campaign.log
+  CAMPAIGN RESULT: 127 checks, 0 failures
+clay.log
+  CLAY RESULT: 35 checks, 0 failures
+defense.log
+  DEFENSE RESULT: 55 checks, 0 failures
+fortress.log
+  FORTRESS RESULT: 101 checks, 0 failures
+frontier_features.log
+  FRONTIER FEATURES RESULT: 31 checks, 0 failures
+internet.log
+  INTERNET RESULT: 31 checks, 0 failures
+mobile.log
+  MOBILE RESULT: 49 checks, 0 failures
+mobile_experience.log
+  MOBILE EXPERIENCE RESULT: 30 checks, 0 failures
+mobile_performance.log
+  MOBILE PERFORMANCE RESULT: 26 checks, 0 failures
+mobile_targeting.log
+  TARGETING RESULT: 35 checks, 0 failures
+online_preparation.log
+  ONLINE PREPARATION RESULT: 95 checks, 0 failures
+progression.log
+  PROGRESSION RESULT: 43 checks, 0 failures
+rank_combat.log
+  RANK COMBAT RESULT: 34 checks, 0 failures
+release15.log
+  RELEASE15 RESULT: 35 checks, 0 failures
+release15_encounters.log
+  RELEASE15 ENCOUNTERS RESULT: 27 checks, 0 failures
+roll.log
+  ROLL RESULT: 33 checks, 0 failures
+run.log
+  RESULT: 85 checks, 0 failures
+sectors.log
+  SECTORS RESULT: 75 checks, 0 failures
+session.log
+  SESSION RESULT: 16 checks, 0 failures
+survival.log
+  SURVIVAL RESULT: 81 checks, 0 failures
+zb16-final-progression.log
+  RELEASE16 PROGRESSION RESULT: 51 checks, 0 failures
+zb16-final-ui-desktop.log
+  RELEASE16 UI RESULT: 14 checks, 0 failures
+zb16-final-ui-mobile.log
+  RELEASE16 UI RESULT: 12 checks, 0 failures
+zb16-existing-coop.log
+  COOP HOST RESULT: 35 checks, 0 failures
+  COOP CLIENT RESULT: 25 checks, 0 failures
+  COOP CLIENT RESULT: 25 checks, 0 failures
+  COOP CLIENT RESULT: 28 checks, 0 failures
+zb16-motion.log
+  MOTION HOST RESULT: 3 checks, 0 failures
+  MOTION CLIENT RESULT: 6 checks, 0 failures
+zb16-split.log
+  SPLIT HOST RESULT: 8 checks, 0 failures
+  SPLIT CLIENT RESULT: 6 checks, 0 failures
+  SPLIT CLIENT RESULT: 6 checks, 0 failures
+zb16-coop-2.log
+  RELEASE16 COOP host-1 RESULT: 12 checks, 0 failures
+  RELEASE16 COOP client-1 RESULT: 6 checks, 0 failures
+zb16-coop-3.log
+  RELEASE16 COOP host-1 RESULT: 15 checks, 0 failures
+  RELEASE16 COOP client-1 RESULT: 6 checks, 0 failures
+  RELEASE16 COOP client-2 RESULT: 6 checks, 0 failures
+zb16-coop-4.log
+  RELEASE16 COOP host-1 RESULT: 18 checks, 0 failures
+  RELEASE16 COOP client-1 RESULT: 6 checks, 0 failures
+  RELEASE16 COOP client-2 RESULT: 6 checks, 0 failures
+  RELEASE16 COOP client-3 RESULT: 6 checks, 0 failures
+
+TOTAL: 1481 verificações, 0 falhas nos resultados finais.
+
+Os testes ENet usam processos reais; um participante usa configuração de controles mobile. UI: geometria e ações em headless, sem afirmar captura renderizada ou teste físico de Android. Sem alteração de Firebase em produção. Sem afirmar validação da atualização 1.6 completa.

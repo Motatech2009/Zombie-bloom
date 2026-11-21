@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/characters/player16/albedo_texture.jpg" id="1"]
+[ext_resource type="Texture2D" path="res://assets/characters/player16/normal_texture.png" id="2"]
+
+[resource]
+resource_name = "tripo_material_09424e14-a944-466a-b771-d6829dbb78b4"
+metallic_specular = 0.25
+metallic_texture_channel = 2
+roughness = 0.94
+roughness_texture_channel = 1
+normal_enabled = true
+normal_scale = 0.45
+
+albedo_texture = ExtResource("1")
+normal_texture = ExtResource("2")
+

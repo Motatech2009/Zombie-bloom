@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/defenses/core/base_2.res" id="1_euqph"]
+
+[ext_resource type="Material" path="res://assets/defenses/core/material.tres" id="material"]
+
+[node name="core_N2" type="Node3D" unique_id=1997070125]
+metadata/tier = 2
+metadata/source = "Tripo/user submission"
+
+[node name="Base" type="MeshInstance3D" parent="." unique_id=359819450]
+mesh = ExtResource("1_euqph")
+surface_material_override/0 = ExtResource("material")

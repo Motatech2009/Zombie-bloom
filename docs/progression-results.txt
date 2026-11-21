@@ -1,0 +1,46 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: first expedition enters the northern sector
+PASS: a new generation receives an exact three-minute lifetime
+PASS: taking a real partial stack leaves supplies in the regional box
+PASS: a real field death records the exact encounter index
+PASS: leaving the area returns to the persistent core
+PASS: cached geometry, partial loot, houses and enemies survive JSON checkpoint validation
+PASS: existing v6 saves without sector memory remain compatible
+PASS: unknown cached item types reject a checkpoint without mutating the live game
+PASS: an invalid regeneration deadline is rejected
+PASS: the same area can be re-entered before its timer expires
+PASS: quick revisits neither reroll the map nor extend its generation timer
+PASS: re-entry preserves partially harvested loot without copying it into the bag
+PASS: house deaths and partially emptied supplies are restored exactly
+PASS: a living house guard returns with its remaining health
+PASS: a wounded boss keeps its health and identity even after a wave advances
+PASS: defeated and already materialized enemies cannot be queued twice
+PASS: a dropped pile is restored once with its original contents
+PASS: party leaves the preserved area again
+PASS: the old layout remains active immediately before the deadline
+PASS: party can leave at the cooldown boundary
+PASS: the area can be entered after its regeneration deadline
+PASS: only the next entry after three minutes regenerates layout, enemies and loot
+PASS: a fresh generation has fresh houses and cache contents
+PASS: return to base permits checkpoint restoration
+PASS: save/load cannot bypass the cooldown or restore already taken supplies
+PASS: loot and boss tests return to base
+PASS: solo gathering remains timed but uses forty percent less time
+PASS: solo gathering completes at its reduced threshold
+PASS: a joining player restores co-op timing without granting free gather progress
+PASS: cooperative rare-crate and deposit times stay unchanged
+PASS: solo acceleration affects supplies and deposit while repair timing remains unchanged
+PASS: restoring supplies also rewinds connected guest inventories to prevent save/load duplication
+PASS: a guest joining after a checkpoint cannot carry future supplies into the restored world
+PASS: military caches roll ammunition much more often than forest caches
+PASS: regional loot includes several ammunition families and consumables
+PASS: a cache's supply roll is deterministic within its generation
+PASS: the first solo boss has substantially more than one thousand health
+PASS: a cooperative boss also gains additional health per player
+PASS: boss endurance continues growing with later waves
+PASS: boss death creates a distinct extra supply drop with ammunition and components
+PASS: boss rewards guarantee useful supplies independently of optional rare rolls
+PASS: extra boss loot is carried in the player's bag and still needs transport to the core
+PASS: a full ground-drop budget merges an unloaded rare reward instead of losing boss supplies
+PROGRESSION RESULT: 43 checks, 0 failures

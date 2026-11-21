@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "turret"
+title = "Torreta"
+color = Color(0.4, 0.69, 0.68, 1)
+values = {
+"health": 140.0,
+"cost": 75,
+"radius": 0.85,
+"repair_cost": 10,
+"repair_amount": 55.0,
+"damage": 15.0,
+"range": 15.0,
+"interval": 0.4
+}

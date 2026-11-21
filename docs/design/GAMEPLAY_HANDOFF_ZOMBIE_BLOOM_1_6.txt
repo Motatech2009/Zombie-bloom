@@ -1,0 +1,435 @@
+# ZOMBIE BLOOM — GAMEPLAY HANDOFF PARA O CONSTRUTOR
+
+**Documento:** `GAMEPLAY_HANDOFF_ZOMBIE_BLOOM_1_6.md`  
+**Data da especificação:** 16/11/2026  
+**Linha de referência jogada:** `1.5.0-rc.1`  
+**Versão-alvo de planejamento:** `1.6` (*rótulo provisório; não publicar como versão pronta*)  
+**Destinatário:** Agente Construtor → Auditor → Remediador → Lançador  
+**Tipo:** Especificação de produto/gameplay. Não é prova de implementação nem autorização para lançamento.  
+**Fontes:** `Zombie_Bloom_Sistemas_Detalhados_1_5.txt` (16/11/2026), cinco capturas do menu real da 1.5 e solicitações do criador nesta conversa.
+
+## 0. LEGENDA DE DECISÕES — LEIA ANTES DE IMPLEMENTAR
+
+- **[CRIADOR]**: solicitação explícita do criador, requisito obrigatório de escopo.
+- **[REFERÊNCIA 1.5]**: comportamento existente documentado; preservar ou migrar sem regressão.
+- **[PROPOSTA]**: detalhamento inicial criado pelo game designer para viabilizar construção; precisa da validação criativa do criador antes de ficar definitivo. Usar configuração, não constantes irremovíveis.
+- **[PENDÊNCIA BLOQUEANTE]**: decisão ou infraestrutura indispensável à função especificada; não lançar o recurso como finalizado sem resolver.
+
+**Solicitações confirmadas pelo criador:** modernizar o menu sem perder identidade; facilitar login, elos e visualização de progresso; registrar horas reais; dar **100 unidades de moeda por horda concluída**; loja de cosméticos por classe; nova forma de exploração/comércio seguro; **5% de chance de encontrar um boss com 20.000 de vida enquanto explora**; **10% de chance de encontrar a base segura enquanto explora**; mochila encontrável e evolutiva; melhorar as cartas de evolução e separar completamente as escolhas de cada jogador; pensar em um novo modo; criar agora o catálogo de cosméticos e as melhorias próprias das classes.
+
+**Não tratar como aprovado automaticamente:** nome da moeda **Brotos**, preços, nomes e aparência dos novos cosméticos, talentos de classe, nome do boss **Titã Enraizado**, nome do ponto seguro **Posto do Farol**, valores de loot e estrutura exata do novo modo **Expedição de Resgate**. São **propostas concretas** incluídas para avaliação e trabalho controlado. Se o criador não ratificar, manter em configuração/branch e não publicar como cânone.
+
+**Não reimplementar o que a 1.5 já faz:** login lembrado com Firebase Authentication; 3 classes; 19 infectados; 7 chefes; 11 estruturas; Reciclador; 3 mutadores; cosméticos concedidos por elo; ciclo dia/noite e Noite Vermelha; extração; ranking de abates, hordas, sucata e pontos; fluxo de salvamento local. O objetivo é **integrar e ampliar**, não trocar sistemas funcionais.
+
+---
+
+## 1. BASE REAL E INVARIANTES
+
+A 1.5 tem modo Campanha (20 hordas), Defesa Infinita, solo e coop até 4 via host autoritativo (protocolo de rede **17**). Fatores de população: 1/2/4/8 para 1/2/3/4 participantes. Sectores de aprox. 120m, persistência normal de setor fora da base por 180s, e 75% de chance de um evento existente em novas visitas elegíveis. O Núcleo está em `(0,0)`. Inventário: 18 slots (9 barra rápida), Batedor 20. Estruturas têm cota **por preparação** de 6→12 (+1 Engenheiro), não limite de 12 estruturas no mapa; limite físico geral 120.
+
+Evoluções **atuais** são oportunidades após hordas com teto por habilidade 2 (hordas 1–5), 7 (6–10) e 12 (11+). Bônus atuais: dano +4%/nível; cadência +3%; pente +4%; recarga −2% duração; movimento +1,5%; vida +10; coleta até +50% velocidade; Engenharia até −40% duração; economia de munição até 25% de chance; Carga até dobro do tamanho de pilhas. Respeitar as fórmulas existentes e seus tetos.
+
+Classes em uso:
+
+| Classe | Bônus inicial preservado |
+|---|---|
+| Engenheiro | +1 cota de construção por preparação ao atuar; reparos custam 15% menos sucata |
+| Batedor | 20 slots, em vez de 18; +10% de velocidade fora de combate; janela de 6s para considerar combate |
+| Atirador | Pistola inicial Reforçada; recarga ×0,85 |
+
+Contas/elo: Firebase Auth + Firestore; login persistente já previsto; ranking comunitário **sem validação competitiva independente**; Elo 10 / Imortal = **10.000 abates**, e ranking limitado a 25 resultados por consulta. Cosméticos por elo já são visuais e sincronizados. Campanha no save local (formato 6), e não na nuvem. Escrita estatística em lotes ~120s, fila local periódica ~5s, cache de ranking ~60s.
+
+**Obrigatório:** manter compatibilidade com Windows e Android; preservar o cenário isométrico de fundo do menu, a estética de massinha e a identificação da versão no canto inferior direito. Não embutir segredos administrativos Firebase no cliente. Atualizar protocolo/schema somente conforme mudanças reais, com migração e testes.
+
+---
+
+## 2. ENTREGAS E ORDEM DE PRIORIDADE
+
+| ID | Entrega | Prioridade | Estado do design |
+|---|---|---|---|
+| ZB-UX-01 | Menu 1.6 e navegação entre Jogar / Amigos / Perfil / Ranking / Loja | P1 | direção [CRIADOR], layout [PROPOSTA] |
+| ZB-AUTH-01 | Simplificação visual do login, mantendo persistência existente | P1 | direção [CRIADOR] |
+| ZB-PROFILE-01 | Tempo ativo da conta, da sessão e estatísticas | P1 | direção [CRIADOR], regras [PROPOSTA] |
+| ZB-UP-01 | Cartas e escolhas de upgrades independentes por jogador | **P0** | [CRIADOR] |
+| ZB-CLASS-01 | Talentos próprios de Engenheiro/Batedor/Atirador | P1 | [PROPOSTA] |
+| ZB-ECO-01 | +100 moeda por horda e carteira persistente | P1 | valor [CRIADOR], nome [PROPOSTA] |
+| ZB-COS-01 | Loja de cosméticos, catálogo e prévia por classe | P1 | direção [CRIADOR], catálogo [PROPOSTA] |
+| ZB-BAG-01 | Mochilas exploráveis e melhoráveis | P1 | direção [CRIADOR], números [PROPOSTA] |
+| ZB-EXP-01 | Base segura explorável, **10%** | P2 | chance [CRIADOR], restante [PROPOSTA] |
+| ZB-TITAN-01 | Boss de exploração, **5%**, **20.000 PV** | P2 | chance/vida [CRIADOR], poderes [PROPOSTA] |
+| ZB-MODE-01 | Expedição de Resgate | P2 | novo modo [CRIADOR], conceito [PROPOSTA] |
+| ZB-TEST-01 | Auditoria de saves, coop, banco, telas e antiduplificação | P0 para lançar | obrigatório |
+
+Entregar por commits/PRs coesos e verificar cada módulo; **não encerrar a atualização apenas porque a tela aparece**. Código aprovado, builds físicas, persistência e sincronização devem funcionar juntos.
+
+---
+
+## 3. ZB-UX-01 — MENU PRINCIPAL E RANKING
+
+### Objetivo e visual
+
+Preservar o **mesmo cenário 3D** das capturas: posto/Núcleo central, estrada, sobreviventes animados, iluminação terrosa, fundo visível, painel lateral preto/verde translúcido com raio arredondado e destaque verde-lima. Não substituir por interface genérica, textura hiper-realista ou nova identidade visual. Reduzir dispersão dos botões e impedir telas longas sem segmentação.
+
+**Menu proposto:** cabeçalho `ZOMBIE BLOOM`; cartão de conta com nome, emblema do elo, kills reais, barra para o próximo elo, horas e moeda; ação primária **JOGAR**; ações secundárias **COOPERATIVO**, **SOBREVIVENTE**, **RANKING E ELOS**, **LOJA DE COSMÉTICOS**; Configurações/Como Jogar/Sair acessíveis sem esconder funções existentes. Caso não autenticado, cartão indica convidado e ação Entrar; não inventar nome/abates reais.
+
+**Jogar:** subopções Continuar save (quando compatível), Nova Campanha, Defesa Infinita e novo modo somente quando concluído; pedir confirmação para sobrescrever campanha. Não criar visual de botão "Continuar" quando não existe save. **Cooperativo:** tela simples `Criar sala` / `Entrar na sala`, com campos técnicos IP/porta/UPnP sob `Avançado`, mantendo a conexão direta existente. Sem prometer lobby público por código se não houver backend de descoberta. Oferecer cópia de IP/porta apenas quando esses dados são de fato conhecidos pelo host.
+
+**Ranking:** dividir em abas `Classificação` (filtros existentes: abates, hordas, sucata, pontos), `Meus Elos` (10 emblemas em grade responsiva, requisito de cada marco, atual, próximo, progresso) e `Recompensas` (cosméticos por elo preservados). No ranking mostrar posição, nome, emblema, métrica, período de atualização; no perfil mostrar contagem validada/sincronizada e progresso eventualmente pendente quando aplicável. Conservar máximo 25 resultados e cache de 60s. Não mostrar perfis fictícios. Se não houver conexão, mostrar estado compreensível sem apagar os números locais.
+
+**Versões e estados:** manter versão atual (1.5.0-rc.1 na base, nova string só quando release real); não hardcodar 1.6 em builds 1.5. Indicador discreto de `Conectado`, `Sincronizando`, `Convidado`, `Sem internet`, `Sessão expirada` conforme estado real.
+
+### Aceite e testes
+
+- Fluxo menu→perfil→elo→ranking→voltar em Windows por mouse/teclado e Android por toque.
+- Fundo 3D continua em execução sem colidir com foco/inputs de UI; botões não ficam sob o notch/área de navegação do celular.
+- Ranking demora/retorna vazio/retorna erro sem travar menu; botão voltar sempre funciona; painel rolável chega ao 10º elo.
+- Contagem e barra de progresso são calculadas a partir dos limiares reais; nunca converter ranking relativo em elo.
+- Compatibilidade de telas pequenas e modo leve: texto legível, alvos de toque adequados, sem scroll horizontal obrigatório.
+
+---
+
+## 4. ZB-AUTH-01 E ZB-PROFILE-01 — LOGIN E TEMPO JOGADO
+
+### Autenticação
+
+A 1.5 **já lembra o login**; manter Firebase Authentication e renovação de credencial local protegida, sem armazenar senhas em texto puro. Ao iniciar, tentar recuperar a sessão em segundo plano sem bloquear menu indefinidamente. Login/registro/recuperação continuam disponíveis em painel claro. `Sair da conta` exige intenção explícita e elimina a sessão lembrada. Revogação implica novo login. Conta não é sinônimo de save na nuvem.
+
+### Horas jogadas [PROPOSTA de detalhamento]
+
+Persistir `tempo_ativo_total_segundos`, `tempo_ativo_sessao_segundos`, `maior_sessao_segundos`, `ultima_sessao_em`, opcionalmente `hordas_sessao`, `bosses_derrotados`. Fonte temporal: relógio monotônico local em blocos curtos e reconciliação segura; jamais confiar cegamente em datas do relógio do dispositivo para somar horas.
+
+**Contar:** tempo vivo em combate, preparação, exploração e reanimação dentro de uma partida válida; inclusive jogador derrubado enquanto participa da sessão, se o jogo não estiver suspenso. **Não contar:** menu, login, lobby, loading, pausa de jogo, tela de evolução pausada, jogo em segundo plano, perda de foco persistente ou desconexão prolongada. Inatividade em partida: após 5 minutos sem input relevante, marcar `AFK` e suspender contagem individual até voltar; regra configurável e inicialmente [PROPOSTA]. No coop, jogo pode continuar para aliados sem que o jogador AFK ganhe horas.
+
+Salvar agregados localmente em intervalos curtos, preservar após fechamento inesperado e sincronizar com a conta em lotes sem cada segundo virar uma escrita. Associar sessões a `user_id` (Firebase UID) e `session_id` únicos; convidados podem ter contador local que não se confunde com total online. Não somar uma sessão novamente ao recuperar fila/repetir envio; tratar reconexão e múltiplos dispositivos com deduplicação. Não permitir que uma conta nova herde horas da anterior no mesmo aparelho. Exibir `10h 23min` e não arredondar minutos incorretamente.
+
+**Premiação externa do Elo 10:** sem validação independente dos abates no ambiente atual, NÃO declarar vencedor automático de prêmio real. O criador deve validar o regulamento, contas e registros antes de anunciar resultado oficial. O painel pode exibir corrida de 10.000 kills **provisória**, sem carimbo de premiação verificada.
+
+### Aceite
+
+- Fechar/reabrir com sessão válida restaura conta sem novo preenchimento; revogada exige novo acesso.
+- 15 minutos efetivos em partida somam ~900s; 10 minutos em menu somam zero; tela pausada/AFK não gera horas.
+- Crash/reconexão não zera nem duplica horas; sincronização em múltiplos dispositivos não acrescenta repetidamente uma mesma sessão.
+
+---
+
+## 5. ZB-UP-01 — EVOLUÇÕES INDIVIDUAIS NO COOPERATIVO
+
+### Problema [CRIADOR]
+
+Atualmente uma oportunidade de evolução aparece aos dois jogadores e apenas um pode consumir a escolha. A evolução da **personagem** não deve competir com a dos aliados.
+
+### Regra obrigatória
+
+Após horda válida, **cada participante elegível** recebe **1 escolha individual** de 1 entre 3 cartas de upgrade disponíveis para seu perfil. As cartas aparecem somente ao jogador destinatário. O jogador A escolhe a carta A sem consumir carta de B; B recebe suas opções e aplica independentemente. Isso vale para até quatro jogadores, inclusive quando estão em quadrantes distintos. Os upgrades individuais afetam apenas seu personagem, salvo talentos de classe explicitamente vinculados a estruturas que ele construiu.
+
+**Não confundir com XP:** a linha 1.5 documenta **evolução por horda**, não uma barra de XP por kills. Implementar primeiro a correção no gatilho de conclusão da horda. Se existir sistema de XP em código mais novo, adaptar sem inventar recompensas adicionais por abate; documentar qualquer divergência antes de alterar progressão.
+
+**Fluxo recomendado:** `HORDA_ENCERRADA` → calcular participantes elegíveis → criar `reward_choice_id` por `match_id/horde_id/player_uid` → sortear cartas elegíveis por classe/limite individual → marcar `PENDENTE` → apresentar cartas individualmente na fase de preparação → jogador confirma 1 → host valida e aplica de modo idempotente → `APLICADA`. A fase de seleção de todos continua com pausa compartilhada do combate (como existe); **nenhum jogador é obrigado a aceitar a escolha alheia**. Jogador que não escolher pode deixar a recompensa pendente e resolver entre hordas, sem receber duplicação por sair/entrar. Se todos os upgrades já estiverem no máximo, concluir sem modal bloqueante (fallback definido pelo design, não upgrade arbitrário).
+
+Teto por **jogador e habilidade**: horda 1–5 nível 2, 6–10 nível 7, 11+ nível 12; níveis atuais não são zerados. Custos existentes de crescimento e upgrades do Bento não se confundem com as cartas. Evitar alterar progressão de campanha salva sem migração. As cartas exibem `Nome`, `Categoria`, `Efeito atual → próximo`, `Nível atual / máximo`, `Ícone`, `Cor da classe`, `Bônus cumulativo` e aviso de limite.
+
+**Segurança/cooperativo:** estado por UID/jogador, não apenas por slot de conexão, não usar somente nickname. Host valida que a carta oferecida pertence àquele jogador e ainda está pendente, que nível será permitido e que o comando não foi aplicado. O cliente visualiza apenas seu modal. Repetir o mesmo `choice_id` não altera atributos novamente. Reconexão restaura pendência; sair de partida não atribui upgrade ao colega.
+
+### Aceite
+
+- Com dois jogadores, ambos concluem a horda e recebem 1 carta selecionável cada; podem escolher upgrades diferentes.
+- Jogador A escolhe duas vezes em sequência via lag/duplo clique: aplica **somente uma** vez.
+- Jogador B desconecta no modal e reconecta: sua carta continua pendente; A não recebe B.
+- O estado é preservado por save compatível e pela recuperação de partida existente; nenhum jogador recebe escolhas de campanha antiga novamente.
+- Modal ocupa espaço seguro no Android e mantém leitura de porcentagens em ambos os dispositivos.
+
+---
+
+## 6. ZB-CLASS-01 — TALENTOS EXCLUSIVOS DAS 3 CLASSES
+
+**[PROPOSTA] Catálogo fechado de design inicial, não substituir os bônus de classe implementados.** Talentos são escolhas de evolução **temporárias por campanha**, não compras de Brotos nem bônus permanentes da conta. Ao receber carta individual, o sorteio inclui cartas universais e cartas da classe escolhida. Oferecer ao menos uma opção própria da classe quando houver talento elegível, sujeito ao sorteio/determinismo e sem bloquear cartas universais. Cada talento tem **3 níveis**, aplica seu efeito adicional por nível e só aparece quando a classe corresponde. Cada nível custa **uma oportunidade de evolução**. Não criar XP adicional apenas para talentos.
+
+### Engenheiro
+
+| ID | Talento | N1 | N2 | N3 | Funcionamento / limite |
+|---|---|---:|---:|---:|---|
+| ENG-T01 | Oficina Econômica | −5% | −10% | −15% | Desconto adicional de sucata **apenas em reparos efetuados pelo Engenheiro**; custo final = arredondar(base ×0,85 × (1−bônus)); mínimo 1 se reparo originalmente custa sucata. Não afeta compra ou construção. |
+| ENG-T02 | Mãos de Oficina | −6% | −12% | −18% | Reduz duração de construção/reparo/upgrade executados pelo próprio Engenheiro; multiplicar pelos bônus de Engenharia, com duração final mínima configurável sugerida 0,7s. Não reduz tempo de reciclagem/extrair. |
+| ENG-T03 | Liga Reforçada | +4% | +8% | +12% | Estrutura **concluída pelo Engenheiro** ganha HP máximo adicional sobre o valor após melhoria; refazer HP ao concluir. Aplicar no máximo uma marca por estrutura, mantendo o maior bônus, não por novo reparo. Fusão mantém a regra de bônus sem somar ambas. |
+
+**Silhueta da classe:** ferramentas de massinha, capacete, luvas e patches industriais. **Verificação:** duas pessoas com Engenheiro não empilham Liga Reforçada infinitamente em uma mesma torre; custo de reparo não fica negativo; cota adicional existente permanece +1 (não vira +2 por talento).
+
+### Batedor
+
+| ID | Talento | N1 | N2 | N3 | Funcionamento / limite |
+|---|---|---:|---:|---:|---|
+| BAT-T01 | Passos Silenciosos | +3% | +6% | +9% | Bônus adicional de velocidade **somente fora de combate**; combinar multiplicativamente com os +10% existentes; perder após tiro/dano e recuperar apenas depois da janela de 6s. |
+| BAT-T02 | Olhar de Saque | +6% | +12% | +18% | Aumenta velocidade de interação com loot (não aumenta quantidade nem chance de itens); duração = duração_base/(1 + bônus) e combinar com evolução Coleta sem somar diretamente porcentagens de tempo. |
+| BAT-T03 | Passo de Fuga | −5% | −10% | −15% | Reduz tempo de recarga do rolamento para o Batedor, partindo dos 5s atuais (nível 3 → 4,25s antes de outros bônus); não aumenta invulnerabilidade de 0,2s. |
+
+**Silhueta:** capuz, poncho, binóculo e acessórios compactos. **Verificação:** bônus de velocidade não é aplicado durante confronto; nenhum saque se multiplica; rolamento ainda interrompe a coleta e mantém as janelas de ataque.
+
+### Atirador
+
+| ID | Talento | N1 | N2 | N3 | Funcionamento / limite |
+|---|---|---:|---:|---:|---|
+| ATI-T01 | Mira Treinada | +2 pp | +4 pp | +6 pp | Aumenta chance absoluta de crítico, da base 10% para 12/14/16% antes de outros bônus; multiplicador de crítico continua 1,5. Exibir **pontos percentuais**, não +6% relativo. |
+| ATI-T02 | Ritmo de Combate | +3% | +6% | +9% | Cadência maior com armas de fogo equipadas, multiplicada pelos níveis da evolução universal de cadência e da oficina. Evitar intervalo de tiro abaixo de mínimo seguro configurável. Não melhora torre nem arma de aliados. |
+| ATI-T03 | Recarga de Veterano | −4% | −8% | −12% | Reduz duração de recarga do próprio jogador; empilha **multiplicativamente** com a base ×0,85 da classe, upgrades de recarga e oficina; respeitar piso de 50% da duração básica original (proposta). |
+
+**Silhueta:** lenço, colete leve, viseira e capacete remendado. **Verificação:** não alterar pente do lança-foguetes (permanece 1); buffs não modificam atributos no cliente de outro usuário; cálculo de DPS com armas e oficina deve ser validado.
+
+### Regra comum dos talentos
+
+- Os 9 talentos acima são **novo conteúdo [PROPOSTA]**; os bônus iniciais da classe permanecem como na 1.5.
+- Trocar classe **antes** de iniciar partida altera o catálogo; classe do jogador durante sessão é estável. Não permitir comprar talentos de outra classe via payload modificado.
+- Não conceder talento em dobro por rollback, save duplicado, reload ou transferência entre jogadores.
+- Mensagens de UI mostram bônus exato por nível e valores atualizados após confirmação; efeitos/áudio leves e legíveis no Android.
+
+---
+
+## 7. ZB-ECO-01 — MOEDA DE CONTA POR HORDA
+
+**[CRIADOR]** Cada horda efetivamente **concluída** concede **100 moedas** para cada jogador elegível. **[PROPOSTA] Nome da moeda: BROTOS**, símbolo de pequena ficha de argila com broto verde; manter nome via `display_name` para poder renomear sem quebrar dados.
+
+**Escopo:** Brotos pertencem à **conta online** e não ocupam mochila; são separados de sucata/madeira/componentes (economia da campanha), pontos de desafio e abates/elos (ranking). Não usar Brotos na oficina do Bento, defesas, armas ou consumíveis. Não vender vantagem permanente.
+
+**Transação válida:** `match_id + horde_index + account_uid + economy_version` identifica o crédito único. A horda só paga se terminou com condição real de vitória, após confirmação do host e política de validação do backend. Jogadores presentes e participantes elegíveis recebem 100 integralmente, não há divisão. Não paga por iniciar, perder, recarregar horda antiga ou abandonar antes da conclusão. Tratar jogador derrubado e reanimado como elegível se participou da horda e permaneceu na sessão; jogador AFK prolongado ou entrando após conclusão não recebe crédito (política sugerida; implementar com telemetria concreta). Modo Infinito paga a cada horda realmente concluída, com proteção contra replay. Os 20 cercos da Campanha podem render 2.000 Brotos por campanha completa se todos válidos.
+
+**Persistência:** crédito e compra no servidor em operação atômica/idempotente; saldo = créditos válidos − débitos válidos. Persistir `wallet_balance`, ledger `transaction_id`, `source_match_id`, `source_horde_id`, `item_id`, timestamp do servidor. Um resgate de fila offline não significa crédito automático irrestrito: pendência deve ser verificada antes de confirmar. A compra falha com saldo insuficiente, nunca assume sucesso só porque cliente clicou. Mostrar `+100 Brotos` ao confirmar crédito; enquanto pendente, `100 Brotos aguardando validação`.
+
+**[PENDÊNCIA BLOQUEANTE DE SEGURANÇA]** Host 1.5 é autoritativo **somente dentro de partida P2P**; não é fonte independente confiável para resultados competitivos ou economia. Uma Cloud Function que recebe `ganhei a horda` do host e apenas soma 100 ainda pode ser explorada. O Arquiteto precisa estabelecer validação/limites antifraude proporcionais: eventos assinados por serviço confiável quando disponíveis, verificação da sequência de horda por sessão, não repetição, limites coerentes, logs e revisão de anomalias. Até isso existir, a carteira pode ser **protótipo isolado** e não deve ser declarada segura. O prêmio físico do Elo 10 fica em validação manual independente.
+
+**Teste obrigatório:** mesma vitória transmitida 10 vezes → um crédito; convidado sem conta → sem saldo remoto prometido; duas compras simultâneas → não há saldo negativo; falha de rede antes/depois da confirmação → operação pode repetir com mesma `transaction_id` sem duplicar; desconexão/retorno → saldo consistente.
+
+---
+
+## 8. ZB-COS-01 — LOJA E CATÁLOGO DE COSMÉTICOS
+
+**[CRIADOR]** Comprar cosméticos com moeda ganhada pelas hordas; foco no estilo das 3 classes existentes. **[REFERÊNCIA 1.5]** Já existem cosméticos **conquistados por elo** (cabeça, mochila/aura); preservar todos e não cobrar por itens já desbloqueados. Cosmético não dá dano, velocidade, vida, capacidade ou qualquer outro bônus.
+
+### Interface e equipamento [PROPOSTA]
+
+**Loja: Ateliê dos Sobreviventes.** Acessível no menu principal. Tela com modelo 3D do próprio personagem em massinha, rodar, prévia antes de comprar, filtro `Engenheiro / Batedor / Atirador / Universais / Obtidos`; preço, saldo, item equipado, comprado/bloqueado; botões COMPRAR, EQUIPAR, RETIRAR e VOLTAR com confirmação da compra. Se a conta estiver offline, itens já comprados e cache podem ser vistos, mas não confirmar compra remota offline; sincronizar depois de autenticar.
+
+**Slots cosméticos:** `cabeca`, `roupa`, `visual_mochila`, `efeito`. Só um por slot por personagem. `visual_mochila` é capa/skin, **não** substitui a mochila funcional ZB-BAG-01. Auras leves não podem impedir leitura do inimigo ou do HUD. Todas as compras são **da conta**, não expiram quando mudar de classe; por padrão, cada peça temática só equipa na classe correspondente [PROPOSTA]; universais equipam em qualquer classe. Compatibilizar com os cosméticos de elo: usar o mesmo sistema de slots, **sem revogar** desbloqueios existentes. Variantes equipadas devem sincronizar para até 4 jogadores.
+
+### Catálogo inicial fechado [PROPOSTA, 18 itens de classe + 3 universais]
+
+| ID | Classe | Item | Slot | Custo (Brotos) | Direção artística 3D |
+|---|---|---|---|---:|---|
+| COS-ENG-01 | Engenheiro | Capacete Remendado | cabeça | 300 | capacete amarelo arredondado, duas soldas, arranhões |
+| COS-ENG-02 | Engenheiro | Máscara de Soldador | cabeça | 550 | máscara cinza articulada com visor verde fosco |
+| COS-ENG-03 | Engenheiro | Macacão da Oficina | roupa | 800 | macacão marrom com bolso quadrado e graxa |
+| COS-ENG-04 | Engenheiro | Mestre das Engrenagens | roupa | 1.300 | uniforme escuro com ombreiras de sucata moldada |
+| COS-ENG-05 | Engenheiro | Caixa de Ferramentas | visual_mochila | 500 | caixa pequena presa às costas, alças grossas de argila |
+| COS-ENG-06 | Engenheiro | Faíscas de Bancada | efeito | 1.400 | partículas discretas amarelas que surgem em repouso, limite mobile |
+| COS-BAT-01 | Batedor | Capuz do Explorador | cabeça | 300 | capuz verde-musgo, silhueta abaulada |
+| COS-BAT-02 | Batedor | Óculos de Reconhecimento | cabeça | 550 | óculos grossos em couro/argila, lentes âmbar |
+| COS-BAT-03 | Batedor | Poncho do Andarilho | roupa | 850 | capa curta marrom com bainha irregular |
+| COS-BAT-04 | Batedor | Explorador do Ermo | roupa | 1.300 | jaqueta terrosa com tecido remendado e tornozeleiras |
+| COS-BAT-05 | Batedor | Cantil do Deserto | visual_mochila | 500 | alforge compacto com cantil pendurado |
+| COS-BAT-06 | Batedor | Poeira do Caminho | efeito | 1.400 | pequenas partículas de poeira em movimentos fortes, não oculta inimigos |
+| COS-ATI-01 | Atirador | Lenço da Resistência | cabeça | 300 | lenço vinho/amarelado atrás do pescoço, sem cobrir mira |
+| COS-ATI-02 | Atirador | Capacete de Patrulha | cabeça | 550 | capacete militar verde, fita irregular e fivela |
+| COS-ATI-03 | Atirador | Uniforme de Vigia | roupa | 850 | colete de tecido e bolsos planos, sem arma nova |
+| COS-ATI-04 | Atirador | Veterano da Última Linha | roupa | 1.300 | jaqueta reforçada com insígnia de argila |
+| COS-ATI-05 | Atirador | Rádio de Campanha | visual_mochila | 500 | rádio antigo e antena curta montados nas costas |
+| COS-ATI-06 | Atirador | Brilho de Pólvora | efeito | 1.400 | partículas discretas após recarga, sem alterar disparo real |
+| COS-UNI-01 | Todas | Gorro do Refúgio | cabeça | 250 | gorro bege com costura frontal |
+| COS-UNI-02 | Todas | Avental do Sobrevivente | roupa | 600 | roupa simples de trabalho remendada |
+| COS-UNI-03 | Todas | Medalha do Núcleo | visual_mochila | 400 | pingente discreto com emblema do Núcleo nas costas |
+
+**Sem exclusividade real por dinheiro:** os itens de 1.300–1.400 Brotos devem ser atingíveis por jogo normal; aproximadamente 13–14 hordas, sem bônus externos. Valores servem como protótipo e precisam de telemetria para calibrar. Itens de elo permanecem **gratuitos por progresso de abates**, exclusivos e identificados como `Origem: Elo`. Não vender equivalentes visualmente indistinguíveis da medalha de Imortal.
+
+### Requisitos técnicos de cada item
+
+`id`, `display_name`, `description`, `class_restriction`, `slot`, `price_soft_currency`, `rarity=cosmetic`, `mesh/scene_ref`, `palette`, `particles_budget`, `owned`, `equipped`; assets de baixa geometria/rig compatível com 3 classes. Desbloqueio persistido no UID da conta e equipado por classe/perfil visual; compra transacional atômica. Não permitir cliente definir preço, item ou saldo; backend consulta catálogo com ID imutável e valores autorizados.
+
+**Aceite:** comprar com saldo suficiente debita exatamente uma vez e concede a peça; reiniciar/relogar restaura propriedade; desconexão no meio da compra não duplica nem subtrai sem entrega; classe errada não equipa peça restrita; os outros 3 jogadores veem o cosmético correto; aura reduzida/desligada em modo leve e Android; trocas de roupa não afetam colisão/hitbox/arma.
+
+---
+
+## 9. ZB-BAG-01 — MOCHILA ENCONTRÁVEL E APRIMORÁVEL
+
+**[CRIADOR]** Encontrar bolsa durante exploração e melhorá-la. Não mudar os 9 slots de barra rápida. **[REFERÊNCIA 1.5]** Padrão 18 slots; Batedor 20; evolução `Carga` altera **pilhas** e não quantidade de slots.
+
+**[PROPOSTA] Equipamento de mochila por partida:**
+
+| Item | Efeito sobre a capacidade base da classe | Obtenção | Aparência |
+|---|---:|---|---|
+| BAG-00 — mochila normal | +0 | equipamento inicial | pequena bolsa de argila marrom |
+| BAG-01 — Bolsa de Campo | +3 slots | loot elegível em casas/depósitos/eventos (raridade incomum; peso definido por tabela) | bolsos laterais de tecido de massinha |
+| BAG-02 — Bolsa Reforçada | +6 slots no total | melhorar BAG-01 no comerciante apropriado | placas laterais verdes e travas grossas |
+
+Capacidades resultantes: personagem padrão 18→21→24; Batedor 20→23→26. Não equipar duas bolsas, nem fundir duas para duplicar capacidade. Slots além do 9º são apenas inventário adicional. Se tentar retirar/trocar bolsa com inventário acima da capacidade futura, bloquear ação e exibir `Libere X slots primeiro`. A evolução `Carga` continua atuando nos tamanhos das pilhas elegíveis, sem dobrar slots da mochila.
+
+**[PROPOSTA] Custo BAG-01→BAG-02:** 120 sucatas e 8 componentes do estoque que o comerciante aceitar (definir origem mochila/deposito de acordo com acesso efetivo). A bolsa e seu nível pertencem ao **save da campanha**; o cosmético `visual_mochila` pertence à **conta**. Um inventário de campanha antigo migra para BAG-00, mantendo slots originais e a capacidade extra da classe Batedor. Não permitir deixar itens em slots inválidos após migração.
+
+**Aceite:** todas as classes recebem +3/+6 slots corretos; o Batedor continua com +2 base; trocar cosmetização não altera capacidade; salvar/carregar conserva bolsa sem duplicar itens; capacidade negativa/excedente impossível; Android organiza grade e mantém botão de acesso às 9 posições rápidas.
+
+---
+
+## 10. ZB-EXP-01 E ZB-TITAN-01 — ENCONTROS AO EXPLORAR
+
+### Probabilidades obrigatórias do criador
+
+- **5%** de chance de aparecer o **boss colossal** por novo setor explorável elegível.
+- **10%** de chance de aparecer uma **base/área segura de comércio** por novo setor explorável elegível.
+- Os encontros são **mutuamente exclusivos no mesmo setor**. Os outros 85% usam o gerador de setores/eventos já existente.
+
+**Definição operacional [PROPOSTA]:** uma rolagem de 0–99 (determinística por semente da partida + coordenada) na **primeira geração de um setor novo elegível** fora do Núcleo: 0–4 = boss (5%), 5–14 = posto (10%), 15–99 = geração habitual (85%). Isso assegura probabilidades **incondicionais entre setores elegíveis** e impede dupla ocupação de posto+boss. Em setores comuns resultantes (85%), conservar a regra existente de 75% para eventos **condicionalmente ao setor comum**, sem aplicar os 75% antes da nova rolagem. Não transformar 5% em 5% de 75% ou 10% em 10% de 75%.
+
+**Elegibilidade:** todo novo setor de exploração com geração completa, fora de `(0,0)`, não ocupado por uma instância especial/ponto permanente de missão e não gerado apenas por reentrada/atualização visual. Jogadores em quadrantes diferentes podem descobrir setores distintos. Registro `special_sector_roll[coordinate] = {kind, encounter_id, state}` na partida; persistir para que renovação normal após 180 segundos **não refaça** a rolagem nem regenere prêmio do boss. Se arquitetura atual não comporta persistência por coordenada, criar camada de setores especiais persistentes separada do cache de 180s. Não usar `random()` puro a cada reload.
+
+**Risco de design:** 10% por setor novo significa, em média, um posto a cada dez setores elegíveis em exploração extensa. Não adicionar limite secreto (ex. 1 posto por campanha) que mudaria os 10%. Caso muitos postos prejudiquem o mapa, obter decisão do criador sobre limitar elegibilidade ou introduzir região; registrar a probabilidade efetiva, não falsificar o percentual anunciado. Boss de 20k pode ser encontrado cedo: não ativar combate obrigatório; identificar ameaça e garantir fuga real por bordas/rotas; escalonamento de spawn por horda só mediante aprovação porque altera a chance pedida.
+
+### 10.1 — Posto do Farol / base segura **10%** [PROPOSTA]
+
+**Identidade:** ponto especial habitado em ruína protegida, com 3 barracas, cerca, luz quente de lampiões e sobreviventes com modelos arredondados. É **ponto de exploração**, não o Núcleo principal, não substitui o Bento. Coordenada persistente na campanha, posição sinalizada no mapa depois de descoberta, comerciantes de recursos da **partida**, não Brotos.
+
+Comerciantes:
+
+| NPC / ID | Itens e serviço | Preços iniciais [PROPOSTA] | Limites |
+|---|---|---|---|
+| `NPC-MARA` — Mara, Costureira | upgrade BAG-01→BAG-02; kit de mochila | reforço: 120 sucatas +8 componentes | só reforçar bolsa válida uma vez |
+| `NPC-DAVI` — Davi, Médico | kit médico e suprimentos básicos | kit: 45 sucatas; estoque sugerido 2 por posto e preparação | sem cura infinita grátis |
+| `NPC-FERRO` — Ferrugem, Sucateiro | munição leve e troca de material com taxa | pacote munição leve 40 sucatas; 20 madeiras→1 componente | impedir ciclos com lucro positivo quando combinados com Reciclador |
+
+**Área segura:** dentro do perímetro, não spawnar inimigos comuns e impedir ataques de infectados que cruzem área; limpar/evitar spawns presos sem teletransportar chefes para dentro. A horda do Núcleo **não pausa**; enquanto o posto está em paz, o Núcleo pode ser atacado. Durante uma horda, limitar ou fechar comércio e indicar `Vendedores se abrigaram — volte após a horda`; o jogador continua livre para sair. Posto não é uma segunda base com torres/estrutura permanente construída pelo jogador. Não garantir invulnerabilidade global a quem atacar de dentro; impedir tiros de dentro para fora se isso virar exploit (ou desligar seleção de alvo dentro da área protegida). A equipe pode negociar separadamente e preços/estoques compartilhados devem ser atômicos no host.
+
+**Reentrada:** posto continua localizado na mesma coordenada, não gera novas unidades de estoque a cada 180s, nem se torna multiplicador infinito da economia. A lista e a disponibilidade dos serviços são preservadas no save. Não reivindicar `vendedores infinitos` sem definição de restock.
+
+### 10.2 — Titã Enraizado / boss colossal **5%** [PROPOSTA do nome e golpes]
+
+**Classe:** boss opcional especial de exploração, não substitui os 7 bosses das hordas. **Vida base fixa [CRIADOR]: 20.000 PV**. Aplicar modificadores de dia/noite já existentes somente após documentar sua interação com bosses; por padrão proposto, respeitar +30% noite, +50% Noite Vermelha **como aumento sobre vida base**, mantendo 20.000 no dia. Sem escalonamento adicional por nº de jogadores **na primeira rodada de testes**, para não multiplicar excessivamente vida; ajustar depois da telemetria. O encontro não é garantido a cada 20 setores — 5% é probabilidade por teste, sem pity automático.
+
+**Visual:** gigante 2,5–3x a altura do Bruto (escala sugerida, validar câmera), massinha marrom-escura com rachaduras, raízes grossas, núcleo vegetal verde brilhante no peito, passos pesados e silhueta muito diferente de Colmeia Viva. Baixar partículas/sombras no Android; hitbox coerente com modelo e capacidade real de atravessar ruas/setores.
+
+**Padrões [PROPOSTA]:**
+
+1. **Punho Sísmico:** golpe radial telegráfo com marca no chão por 1,4s, dano de área moderado, intervalo sugerido de 9s; sair da marca evita dano. Não atingir quem já rolou para fora na confirmação.
+2. **Raízes de Contenção:** cria 3 pequenas áreas marcadas, preparação de 1,2s, que reduzem velocidade por 2s quando atingem, sem imobilização inevitável; intervalo sugerido 13s. Raízes somem e não persistem no save como construções.
+3. **Coração Exposto:** depois do Punho Sísmico, ponto do peito abre por 3s; dano nesse ponto recebe multiplicador x1,5; exigir linha de tiro real. É fraqueza opcional que premia precisão.
+4. **Fúria final:** abaixo de 25% da vida, maior frequência de golpes (−15% intervalos) sem aumentar dano inevitável. Conciliar com fúria padrão dos bosses na 1.5 (gatilho <40%, +25% velocidade e +30% dano especial): **não acumular duas fúrias genéricas sem decisão técnica**; sugestão é substituir a fúria genérica por fase própria do Titã, manter explícito no catálogo.
+
+**IA:** persegue ameaça próxima, alterna ataques e conserva linha de fuga. Não aparece dentro do Posto seguro nem no Núcleo. Não obrigar jogador a lutar; se ninguém estiver no setor por janela configurada, suspender/serializar comportamento sem resetar vida. Ao sair e retornar, vida restante e estado de derrota persistem; recarregar mapa não cria outro prêmio.
+
+**Loot inicial [PROPOSTA]**, concedido uma vez após derrota e distribuído como loot individual instanciado ou através de baú de equipe com regras exclusivas (escolher uma estratégia e não as misturar): 250–400 sucata, 8–12 componentes, 1 caixa rara; chance de 1 item de mochila especial **a definir** (não criar bolsa melhor que BAG-02 sem aprovação). Se usar loot compartilhado, nenhum participante pode pegar a mesma pilha duas vezes. Não conceder Brotos ao simplesmente matar o boss, pois o criador vinculou a moeda à **horda completa**. Créditos de kill reais e regras de ranking seguem a plataforma atual, sem contagem por cada golpe.
+
+**Aceite:** em distribuição determinística de 10.000 novos setores elegíveis com seeds distintas, boss ~5% e posto ~10%, separados sem dupla marcação (tolerância estatística documentada); jamais recalcular ao recarregar setor; Titan 20.000 vida base no dia; boss pode ser evitado; telegráfos têm reação; loot é uma vez; desempenho aceitável em Android e coop com quatro participantes.
+
+---
+
+## 11. ZB-MODE-01 — EXPEDIÇÃO DE RESGATE (NOVO MODO)
+
+**[CRIADOR]** Um modo adicional. **[PROPOSTA]** Expedição de Resgate, reutilizando setores, inimigos e armas já existentes.
+
+**Objetivo:** modo curto (alvo de 15–20 min; não é limite rígido) solo/até quatro jogadores. Ao entrar, jogadores recebem um sinal de rádio, exploram 2–4 setores para encontrar transmissor, defendem a ativação e regressam ao ponto de extração. Não criar mundo MMO persistente nem substituir a campanha.
+
+**Fases:** (1) rastrear sinal e recuperar componente do transmissor; (2) proteger estação por ondas temporizadas curtas com progressão separada; (3) atingir ponto de extração e sobreviver à última onda. Falha se equipe for eliminada/objetivo destruído conforme regras e sinalizações; vitória somente depois de todos os objetivos obrigatórios validados. Mostrar missão por checklist curto no HUD; mapas e objetivos sincronizados por host; participantes em setores diferentes podem contribuir, mas não completam objetivo duas vezes.
+
+**Moeda:** 100 Brotos por **horda formalmente concluída** no modo, desde que o evento use os mesmos critérios antifraude e identifique `match_id/horde_id`; objetivos intermediários não pagam 100 cada automaticamente. Definir no design quais etapas são hordas elegíveis antes de publicar. Resultados da campanha/mutadores não devem ser alterados.
+
+**Escopo de persistência:** sessão de expedição separada de campanha 20 hordas; não sobrescrever save antigo; escolher se há save de expedição próprio (proposta: não salvar missão no meio, apenas recordes). O modo só aparece como `Disponível` quando estiver testado; se ainda WIP, escondê-lo do build público.
+
+**Aceite:** solo e 4 jogadores chegam ao final sem softlock; um jogador desconecta sem duplicar objetivo; spawn da área segura e do Titã no modo só se habilitado explicitamente nas tabelas de geração; contagem de moeda não duplica ao reiniciar missão.
+
+---
+
+## 12. MODELOS DE DADOS E EVENTOS (SUGESTÃO DE CONTRATO)
+
+*Adaptar ao esquema real do projeto, sem migrar bancos de forma destrutiva. Os nomes são ilustrativos, não APIs existentes.*
+
+### Conta online (`accounts/{uid}` + coleções restritas de operações)
+
+- `stats`: kills, completed_hordes, collected_scrap, challenge_points, active_play_seconds, longest_session_seconds; preservar dados antigos.
+- `wallet`: balance, currency_code (constante estável, ex. `BRT`), ledger de créditos/débitos, `last_sync`.
+- `cosmetics_owned`: IDs dos cosméticos concedidos ou comprados; `cosmetics_equipped_by_class`: slots por classe; `rank_rewards`: concessões por marco de elo.
+- `play_sessions`: session_id, match_id, start/end do servidor, segundos ativos confirmados, checkpoint/deduplicação.
+
+### Save de partida local (formato 6 atual + migração planejada)
+
+- `player_loadouts[uid/player_identity]`: classe, talentos e níveis, upgrades universais e níveis, `pending_reward_choice_ids`, mochila funcional id/nível, inventário válido.
+- `exploration.special_sector_rolls[coord]`: seed/resultado especial/encounter_id/status/loot_claimed; comerciantes e estoques persistentes.
+- `bosses[encounter_id]`: espécie, 20.000 base, vida atual, estado/fases, derrota e concessão de loot.
+- `match_id` estável por sessão salva, `horde_id` por horda real, lista de participantes elegíveis.
+
+### Eventos de domínio
+
+| Evento | Origem | Consumidores | Garantia |
+|---|---|---|---|
+| `HordeCompleted` | host/resultado validado | upgrades por UID, stats, wallet | um `event_id` por horda real |
+| `PlayerUpgradeChoiceCommitted` | escolha individual validada | stats da partida + save | um por `choice_id` |
+| `SectorFirstDiscovered` | gerador de mundo | roll especial + mapa + save | uma vez por coordenada elegível |
+| `TitanDefeated` | combate validado | loot + registro + kills | uma vez por `encounter_id` |
+| `WalletCreditCommitted` | backend autorizado | conta + UI de saldo | operação atômica/idempotente |
+| `CosmeticPurchased` | backend autorizado | propriedade + débito | tudo ou nada |
+
+**Separação de confiança:** host autoritativo de gameplay ≠ servidor de confiança competitiva. Validar todos os `uid`, IDs e preços; cliente não escreve saldo diretamente. Repetir comandos por latência/reconexão não aplica efeitos duas vezes.
+
+---
+
+## 13. TESTES DE REGRESSÃO E CRITÉRIOS DE RELEASE
+
+### Funcionais
+
+1. Login restaurado sem digitar senha; convidado não recebe saldo remoto indevido; logout correto.
+2. Ranking mantém kills/hordas/sucata/pontos; elos e cosméticos antigos preservados; 10.000 abates continua Elo 10, sem multiplicador de pontos de desafio.
+3. Dois a quatro jogadores recebem e escolhem **cada um sua própria** evolução; talentos corretos por classe; valores máximos corretos e sem duplo clique.
+4. Horda concluída rende +100 moeda uma única vez por UID elegível; falha/retentativa/reconexão não duplica.
+5. Comprar e equipar todos os 21 cosméticos do catálogo de design; teste de todas as classes; skins de mochila não mudam inventário.
+6. Bolsas: 18/20 base; 21/23 Campo; 24/26 Reforçada; itens jamais somem silenciosamente.
+7. Distribuição de primeiro encontro por setor: 5% boss / 10% posto / 85% normal; setor recarregado não gera nova chance; interação com evento de 75% corretamente condicionada.
+8. Titã com vida base 20.000 (dia), telegráfos esquiváveis, pontos fracos funcionais, loot uma vez; boss não bloqueia saída do setor.
+9. Posto tem três NPCs, sem dano comum no interior, tempo da horda segue, preços/estoques não duplicam com trocas em coop.
+10. Novo modo não altera campanha existente nem credita 100 Brotos por objetivo que não seja horda.
+
+### Integridade / persistência / desempenho
+
+- Testar crash durante recompensa, durante compra, durante vitória, durante escolha individual, durante transição de setor e no autosave.
+- Testar reconexão/host/clientes em sessões reais Windows↔Android; four-player load com exploração independente.
+- Verificar reentrada em setor após 179s e 181s, reinício do jogo e reabertura de campanha: evento especial estável; loot não duplica.
+- Migrar save da 1.5 (formato 6) sem apagar Núcleo, inventário, arma, classes e upgrades; nunca forçar reset silencioso por mudança de esquema.
+- Testar redes lentas e offline (contagem pendente claramente sinalizada); autenticação revogada; conta trocada no mesmo dispositivo.
+- Perfil de memória/FPS/uso de partículas no Android real: definir dispositivos mínimos do projeto e medir cenas com 4 jogadores e horda de pico, não afirmar FPS sem medição.
+- Backend: escrever regras de acesso, funções de transação, limites razoáveis e logs; testar idempotência com chamadas concorrentes, payloads maliciosos e replay de IDs antigos.
+
+### Definition of Done
+
+- [ ] Interface legível em celular e Windows, preservando cenário original.
+- [ ] Upgrade individual é funcional com 2, 3 e 4 pessoas.
+- [ ] Todos os novos itens e talentos possuem IDs, modelos, efeitos e valores em configuração.
+- [ ] Probabilidades 5% e 10% são reais e **não** uma chance condicionada escondida.
+- [ ] Dados de conta x partida são separados; migração mantém saves anteriores.
+- [ ] Compras/créditos idempotentes em backend; sem escrita direta de saldo pelo cliente.
+- [ ] Testes de integração e de dispositivos concluídos; erros críticos corrigidos.
+- [ ] Auditor valida riscos de abuso e qualidade; criador aprova catálogo e pontos pendentes.
+- [ ] Apenas após isso: lançar versão e atualizar notas públicas/links de download.
+
+---
+
+## 14. PLANO DE IMPLEMENTAÇÃO POR ETAPAS (SEM PROMOVER ANTES DA CONCLUSÃO)
+
+**Etapa A — P0 Gameplay:** investigar o fluxo real de evolução existente; introduzir escolha por UID e regressão cooperativa. Manter saves.
+
+**Etapa B — Dados e UX:** refinar menu e ranking; reutilizar login lembrado; mostrar perfil com tempo ativo; validar fluxos PC/Android.
+
+**Etapa C — Economia confiável:** contrato e ledger backend, +100 por vitória, estados pendente/confirmado; testar repetição e múltiplas sessões; não habilitar loja pública antes de operação confiável.
+
+**Etapa D — Classes e loja:** incluir nove talentos, 21 itens de catálogo, previews/slots e equipar/sincronizar cosméticos; manter cosméticos do elo.
+
+**Etapa E — Exploração:** implementar bolsa e Mara; spawn do posto 10%, comerciantes e persistência; boss 5%, 20k PV, contrajogo e loot.
+
+**Etapa F — Modo novo:** Expedição de Resgate isolada da Campanha/Infinita, reutilizando conteúdo e eventos validados.
+
+**Etapa G — Auditoria integral:** integração, saves/migrações, Firebase real, Windows/Android, coop de 4, balanceamento de 20 hordas e pelo menos uma sessão longa de Defesa Infinita. Corrigir P0/P1 antes de publicar.
+
+Cada etapa deve entregar: diff do que mudou, testes automáticos e manuais, regressões verificadas, problemas pendentes e telas/capturas reais. PR/branch separado quando necessário. A aprovação criativa final é do criador.
+
+---
+
+## 15. PENDÊNCIAS DE APROVAÇÃO / ARQUITETURA
+
+**PENDÊNCIAS CRIATIVAS (não inventar aprovação):** confirmar ou renomear moeda `Brotos`; validar os 21 cosméticos e preços; aceitar ou ajustar nove talentos e valores; confirmar nomes `Titã Enraizado` e `Posto do Farol`, ataques, loot e NPCs; aprovar `Expedição de Resgate` como novo modo; decidir se cosméticos de classe ficam restritos a essa classe ou podem ser usados por outras. O Construtor pode preparar modelos/tabelas configuráveis enquanto aguarda aprovação, mas não declarar conteúdo final.
+
+**PENDÊNCIAS TÉCNICAS BLOQUEANTES:** verificar estrutura real do sistema de evoluções para identificar como criar recompensa por usuário sem regressão; decidir serviço de validação remota das moedas contra fraude de host; criar transações atômicas; mapear migração de save 6 e eventual mudança de protocolo 17; decidir a política de concessão offline; definir política segura para horas ativas em múltiplos dispositivos.
+
+**NÃO FAZER:** substituir a estética do menu, resetar dados do jogador, inventar milhares de moedas em saves antigos, multiplicar kills reais por mutadores, conceder upgrades compartilhados novamente, permitir que reentrada em setor re-sorteie 5%/10%, dar invulnerabilidade ilimitada para atacar do posto, monetizar vantagens competitivas, anunciar vencedor verificado de prêmio físico somente pelo ranking comunitário, ou promover release sem teste real no Android.
+
+**INSTRUÇÃO FINAL AO CONSTRUTOR:** Antes de programar, confronte este documento com a branch atual do jogo. Se algo divergir da 1.5.0-rc.1 documentada, registre diferença e preserve o comportamento mais recente **comprovado**. Implemente uma etapa de cada vez, com requisitos rastreáveis e aceite verificável; não trate parâmetros propostos como cânone até aprovação do criador.

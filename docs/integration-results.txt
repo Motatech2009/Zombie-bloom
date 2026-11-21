@@ -1,0 +1,88 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: negative damage is rejected
+PASS: healing clamps to maximum
+PASS: death is terminal and damage clamps to zero
+PASS: world initializes in preparation with a live player
+PASS: no enemies before the first wave
+PASS: WASD input moves the actual CharacterBody3D
+PASS: pistol fires with ammunition
+PASS: raycast hits an enemy and applies configured damage
+PASS: cadence prevents repeated shots
+PASS: partial magazine starts reloading
+PASS: firing is blocked during reload
+PASS: reload replenishes only the current magazine
+PASS: empty gun automatically starts reload
+PASS: switching cancels reload without refilling the old gun
+PASS: rifle has a separate magazine
+PASS: shotgun casts all six pellets and consumes one shell
+PASS: rifle applies its own damage and magazine accounting
+PASS: death registers exactly one kill and removes the enemy from active counts
+PASS: repeated damage does not duplicate loot or kills
+PASS: wallet rejects overdrafts and negative spending
+PASS: pickup grants loot once
+PASS: XP queues multiple level choices and pauses combat
+PASS: upgrade applies: damage
+PASS: damage upgrade changes combat damage
+PASS: consumed offer rejects duplicate selection
+PASS: upgrade applies: rate
+PASS: rate upgrade changes cadence
+PASS: consumed offer rejects duplicate selection
+PASS: upgrade applies: capacity
+PASS: capacity upgrade changes magazine size
+PASS: consumed offer rejects duplicate selection
+PASS: upgrade applies: reload
+PASS: reload upgrade reduces reload duration
+PASS: consumed offer rejects duplicate selection
+PASS: upgrade applies: speed
+PASS: speed upgrade changes movement
+PASS: consumed offer rejects duplicate selection
+PASS: upgrade applies: health
+PASS: health upgrade increases maximum health
+PASS: consumed offer rejects duplicate selection
+PASS: shield absorbs damage before health
+PASS: power pickup refreshes duration without stacking intensity
+PASS: all three temporary powers expire completely
+PASS: construction rejects overlap with core
+PASS: construction rejects overlap with player
+PASS: construction rejects map border
+PASS: construction rejects distant positions
+PASS: free nearby construction site is accepted
+PASS: barricade construction spends exactly its cost
+PASS: construction rejects overlap with existing defenses
+PASS: construction rejects insufficient resources
+PASS: turret construction spends its own cost
+PASS: repair applies health and spends resources
+PASS: full structure cannot consume repair resources
+PASS: turret raycast automatically damages a visible target
+PASS: turret cannot shoot through a solid obstacle
+PASS: zombie attacks a barricade obstructing its route
+PASS: solid barricade prevents zombie from penetrating its occupied volume
+PASS: wave starts only once and leaves preparation
+PASS: combat disables construction and repair
+PASS: live wave timer generates enemies automatically
+PASS: pause freezes the world and survival clock
+PASS: continue resumes the scene tree
+PASS: wave progression reaches 1
+PASS: wave 1 counts spawns, kills and remaining enemies
+PASS: completed wave reopens preparation
+PASS: wave progression reaches 2
+PASS: wave 2 counts spawns, kills and remaining enemies
+PASS: completed wave reopens preparation
+PASS: wave progression reaches 3
+PASS: third wave introduces runners
+PASS: wave 3 counts spawns, kills and remaining enemies
+PASS: completed wave reopens preparation
+PASS: wave progression reaches 4
+PASS: wave 4 counts spawns, kills and remaining enemies
+PASS: completed wave reopens preparation
+PASS: wave progression reaches 5
+PASS: final wave introduces brutes
+PASS: wave 5 counts spawns, kills and remaining enemies
+PASS: fifth wave opens victory and freezes the game
+PASS: victory cannot start another wave
+PASS: terminal result cannot be overwritten
+PASS: defeat from player death opens terminal result
+PASS: defeat from core death opens terminal result
+PASS: menu, help and settings build successfully
+RESULT: 85 checks, 0 failures

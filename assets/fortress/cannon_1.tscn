@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/defenses/cannon/gun_1.res" id="1_f1jef"]
+[ext_resource type="ArrayMesh" path="res://assets/defenses/cannon/swivel_1.res" id="2_iwt6n"]
+[ext_resource type="ArrayMesh" path="res://assets/defenses/cannon/base_1.res" id="3_211ly"]
+
+[ext_resource type="Material" path="res://assets/defenses/cannon/material.tres" id="material"]
+
+[node name="cannon_N1" type="Node3D" unique_id=1853313809]
+metadata/tier = 1
+metadata/source = "Tripo/user submission"
+
+[node name="Head" type="Node3D" parent="." unique_id=803565298]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1110862, 0)
+
+[node name="Pitch" type="Node3D" parent="Head" unique_id=2093427870]
+
+[node name="Gun" type="MeshInstance3D" parent="Head/Pitch" unique_id=611416519]
+mesh = ExtResource("1_f1jef")
+surface_material_override/0 = ExtResource("material")
+
+[node name="Muzzle1" type="Marker3D" parent="Head/Pitch" unique_id=2019131935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.009849358, 0, -1.5060046)
+
+[node name="Swivel" type="MeshInstance3D" parent="Head" unique_id=727540079]
+mesh = ExtResource("2_iwt6n")
+surface_material_override/0 = ExtResource("material")
+
+[node name="Base" type="MeshInstance3D" parent="." unique_id=1977436034]
+mesh = ExtResource("3_211ly")
+surface_material_override/0 = ExtResource("material")

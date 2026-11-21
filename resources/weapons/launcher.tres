@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GameSpec" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/core/game_spec.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "launcher"
+title = "Lança-foguetes"
+color = Color(0.9,0.65,0.3,1)
+values = {
+"damage": 130.0,
+"interval": 1.0,
+"range": 36.0,
+"capacity": 1,
+"reload": 2.5,
+"pellets": 1,
+"spread": 0.0
+}

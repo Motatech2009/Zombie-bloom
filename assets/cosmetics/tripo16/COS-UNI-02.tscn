@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/cosmetics/tripo16/COS-UNI-02.res" id="1_57mu1"]
+
+[ext_resource type="Material" path="res://assets/cosmetics/tripo16/material.tres" id="material"]
+
+[node name="COS-UNI-02" type="Node3D" unique_id=878748062]
+metadata/cosmetic_id = "COS-UNI-02"
+metadata/slot = "outfit"
+metadata/source = "Tripo/user submission"
+
+[node name="Accessory" type="MeshInstance3D" parent="." unique_id=1949741932]
+mesh = ExtResource("1_57mu1")
+surface_material_override/0 = ExtResource("material")

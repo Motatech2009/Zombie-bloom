@@ -1,0 +1,11 @@
+.godot/
+builds/
+*.tmp
+*.log
+
+node_modules/
+# Local creator originals and art preparation outputs (production assets are tracked).
+art_source/tripo16/incoming/
+art_source/tripo16/prepared/
+art_source/tripo16/references/
+art_source/tripo16/cannon/*.glb

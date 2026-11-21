@@ -1,0 +1,38 @@
+{
+  "created": "2026-11-17",
+  "generator": "Tripo; user-supplied exports; offline Godot4.6.3 preparation",
+  "sources": [
+    {
+      "file": "TORRE ELETRICA.glb",
+      "sha256": "f6eb41160d558d96866b82102a91db6294339b90374e29c20f82979f2106e17a",
+      "budget": 16000
+    },
+    {
+      "file": "torreta elevada.glb",
+      "sha256": "b376a5c702a6e9789be866e65b843c954f579f2bb52d471b3b9a80c5e4dada27",
+      "budget": 16000
+    },
+    {
+      "file": "cannon_original.glb",
+      "sha256": "9f961f0897cd644d9683f265ba19c0e8abe2197852c09b0c803c546c5db098ec",
+      "budget": 16000
+    },
+    {
+      "file": "Nucleo vercao 1.glb",
+      "sha256": "176fafebaab118745a79094c424098c3b61186e61552c0ed383a0d26724e01f5",
+      "budget": 16000
+    }
+  ],
+  "cosmetics": {
+    "file": "cosmeticos.glb",
+    "sha256": "a4635f3faa591956989b87920f6f136a46bd8ebc26a228632b1b2dc59149f8ec",
+    "physical_items": 19,
+    "triangles": 12781
+  },
+  "core_8k_reference": {
+    "file": "Nucleo vecao 2 8k.glb",
+    "sha256": "9ed9048130975f305d3d54c34b7649012fcf0406098748713205380eee5de1c0",
+    "triangles": 12558,
+    "usage": "Compared only. Production uses reduced 4K source, preserving the more detailed silhouette."
+  }
+}

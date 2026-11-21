@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/defenses/basic_turret/head_3.res" id="1_41jtm"]
+[ext_resource type="ArrayMesh" path="res://assets/defenses/basic_turret/base_3.res" id="2_g22cn"]
+
+[node name="turret_N3" type="Node3D" unique_id=2046454420]
+metadata/tier = 3
+metadata/source = "Tripo/user submission"
+
+[node name="Head" type="Node3D" parent="." unique_id=17309454]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+
+[node name="Pitch" type="Node3D" parent="Head" unique_id=1733866732]
+
+[node name="Gun" type="MeshInstance3D" parent="Head/Pitch" unique_id=197928678]
+mesh = ExtResource("1_41jtm")
+
+[node name="Muzzle1" type="Marker3D" parent="Head/Pitch" unique_id=155651301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.30834788, 0, -1.4012547)
+
+[node name="Muzzle2" type="Marker3D" parent="Head/Pitch" unique_id=1562545337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28286353, 0, -1.4012547)
+
+[node name="Base" type="MeshInstance3D" parent="." unique_id=1140926468]
+mesh = ExtResource("2_g22cn")
